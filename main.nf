@@ -51,6 +51,7 @@ WorkflowMain.initialise(workflow, params, log)
 */
 
 include { RNACHROM } from './workflows/rnachrom'
+include { MACS2_CALLPEAK } from '../modules/nf-core/macs2/callpeak/main'
 
 //
 // WORKFLOW: Run main nf/rnachrom analysis pipeline
