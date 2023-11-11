@@ -2,10 +2,10 @@ process SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_single'
 
-    conda "conda-forge::python=3.8.3"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'biocontainers/python:3.8.3' }"
+    // conda "conda-forge::python=3.8.3"
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/python:3.8.3' :
+    //     'biocontainers/python:3.8.3' }"
 
     input:
     path samplesheet
@@ -17,9 +17,9 @@ process SAMPLESHEET_CHECK {
     when:
     task.ext.when == null || task.ext.when
 
-    script: // This script is bundled with the pipeline, in nf/rnachrom/bin/
+    script: // This script is bundled with the pipeline, in nf-core/rnachrom/bin/
     """
-    check_samplesheet.py \\
+    check_samplesheet_rna_dna_parts.py \\
         $samplesheet \\
         samplesheet.valid.csv
 

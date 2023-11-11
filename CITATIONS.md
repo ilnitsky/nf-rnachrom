@@ -1,4 +1,4 @@
-# nf/rnachrom: Citations
+# nf-core/rnachrom: Citations
 
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 

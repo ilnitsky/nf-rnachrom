@@ -1,5 +1,5 @@
 //
-// This file holds several functions specific to the workflow/rnachrom.nf in the nf/rnachrom pipeline
+// This file holds several functions specific to the workflow/rnachrom.nf in the nf-core/rnachrom pipeline
 //
 
 import nextflow.Nextflow

@@ -12,12 +12,13 @@ workflow INPUT_CHECK {
     SAMPLESHEET_CHECK ( samplesheet )
         .csv
         .splitCsv ( header:true, sep:',' )
-        .map { create_fastq_channel(it) }
+        .map { create_fastq_channel_rna_dna(it) }
         .set { reads }
 
     emit:
     reads                                     // channel: [ val(meta), [ reads ] ]
     versions = SAMPLESHEET_CHECK.out.versions // channel: [ versions.yml ]
+    csv = SAMPLESHEET_CHECK.out.csv           // channel: [ samplesheet.csv ]
 }
 
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
@@ -42,3 +43,22 @@ def create_fastq_channel(LinkedHashMap row) {
     }
     return fastq_meta
 }
+
+def create_fastq_channel_rna_dna(LinkedHashMap row) {
+    // create meta map
+    def meta = [:]
+    meta.id         = row.sample
+
+    // add path(s) of the fastq file(s) to the meta map
+    def fastq_meta = []
+    if (!file(row.rna).exists()) {
+        exit 1, "ERROR: Please check input samplesheet -> RNA FastQ file does not exist!\n${row.rna}"
+    }
+   
+    if (!file(row.dna).exists()) {
+        exit 1, "ERROR: Please check input samplesheet -> DNA FastQ file does not exist!\n${row.dna}"
+    }
+    fastq_meta = [ meta, [ file(row.rna), file(row.dna) ] ]
+    return fastq_meta
+}
+

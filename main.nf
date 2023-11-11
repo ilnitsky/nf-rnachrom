@@ -1,9 +1,11 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf/rnachrom
+    nf-core/rnachrom
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf/rnachrom
+    Github : https://github.com/nf-core/rnachrom
+    Website: https://nf-co.re/rnachrom
+    Slack  : https://nfcore.slack.com/channels/rnachrom
 ----------------------------------------------------------------------------------------
 */
 
@@ -51,12 +53,11 @@ WorkflowMain.initialise(workflow, params, log)
 */
 
 include { RNACHROM } from './workflows/rnachrom'
-include { MACS2_CALLPEAK } from '../modules/nf-core/macs2/callpeak/main'
 
 //
-// WORKFLOW: Run main nf/rnachrom analysis pipeline
+// WORKFLOW: Run main nf-core/rnachrom analysis pipeline
 //
-workflow NF_RNACHROM {
+workflow NFCORE_RNACHROM {
     RNACHROM ()
 }
 
@@ -71,7 +72,7 @@ workflow NF_RNACHROM {
 // See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow {
-    NF_RNACHROM ()
+    NFCORE_RNACHROM ()
 }
 
 /*

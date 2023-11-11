@@ -1,4 +1,4 @@
-# nf/rnachrom: Output
+# nf-core/rnachrom: Output
 
 ## Introduction
 
