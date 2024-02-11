@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: bardic
+Version: 0.4.1
+Summary: A binomial RNA-DNA interaction caller.
+Home-page: http://github.com/anikolskaya/BaRDIC
+Author: Dmitry Mylarshchikov
+Author-email: dmitrymyl@gmail.com
+License: MIT
+Requires-Python: >=3.8
+License-File: LICENSE

@@ -26,6 +26,12 @@ ch_multiqc_custom_config   = params.multiqc_config ? Channel.fromPath( params.mu
 ch_multiqc_logo            = params.multiqc_logo   ? Channel.fromPath( params.multiqc_logo, checkIfExists: true ) : Channel.empty()
 ch_multiqc_custom_methods_description = params.multiqc_methods_description ? file(params.multiqc_methods_description, checkIfExists: true) : file("$projectDir/assets/methods_description_template.yml", checkIfExists: true)
 
+
+// ch_config =  Channel.fromPath("$projectDir/assets/grid_test.json", checkIfExists: true)
+ch_config               =  Channel.fromPath( params.base_config, checkIfExists: true)
+ch_config_detect_strand =  Channel.fromPath( "$projectDir/assets/detect_strand.json", checkIfExists: true)
+ch_config_xrna          =  Channel.fromPath( "$projectDir/assets/xrna.json", checkIfExists: true)
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
@@ -35,7 +41,8 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { INPUT_CHECK             } from '../subworkflows/local/input_check'
+include { ALLVSALL                } from '../subworkflows/local/allvsall'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,6 +115,20 @@ workflow RNACHROM {
         ch_multiqc_logo.toList()
     )
     multiqc_report = MULTIQC.out.report.toList()
+
+    // INPUT_CHECK.out.reads.map{it -> it[1]}.collect().view()
+
+    ALLVSALL (
+        INPUT_CHECK.out.csv,
+        ch_config,
+        INPUT_CHECK.out.reads.map{it -> it[1]}.collect()  
+    )
+    
+    // ALLVSALL.out.up.view()
+
+
+
+    // GET_RAW_CONTACTS_A2A.out.rsites.view()
 }
 
 /*
