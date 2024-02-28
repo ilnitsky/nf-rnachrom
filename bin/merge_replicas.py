@@ -8,7 +8,12 @@ def merge_samples(samplesheet_path, detect_strand_path, *replicas ):
     groups = samplesheet['sample'].unique()
     for group in groups:
         # Get the samples for this group
-        samples = samplesheet[samplesheet['sample'] == group]['rna'].values
+
+        if 'rna' in samplesheet.columns:
+            samples = samplesheet[samplesheet['sample'] == group]['rna'].values
+        else:
+            samples = samplesheet[samplesheet['sample'] == group]['fastq_1'].values
+
         merged_data = pd.DataFrame()
 
         for sample in samples:
@@ -24,10 +29,10 @@ def merge_samples(samplesheet_path, detect_strand_path, *replicas ):
             strand = detect_strand[ detect_strand['id'] == sample ]['strand'].values[0]
             if strand == 'ANTI':
                 data['rna_strand'] = data['rna_strand'].apply(lambda x: x.replace('+', 'temp').replace('-', '+').replace('temp', '-'))
-            if strand == 'SAME':
+            elif strand == 'SAME':
                 pass
             else:
-                raise Exception("Strand orientation has not been deduced!")
+                raise Exception("Strand orientation has not been deduced! ")
             
             if merged_data.empty:
                 merged_data = data

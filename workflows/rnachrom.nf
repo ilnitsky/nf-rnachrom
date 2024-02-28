@@ -28,7 +28,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 
 
 // ch_config =  Channel.fromPath("$projectDir/assets/grid_test.json", checkIfExists: true)
-ch_config               =  Channel.fromPath( params.base_config, checkIfExists: true)
+
 ch_config_detect_strand =  Channel.fromPath( "$projectDir/assets/detect_strand.json", checkIfExists: true)
 ch_config_xrna          =  Channel.fromPath( "$projectDir/assets/xrna.json", checkIfExists: true)
 
@@ -40,9 +40,16 @@ ch_config_xrna          =  Channel.fromPath( "$projectDir/assets/xrna.json", che
 
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
+// OTA -- One-to-all experiments processing subworkflow
+// ATA -- All-to-all experiments processing subworkflow
+// ATA_BRIDGE -- All-to-all experiments processing if raw reads have bridge/linker sequence 
 //
+
+
 include { INPUT_CHECK             } from '../subworkflows/local/input_check'
-include { ALLVSALL                } from '../subworkflows/local/allvsall'
+include { OTA                } from '../subworkflows/local/OTA'
+include { ATA                } from '../subworkflows/local/ATA'
+include { ATA_BRIDGE         } from '../subworkflows/local/ATA_bridge'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,6 +62,7 @@ include { ALLVSALL                } from '../subworkflows/local/allvsall'
 //
 include { FASTQC                      } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
+include { CALC_STATS                  } from '../modules/local/calc_stats'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 /*
@@ -89,6 +97,61 @@ workflow RNACHROM {
     )
     ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
+
+
+    // Prepare genome
+
+    //TO DO: CHeck spelling of exp type?
+    if (params.exp_type in ['rap', 'chirp', 'chart']) {
+        OTA (
+            INPUT_CHECK.out.csv,
+            INPUT_CHECK.out.reads 
+        )
+    } else {
+
+        if(params.bridge_processing){
+        ATA_BRIDGE (
+            INPUT_CHECK.out.csv,
+            INPUT_CHECK.out.reads 
+        )
+        ch_trimmed_summary    = ATA_BRIDGE.out.trimmed_summary
+        ch_pear_stats         = ATA_BRIDGE.out.pear_stats
+        ch_bridge_coords_as   = ATA_BRIDGE.out.bridge_coords_as
+        ch_bridge_coords_unF  = ATA_BRIDGE.out.bridge_coords_unF
+        ch_bridge_coords_unR  = ATA_BRIDGE.out.bridge_coords_unR
+        ch_hisat2_summary     = ATA_BRIDGE.out.hisat2_summary
+        ch_bridge_versions    = ATA_BRIDGE.out.versions
+        ch_hisat2_bam         = ATA_BRIDGE.out.hisat2_bam
+
+        ch_hisat2_summary.view()
+
+        // ch_trimmed_summary
+        // | combine( ch_pear_stats, by: 0 )
+        // | combine( ch_bridge_coords, by: 0 )
+        // | combine( ch_hisat2_summary, by: 0 )
+        // | set { ch_stats }
+
+
+        CALC_STATS ( 
+            ch_trimmed_summary,
+            ch_pear_stats,
+            ch_bridge_coords_as,
+            ch_bridge_coords_unF,
+            ch_bridge_coords_unR,
+            ch_hisat2_summary
+         )
+
+        } else {
+        ATA (
+            INPUT_CHECK.out.csv,
+            // INPUT_CHECK.out.reads.map{it -> it[1]}.collect()  
+            INPUT_CHECK.out.reads
+        )
+        }
+    }
+
+
+
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
     )
@@ -115,20 +178,7 @@ workflow RNACHROM {
         ch_multiqc_logo.toList()
     )
     multiqc_report = MULTIQC.out.report.toList()
-
-    // INPUT_CHECK.out.reads.map{it -> it[1]}.collect().view()
-
-    ALLVSALL (
-        INPUT_CHECK.out.csv,
-        ch_config,
-        INPUT_CHECK.out.reads.map{it -> it[1]}.collect()  
-    )
     
-    // ALLVSALL.out.up.view()
-
-
-
-    // GET_RAW_CONTACTS_A2A.out.rsites.view()
 }
 
 /*
@@ -137,7 +187,20 @@ workflow RNACHROM {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+
+
+c_green = params.monochrome_logs ? '' : "\033[0;32m";
+c_yellow = params.monochrome_logs ? '' : "\033[0;33m";
+c_reset = params.monochrome_logs ? '' : "\033[0m";
+
 workflow.onComplete {
+    
+    if ( workflow.success ) {
+      log.info   "${c_green} [$workflow.complete] >> Script finished SUCCESSFULLY after $workflow.duration . ${c_reset}" 
+    } else {
+      log.info "[$workflow.complete] >> Script finished with ERRORS after $workflow.duration"
+    }
+
     if (params.email || params.email_on_fail) {
         NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
     }
@@ -148,8 +211,15 @@ workflow.onComplete {
     }
 }
 
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     THE END
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
+
+    // INPUT_CHECK.out.reads.map{it -> it[1]}.collect().view()
+    // INPUT_CHECK.out.reads.view()
+    // INPUT_CHECK.out.view()
+

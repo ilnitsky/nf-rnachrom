@@ -10,7 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["input", "outdir"],
+            "required": ["input", "outdir", "exp_type"],
             "properties": {
                 "input": {
                     "type": "string",
@@ -28,6 +28,53 @@
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
                     "fa_icon": "fas fa-folder-open"
                 },
+                "exp_type": {
+                    "type": "string",
+                    "description": "Experiment type. Available options: imargi, char, redc, redchip, grid"
+                },
+ 
+                "annot_BED": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "BED file with annotation"
+                },
+                "annot_GTF": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "GTF file with annotation"
+                },
+                "blacklist": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Blacklist file"
+                },
+                "chromsizes": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Chromsizes"
+                },
+                "splice_sites": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Splice sites for hisat aligner"
+                },
+                "smoother": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": ""
+                },
+                "cfg": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": ""
+                },
+                "detect_strand_genes_list": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": ""
+                },
+ 
+                
                 "email": {
                     "type": "string",
                     "description": "Email address for completion summary.",
@@ -42,6 +89,47 @@
                 }
             }
         },
+
+
+        "tool_parameters": {
+            "title": "Tool parameters",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "properties": {
+                "dedup_tool": {
+                    "type": "string",
+                    "description": "Read deduplication tool name"
+                },
+                "dedup_tool_path": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to read deduplication tool executable"
+                },
+                "trim_tool": {
+                    "type": "string",
+                    "description": "Trimming tool name"
+                },
+                "trim_path": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to trimming tool executable"
+                },
+                "align_tool": {
+                    "type": "string",
+                    "description": "Aligning tool name"
+                },
+                "align_tool_path": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to alignment tool executable"
+                }
+
+            }
+        },
+
+
+
         "reference_genome_options": {
             "title": "Reference genome options",
             "type": "object",
@@ -53,6 +141,11 @@
                     "description": "Name of iGenomes reference.",
                     "fa_icon": "fas fa-book",
                     "help_text": "If using a reference genome configured in the pipeline using iGenomes, use this parameter to give the ID for the reference. This is then used to build the full paths for all required reference genome files e.g. `--genome GRCh38`. \n\nSee the [nf-core website docs](https://nf-co.re/usage/reference_genomes) for more details."
+                },
+                "genome_path": {
+                    "type": "string",
+                    "description": "Path to genome and index files",
+                    "help_text": ""
                 },
                 "fasta": {
                     "type": "string",

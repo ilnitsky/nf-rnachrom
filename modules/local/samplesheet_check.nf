@@ -18,6 +18,19 @@ process SAMPLESHEET_CHECK {
     task.ext.when == null || task.ext.when
 
     script: // This script is bundled with the pipeline, in nf-core/rnachrom/bin/
+
+    if( params.bridge_processing || params.exp_type in ['chart', 'rap', 'chirp']) {
+    """
+    check_samplesheet.py \\
+        $samplesheet \\
+        samplesheet.valid.csv
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version | sed \'s/Python //g\')
+    END_VERSIONS
+    """
+    } else {
     """
     check_samplesheet_rna_dna_parts.py \\
         $samplesheet \\
@@ -25,7 +38,8 @@ process SAMPLESHEET_CHECK {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
+        python: \$(python --version | sed \'s/Python //g\')
     END_VERSIONS
     """
+    }
 }

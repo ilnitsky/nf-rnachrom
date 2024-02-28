@@ -4,11 +4,30 @@
     //     'https://depot.galaxyproject.org/singularity/gawk:5.1.0' :
     //     'quay.io/biocontainers/gawk:5.1.0' }"
 
+ANSI_RESET = "\u001B[0m";
+ANSI_BLACK = "\u001B[30m";
+ANSI_RED = "\u001B[31m";
+ANSI_GREEN = "\u001B[32m";
+ANSI_YELLOW = "\u001B[33m";
+ANSI_BLUE = "\u001B[34m";
+ANSI_PURPLE = "\u001B[35m";
+ANSI_CYAN = "\u001B[36m";
+ANSI_WHITE = "\u001B[37m";
 
+
+def print_red = {  str -> ANSI_RED + str + ANSI_RESET }
+def print_black = {  str -> ANSI_BLACK + str + ANSI_RESET }
+def print_green = {  str -> ANSI_GREEN + str + ANSI_RESET }
+def print_yellow = {  str -> ANSI_YELLOW + str + ANSI_RESET }
+def print_blue = {  str -> ANSI_BLUE + str + ANSI_RESET }
+def print_cyan = {  str -> ANSI_CYAN + str + ANSI_RESET }
+def print_purple = {  str -> ANSI_PURPLE + str + ANSI_RESET }
+def print_white = {  str -> ANSI_WHITE + str + ANSI_RESET }
 
 process CONFIG {
     // publishDir ${params.outdir}/'processing', mode: 'copy'
-
+    // log.info print_green("Complete!")
+    log.info print_yellow("Experiment:           ") + print_purple(params.exp_type)
 
     label 'process_single'
 
@@ -28,19 +47,18 @@ process CONFIG {
     
     script:
 
-    if (params.exp_type in ['radicl', 'char', 'redc']) {
+    if (params.exp_type in ['radicl', 'char', 'redc', 'margi']) {
         rsites = 'skip'
     } else {
         rsites = params.exp_type
     }
-    
+    if (!params.bridge_processing){    
     """
     jq \\
     --argjson rna_ids "\$(jq -nR '[inputs|split(",")|.[1]|split("/")|.[-1]|split(".")|.[0]]' <(tail -n+2 $samplesheet))"   \\
     --argjson dna_ids "\$(jq -nR '[inputs|split(",")|.[2]|split("/")|.[-1]|split(".")|.[0]]' <(tail -n+2 $samplesheet))"   \\
      '. + {rna_ids: \$rna_ids, dna_ids: \$dna_ids}' $config > config.json
     
-
     jq '.align.dna_genome_path="${params.genome_path}"' config.json \\
     | jq '.align.known_splice="${params.splice_sites}"' \\
     | jq '.align.tool="${params.align_tool}"' \\
@@ -51,8 +69,26 @@ process CONFIG {
     | jq '.dedup.tool="${params.dedup_tool}"' \\
     | jq '.dedup.tool_path="${params.dedup_tool_path}"' \\
     > config.final.json
-
     """
+    } else {
+    """
+    jq \\
+    --argjson rna_ids "\$(jq -nR '[inputs|split(",")|.[2]|split("/")|.[-1]|split(".")|.[0]]' <(tail -n+2 $samplesheet))"   \\
+    --argjson dna_ids "\$(jq -nR '[inputs|split(",")|.[3]|split("/")|.[-1]|split(".")|.[0]]' <(tail -n+2 $samplesheet))"   \\
+     '. + {rna_ids: \$rna_ids, dna_ids: \$dna_ids}' $config > config.json
+
+    jq '.align.dna_genome_path="${params.genome_path}"' config.json \\
+    | jq '.align.known_splice="${params.splice_sites}"' \\
+    | jq '.align.tool="${params.align_tool}"' \\
+    | jq '.align.tool_path="${params.align_tool_path}"' \\
+    | jq '.rsites.type="skip"' \\
+    | jq '.trim.tool="skip"' \\
+    | jq '.trim.tool_path="skip"' \\
+    | jq '.dedup.tool="skip"' \\
+    | jq '.dedup.tool_path="skip"' \\
+    > config.final.json
+    """
+    }
 
 }
 
@@ -177,6 +213,7 @@ process TRIM {
     """
     } else {
     
+
     }
 
 }
@@ -205,7 +242,9 @@ process ALIGN {
     task.ext.when == null || task.ext.when
 
     script:
+    println print_purple("Aligning files with " + params.align_tool + " tool" )
     """
+    which python
     rnachromprocessing -c config.final.json -s align --input_dir . --output_dir . -v
     """
 
@@ -575,7 +614,19 @@ process BARDIC {
 
 
 
+// process BLACKLISTING {
+//   publishDir "$params.outdir/blkres", mode: 'copy'
+//   input:
+//   path(splice)
 
+//   output:
+//   path("*-blacklist.tab")
+
+//   script:
+//   """
+//   python3 ${projectDir}/bin/rnachrom_pipeline_faster/blacklisting.py ${splice} ${params.blacklist} --outdir .
+//   """
+// }
 
 
 

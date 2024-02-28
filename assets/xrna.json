@@ -1,8 +1,8 @@
 {
-    "bed_input_dir": "results/bed",
-    "fq_input_dir": "results/trim",
+    "bed_input_dir": ".",
+    "fq_input_dir": ".",
     "output_dir": "xrnas",
-    "ouputs_prefix": "xrna_mouse",
+    "ouputs_prefix": "xrna",
     "keep_extras": [
       "ids",
       "merged_bam"

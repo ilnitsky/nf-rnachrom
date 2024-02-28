@@ -27,6 +27,16 @@
 
 1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+3. PEAR - Paired-End Read Merger
+
+
+## Dependencies
+1. Debridge.jl - Chartools
+2. PEAR
+2. Bioawk
+3. fastq-dupaway
+seqkit
+fastuniq
 
 ## Usage
 
@@ -39,6 +49,8 @@ with `-profile test` before running the workflow on actual data.
 <!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
      Explain what rows and columns represent. For instance (please edit as appropriate):
 
+
+-->
 First, prepare a samplesheet with your input data that looks as follows:
 
 `samplesheet.csv`:
@@ -49,8 +61,6 @@ CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
 ```
 
 Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
-
--->
 
 Now, you can run the pipeline using:
 

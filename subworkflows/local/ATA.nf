@@ -7,21 +7,21 @@ include { XRNA_CONFIG; DETECT_STRAND } from '../../modules/local/xrna_assembly'
 
 ch_config_detect_strand =  Channel.fromPath( "$projectDir/assets/detect_strand.json", checkIfExists: true)
 ch_config_xrna          =  Channel.fromPath( "$projectDir/assets/xrna.json", checkIfExists: true)
+ch_config               =  Channel.fromPath( "$projectDir/assets/new_config.json", checkIfExists: true)
 
 
-workflow ALLVSALL {
+workflow ATA {
     take:
     samplesheet // file: /path/to/samplesheet.csv
-    config      // file: /path/to/config.json
     reads
 
     main:
-    
-    rna_samples = Channel.fromPath( params.input )
-    .splitCsv(header: true, sep:',')
-    .map{row -> tuple(file(row.rna).baseName, file(row.rna))}
 
-    CONFIG( samplesheet, config )
+    // rna_samples = Channel.fromPath( params.input )
+    // .splitCsv(header: true, sep:',')
+    // .map{row -> tuple(file(row.rna).baseName, file(row.rna))}
+
+    CONFIG( samplesheet, ch_config )
     XRNA_CONFIG( samplesheet, ch_config_detect_strand, ch_config_xrna )
 
     /*
@@ -29,6 +29,8 @@ workflow ALLVSALL {
     // PREPROCESSING
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     */
+
+    //TO DO: margi ; DEDUP -> TRIM ?
 
     if (params.exp_type == "imargi"){
         RSITES( reads, CONFIG.out.json )

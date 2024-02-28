@@ -1,4 +1,4 @@
-process MAPPING {
+process ALIGN {
     // publishDir ${params.outdir}/'processing', mode: 'copy'
     tag "$config"
     // label 'process_high'

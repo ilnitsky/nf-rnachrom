@@ -1,0 +1,7 @@
+name: debridge
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - julia=1.6.5
