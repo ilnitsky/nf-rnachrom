@@ -60,6 +60,28 @@ sample,fastq_1,fastq_2
 CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
 ```
 
+
+`samplesheet.csv`:
+
+```csv
+sample,fastq_1,fastq_2
+CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+```
+`samplesheet_one-to-all.csv`:
+
+```csv
+sample,rna,dna
+HFFc6_imargi_1,SRR8206679_1.fastq,SRR8206679_2.fastq
+
+```
+
+`samplesheet_one-to-all.csv`:
+
+```csv
+sample,fastq_1,fastq_2,control
+SCIRT_INPUT_chart_39,SRR10044359.fastq,,
+SCIRT_chart_39,SRR10044362.fastq,,SCIRT_INPUT
+```
 Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
 
 Now, you can run the pipeline using:
