@@ -63,30 +63,6 @@ process XRNA_CONFIG {
 
 }
 
-process DETECT_STRAND {
-    // tag "$params.trim_tool"
-    label 'process_single'
-    publishDir (
-        path: { "$params.outdir/detect_strand" },
-        mode: "copy"
-    ) 
-        
-    input:
-    path(contacts)
-    path(config)
-
-    output:
-    path '*'
-    path 'detect_wins.tsv', emit: strand_vote_result
-
-
-    script:
-    """
-    detect-strand -c $config -v
-    """
-
-}
-
 process INFER_XRNA {
     // tag "$params.trim_tool"
 

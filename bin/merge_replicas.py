@@ -21,7 +21,13 @@ def merge_samples(samplesheet_path, detect_strand_path, *replicas ):
             # tab_file_path = os.path.join(tab_dir, f'{sample}.tab')
             sample = os.path.basename(sample)
             sample = os.path.splitext(sample)[0]
-            tab_file_path = f'{sample}.1-CIGAR.tab'
+            tab_file_path = None
+            for replica in replicas:
+                if sample in replica:
+                    tab_file_path = replica
+                    break
+            
+            # tab_file_path = f'{sample}.1-CIGAR.tab'
             data = pd.read_csv(tab_file_path, sep='\t', low_memory=False)
             data['srr_id'] = f'{sample}'
             

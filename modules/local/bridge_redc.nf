@@ -61,47 +61,12 @@ process JULIA_DEBRIDGE_CHARTOOLS {
   """
 }
 
-process BITAP_DEBRIDGE {
 
-  //TO DO: add double bridge and no bridge stats
-  conda "${projectDir}/envs/debridge.yml"
-
-  publishDir ( path: { "$params.outdir/debridged/bitap" }, mode: "copy" )
-  
-  input:
-  tuple val(meta), path(assembled)
-  tuple val(meta), path(unassembled_F)
-  tuple val(meta), path(unassembled_R)
-  
-
-  output:
-  tuple val(meta), path("*"),   emit: coords_as
-
-  script:
-  def bridge_for  = params.forward_bridge_seq
-  def min_seq_len = params.min_rna_dna_parts_length
-  def mism        = params.max_mismatches
-
-  if (params.exp_type == 'redc' ) {
-    // """
-    // ${projectDir}/bin/alpha -s -p -i ${assembled} -d '*b${bridge_for}(${mism}).?CCC(0)' -l ${min_seq_len}
-    // ${projectDir}/bin/alpha -s -p -i ${unassembled_F} -d '*b${bridge_for}(${mism}).?CCC(0)' -l ${min_seq_len}
-    // ${projectDir}/bin/alpha -s -p -i ${unassembled_R} -d '*b${bridge_for}(${mism}).?CCC(0)' -l ${min_seq_len}
-    // """
-    """
-    ${projectDir}/bin/alpha -s -p -i ${assembled} -d '*b${bridge_for}(${mism}).' 
-    ${projectDir}/bin/alpha -s -p -i ${unassembled_F} -d '*b${bridge_for}(${mism}).' 
-    ${projectDir}/bin/alpha -s -p -i ${unassembled_R} -d '*b${bridge_for}(${mism}).' 
-    """
-  } else if (params.exp_type == 'char' )  {
-    
-  }
-}
   // export JULIA_DEPOT_PATH=~/.julia
 
 
 process RNA_AND_DNA_PARTS {
-  //TO DO: add CCC filter
+  //TODO: add CCC filter
   // Add single end option
 
   publishDir ( path: { "$params.outdir/RNA_DNA_parts" }, mode: "copy" )
@@ -125,6 +90,9 @@ process RNA_AND_DNA_PARTS {
   def bridge_rev = params.reverse_bridge_seq
   def bridge_len = bridge_rev.length()
   def min_seq_len = params.min_rna_dna_parts_length
+  // def bridge_id = "1 2 3"
+  def bridge_id = "0 1 2"
+  
   println print_purple("Splitting RNA and DNA files via bridge for " + meta.prefix  )
 
   if (params.exp_type == 'redc' ) {
@@ -132,27 +100,27 @@ process RNA_AND_DNA_PARTS {
   # Split Red-C Single end (Pear Assembled)
 
   ${projectDir}/bin/split_parts_redc_SE.sh ${bridge_len} ${assembled} ${assembled_positions} \
-                                           ${min_seq_len} ${meta.prefix} 1 2 3
+                                           ${min_seq_len} ${meta.prefix} ${bridge_id}
 
   # Split Red-C Paired end (Pear Not Assembled)
 
   ${projectDir}/bin/split_parts_redc_PE.sh ${bridge_len} ${unassembled_F} ${unassembled_positions_F} \
                                            ${unassembled_R} ${unassembled_positions_R} \
-                                           ${min_seq_len} ${meta.prefix} 1 2 3
+                                           ${min_seq_len} ${meta.prefix} ${bridge_id}
   """
   
   } else if (params.exp_type == 'char' )  {
   """
   # Split Char Single end (Pear Assembled)
   ${projectDir}/bin/split_parts_char_SE.sh ${bridge_len} ${assembled} ${assembled_positions} \
-                                           ${min_seq_len} ${meta.prefix} 1 2 3
+                                           ${min_seq_len} ${meta.prefix} ${bridge_id}
 
 
   # Split Char Paired end (Pear Not Assembled)
 
   ${projectDir}/bin/split_parts_char_PE.sh ${bridge_len} ${unassembled_F} ${unassembled_positions_F} \
                                            ${unassembled_R} ${unassembled_positions_R} \
-                                           ${min_seq_len} ${meta.prefix} 1 2 3
+                                           ${min_seq_len} ${meta.prefix} ${bridge_id}
 
   """
   }

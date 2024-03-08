@@ -38,7 +38,7 @@ passed_reads_counter=0
 
 # Execute the bioawk command with the provided and calculated parameters
 bioawk -c fastx '{print}' "$assembled" | cut -f1-3 | \
-paste <(cat "$assembled_positions" | cut -f1,3) - | \
+paste <(cat "$assembled_positions") - | \
 bioawk -v bridge_len="$bridge_len" -v min_seq_len="$min_seq_len" -v prefix="$prefix" -v not_found="$not_found" -v f_br="$f_br" -v r_br="$r_br" 'BEGIN{OFS="\n";}
 {
     rna_seq=substr($4, $2+bridge_len, 999);
@@ -55,7 +55,7 @@ bioawk -v bridge_len="$bridge_len" -v min_seq_len="$min_seq_len" -v prefix="$pre
     if  ( !($1==not_found) && !($1==r_br) && !($1==4) && (length(rna_seq)>=min_seq_len) &&  (length(dna_seq)>=min_seq_len) )  
     {
         print "@"$3" length="length(rna_seq), rna_seq, "+", rna_qual >> (prefix"_1.fastq");
-        print "@"$3" length="length(dna_seq), dna_seq, "+", dna_qual >> (prefix"_2.fastq");
+        print "@"$3" length="length(dna_seq), dna_seq"CATG", "+", dna_qual"AAAA" >> (prefix"_2.fastq");
         passed_reads_counter++;
     }  
 }'

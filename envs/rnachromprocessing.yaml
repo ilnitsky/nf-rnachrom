@@ -38,3 +38,12 @@ dependencies:
   - xz=5.2.6=h166bdaf_0
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
+  - matplotlib==3.8.0
+  - numpy==1.26.4
+  - pandas==2.2.1
+  - pydantic==1.10.13
+  - pyfastx==1.1.0
+  - PyYAML==6.0.1
+  - PyYAML==6.0.1
+  - seaborn==0.13.2
+  - typing_extensions==4.10.0

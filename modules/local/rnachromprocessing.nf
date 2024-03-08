@@ -340,107 +340,14 @@ process CONTACTS {
 
 
 
-process SPLICING_RNA {
-    tag "$name"
-
-    publishDir (
-        path: { "$params.outdir/Splicing_RNA" },
-        mode: "copy"
-    ) 
-
-    input:
-    tuple val(name), path(beds)
-
-    output:
-    tuple val(name), path("*.1-CIGAR.tab")
-
-    script:
-
-    if (params.procedure == 'new') {
-    """
-    python3 ${projectDir}/bin/rnachrom_pipeline_faster/splicing.py ${beds} --rna_parts --outdir .
-    """
-    } else {
-    """
-    python3 ${projectDir}/bin/rnachrom_pipeline_faster/splicing.py ${beds} --outdir .
-    """ 
-    }
-}
-
-process MERGE_REPLICAS {
-    publishDir (
-        path: { "$params.outdir/Merged_replicas" },
-        mode: "copy"
-    ) 
-
-    input:
-    path(samplesheet)
-    path(detect_strand)
-    path(cigar)
-    
-
-    output:
-    path("*.tab")
-
-    script:
-    """
-    python3 ${projectDir}/bin/merge_replicas.py ${samplesheet} ${detect_strand} ${cigar}
-    """
-}
 
 
-process SPLIT_BY_CHRS {
-  //TODO: Split by 2 chroms or 4 chroms
-  //Check if splits correctly header    
-    input:
-    tuple val(name), path(merged)
-  
-    output:
-    tuple val(name), path("chr*.tab")
-
-    shell:
-    """
-    awk '{print > \$1"_${name}.tab"}' ${merged}
-    if [ -f chrY_${name}.tab ]; then
-        cat chrY_${name}.tab >> chrX_${name}.tab
-        rm chrY_${name}.tab
-    else
-        echo "ChrY not found"
-    fi
-    """
-}
 
 
-process ANNOTATE_RNA {
-    tag "$cigar.baseName"
-    errorStrategy 'ignore'
 
-    publishDir (
-        path: { "$params.outdir/Annotate_RNA" },
-        mode: "copy"
-    ) 
-    input:
-    tuple val(name), path(cigar)
-
-    output:
-    tuple val(name), path("*.tab")
-
-    script:
-    if (params.procedure == 'new') {
-    """
-    python3 ${projectDir}/bin/rnachrom_pipeline_faster/annotation_voting.py \\
-    ${cigar} ${params.annot_BED} --rna_parts --no_stat --cpus 2 --outdir .
-    """
-    } else {
-    """
-    python3 ${projectDir}/bin/rnachrom_pipeline_faster/annotation_voting.py \\
-    ${cigar} ${params.annot_BED} --no_stat --cpus 2 --outdir . 
-    """  
-    }
-
-}
 
 process BACKGROUND {
+    conda "${projectDir}/envs/secondary_processing.yml"
     tag "$voted.baseName"
 
     publishDir (
@@ -466,6 +373,7 @@ process BACKGROUND {
 }
 
 process NORMALIZE_RAW {
+    conda "${projectDir}/envs/secondary_processing.yml"
     tag "$voted.baseName"
     publishDir (
         path: { "$params.outdir/Normalize_raw" },
@@ -490,7 +398,7 @@ process NORMALIZE_RAW {
 
 process NORMALIZE_N2 {
     //TODO: Add combining stats into single file 
-
+    conda "${projectDir}/envs/secondary_processing.yml"
     tag "$norm_raw.baseName"
     publishDir (
         path: { "$params.outdir/Normalize_N2" },
@@ -514,7 +422,7 @@ process NORMALIZE_N2 {
 }
 
 process SCALING {
-
+    conda "${projectDir}/envs/secondary_processing.yml"
     //TODO: Collect all scaling files by chr
     tag "$norm_n2.baseName"
     publishDir (
@@ -538,7 +446,8 @@ process SCALING {
 
 }
 
-process VALIDATE_ANNOT {
+process VALIDATE_ANNOT {\
+    conda "${projectDir}/envs/secondary_processing.yml"
     tag "$annot.baseName"
     // Remove header for Bardic
     // TODO: preparation of BED or GTF files
@@ -567,6 +476,7 @@ process VALIDATE_ANNOT {
 }
 
 process BARDIC {
+    conda "${projectDir}/envs/secondary_processing.yml"
     // tag "$norm_n2.baseName"
 
     //Prepare files with protein-coding RNAs for background estimation by BaRDIC. Create BED6 headerless file and run BaRDIC

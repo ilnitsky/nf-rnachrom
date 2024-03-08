@@ -1,8 +1,12 @@
 include { CONFIG; DEDUP; RSITES; NUCLEOTIDE_DISTRIBUTION_RSITES; TRIM; ALIGN; BAM_FILTER; BED_FILES;  CONTACTS } from '../../modules/local/rnachromprocessing'
-include { SPLICING_RNA; MERGE_REPLICAS; SPLIT_BY_CHRS;  ANNOTATE_RNA } from '../../modules/local/rnachromprocessing'
+include { SPLIT_BY_CHRS                         } from '../../modules/local/split_by_chrs'
+include { ANNOTATION_VOTING                     } from '../../modules/local/annotation'
 include { BACKGROUND; NORMALIZE_RAW; NORMALIZE_N2; SCALING } from '../../modules/local/rnachromprocessing'
+include { CIGAR_FILTER                } from '../../modules/local/cigar_filter.nf'
 include { VALIDATE_ANNOT; BARDIC } from '../../modules/local/rnachromprocessing'
-include { XRNA_CONFIG; DETECT_STRAND } from '../../modules/local/xrna_assembly'
+include { XRNA_CONFIG } from '../../modules/local/xrna_assembly'
+include { MERGE_REPLICAS             } from '../../modules/local/merge_replicas.nf'
+include { DETECT_STRAND          } from '../../modules/local/detect_strand'
 
 
 ch_config_detect_strand =  Channel.fromPath( "$projectDir/assets/detect_strand.json", checkIfExists: true)
@@ -62,14 +66,14 @@ workflow ATA {
 
         // rna_beds_ch = bed_ch.join(rna_samples).map{name, bed, fastq -> tuple( name, bed)}.view()
 
-        SPLICING_RNA(rna_beds_ch)
+        CIGAR_FILTER(rna_beds_ch)
 
         //ungroup sample and chromosome splits
         MERGE_REPLICAS( samplesheet, SPLICING_RNA.out.map{name, cigar -> cigar}.collect() )
 
         SPLIT_BY_CHRS( MERGE_REPLICAS.out.map{merged -> tuple(file(merged).baseName, file(merged))} )
 
-        ANNOTATE_RNA( SPLIT_BY_CHRS.out.map{name, split -> split}.flatten() )
+        ANNOTATION_VOTING( SPLIT_BY_CHRS.out.map{name, split -> split}.flatten() )
         // ANNOTATE_RNA.out.view()
 
 
@@ -90,8 +94,8 @@ workflow ATA {
         MERGE_REPLICAS( samplesheet, DETECT_STRAND.out.strand_vote_result, SPLICING_RNA.out.map{name, cigar -> cigar}.collect() )
         SPLIT_BY_CHRS(  MERGE_REPLICAS.out.flatten().map{merged -> tuple(file(merged).baseName, file(merged))}  )
 
-        ANNOTATE_RNA(  SPLIT_BY_CHRS.out.transpose()  )
-        ANNOTATE_RNA.out
+        ANNOTATION_VOTING(  SPLIT_BY_CHRS.out.transpose()  )
+        ANNOTATION_VOTING.out
         | transpose
         | map { group, annotated -> [annotated.name.split('_')[0], group, annotated.name.split('merged*...')[1], annotated]}
         | branch { 

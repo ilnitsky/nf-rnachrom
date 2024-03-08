@@ -35,9 +35,9 @@ reads_rev=0
 # $10 quality (unassembled_R)
 
 paste \
-  <(cat ${unassembled_positions_F} | cut -f1,3) \
+  <(cat ${unassembled_positions_F}) \
   <(bioawk -c fastx '{print}' ${unassembled_F} | cut -f1-3) \
-  <(cat ${unassembled_positions_R} | cut -f1,3) \
+  <(cat ${unassembled_positions_R}) \
   <(bioawk -c fastx '{print}' ${unassembled_R} | cut -f1-3) | \
 bioawk -v bridge_len=${bridge_len} -v prefix=${prefix} -v min_seq_len=${min_seq_len} -v not_found="$not_found" -v f_br="$f_br" -v r_br="$r_br" 'BEGIN{OFS="\n";} 
 {
@@ -51,7 +51,7 @@ bioawk -v bridge_len=${bridge_len} -v prefix=${prefix} -v min_seq_len=${min_seq_
     if (  (length(rna_seq)>=min_seq_len) &&  (length(dna_seq)>=min_seq_len) ) 
     {
       print "@"$3" length="length(rna_seq), rna_seq, "+", rna_qual >> (prefix"_1.fastq");
-      print "@"$3" length="length(dna_seq), dna_seq, "+", dna_qual >> (prefix"_2.fastq");
+      print "@"$3" length="length(dna_seq), dna_seq"CATG", "+", dna_qual"AAAA" >> (prefix"_2.fastq");
       passed_reads_counter++;
       reads_for++;
     }
@@ -65,7 +65,7 @@ bioawk -v bridge_len=${bridge_len} -v prefix=${prefix} -v min_seq_len=${min_seq_
     rna_qual=substr($10, 1, $7-1);
 
     print "@"$8" length="length(rna_seq), revcomp(rna_seq), "+", revcomp(rna_qual) >> (prefix"_1.fastq");
-    print "@"$8" length="length(dna_seq), revcomp(dna_seq), "+", revcomp(dna_qual) >> (prefix"_2.fastq");
+    print "@"$8" length="length(dna_seq), revcomp(dna_seq)"CATG", "+", revcomp(dna_qual)"AAAA" >> (prefix"_2.fastq");
     passed_reads_counter++;
     reads_rev++;
   }

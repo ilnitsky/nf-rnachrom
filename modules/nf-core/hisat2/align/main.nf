@@ -92,12 +92,16 @@ process HISAT2_ALIGN {
             """
         }
     } else if (meta.method == "ATA") {
+        //TODO fix dna/rna determination for alignment
+            // def rna_fastq = ${reads[1]}
+            // def dna_fastq = ${reads[0]}
+
             """
             INDEX=`find -L ./ -name "*.1.ht2" | sed 's/\\.1.ht2\$//'`
 
             hisat2 \\
                 -x \$INDEX \\
-                -U ${reads[0]} \\
+                -U ${reads[1]} \\
                 $ss \\
                 --summary-file ${prefix}_1.hisat2.summary.log \\
                 --threads $task.cpus \\
@@ -107,7 +111,7 @@ process HISAT2_ALIGN {
 
             hisat2 \\
                 -x \$INDEX \\
-                -U ${reads[1]} \\
+                -U ${reads[0]} \\
                 --summary-file ${prefix}_2.hisat2.summary.log \\
                 --threads $task.cpus \\
                 $args_dna \\

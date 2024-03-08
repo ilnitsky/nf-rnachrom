@@ -511,3 +511,90 @@ def helpMessage() {
       --awscli [str]                  Path to the AWS CLI tool
     """.stripIndent()
 }
+
+
+    SAMTOOLS_SORT.out.bam
+        .multiMap { meta, bam, ref_meta, ref ->
+                bam_input       :   tuple(
+                                        [   id          : meta.id,
+                                            sz          : bam.size(),
+                                            single_end  : true  ],
+                                        bam,
+                                        []   // As we aren't using an index file here
+                                    )
+                ref_input       :   tuple(
+                                        ref_meta,
+                                        ref
+                                    )
+        }
+        .set { view_input }
+
+
+  my_output
+   .map { it -> [it[0],
+                 it.flatten().findAll{ it.getExtension=="bgen"},
+                 it.flatten().findAll{ it.getExtension=="stat"}
+                ]
+   }
+
+   .splitText(by:100000000)
+   .splitFasta( record: [id: true, seqString: true ])
+
+           ch_cigar_filtered
+        | collectFile(storeDir: "$params.outdir/merge_replicas", keepHeader: true, sort: true) { meta, files ->
+            // def filename = "${meta.id}.tab"
+            // return [ filename, files[0].text ]
+
+            if (files.size() > 1) {
+
+                def filename1 = "${meta.id}.RNA.tab"
+                def content1 = files[0].text
+                new File("$params.outdir/merge_replicas/$filename1").write(content1)
+
+                def filename2 = "${meta.id}.DNA.tab"
+                def content2 = files[1].text
+                new File("$params.outdir/merge_replicas/$filename2").write(content2)
+            }
+            return [meta.id, 'Processed']
+
+        }
+
+
+        def _make_versions_html(versions):
+    """Generate a tabular HTML output of all versions for MultiQC."""
+    html = [
+        dedent(
+            """\
+            <style>
+            #nf-core-versions tbody:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+            </style>
+            <table class="table" style="width:100%" id="nf-core-versions">
+                <thead>
+                    <tr>
+                        <th> Process Name </th>
+                        <th> Software </th>
+                        <th> Version  </th>
+                    </tr>
+                </thead>
+            """
+        )
+    ]
+    for process, tmp_versions in sorted(versions.items()):
+        html.append("<tbody>")
+        for i, (tool, version) in enumerate(sorted(tmp_versions.items())):
+            html.append(
+                dedent(
+                    f"""\
+                    <tr>
+                        <td><samp>{process if (i == 0) else ''}</samp></td>
+                        <td><samp>{tool}</samp></td>
+                        <td><samp>{version}</samp></td>
+                    </tr>
+                    """
+                )
+            )
+        html.append("</tbody>")
+    html.append("</table>")
+    return "\n".join(html)

@@ -41,13 +41,16 @@ def run_annotation_and_voting(args):
     gene_ann = load_BED(args.annot).rename(columns={'name': 'gene_name', 'source': 'Source'})
     gene_ann = make_pyranges_format(gene_ann, strand = True, save_old_names = False)
 
+
     gene_ann.gene_length = gene_ann.lengths()
     gene_ann = gene_ann[['gene_name', 'gene_type', 'Source', 'gene_length']]
+
     
     if args.rna_parts:
         coln_rdc = rdc_BED_sample[:5] + [rdc_BED_sample[-1]]
         coln_voted = voted_BED[:5] + voted_BED[9:13]
-        cnts = load_rdc(args.rdc, header = 0, names = coln_rdc, dtype = rdc_dtypes, use_cols = [0,1,2,3,5,6])
+        cnts = load_rdc(args.rdc, header = 0, names = coln_rdc, dtype = rdc_dtypes, use_cols = [0,1,2,3,4,6])
+
     else:
         coln_rdc = rdc_BED_sample.copy()
         coln_voted = voted_BED
@@ -112,7 +115,11 @@ def annotate_rdc(contacts: pr.PyRanges, annot: pr.PyRanges, cpus: int) -> pr.PyR
          2. Intervals annotated by genes on the complementing strand (complement_annot)
 
     """
+
+    
     all_annot = contacts.join(annot, how = 'left', strandedness = False, suffix = '_annot', nb_cpu = cpus)
+    print(contacts.head())
+
     strand_match = all_annot.Strand == all_annot.Strand_annot
     gene_found = all_annot.gene_name != '-1'
     

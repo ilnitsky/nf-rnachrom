@@ -7,7 +7,8 @@ def print_purple = {  str -> ANSI_PURPLE + str + ANSI_RESET }
 
 
 process DEDUP {
-    //CHECK FOR CORRECTNESS OF DEDUP TOOL NAME
+    //TODO: CHECK FOR CORRECTNESS OF DEDUP TOOL NAME
+    // TODO: Add default compare seq mode for fastq-dupaway
     // tag "$name"
     publishDir "${params.outdir}/dedup", mode: 'copy'
 
