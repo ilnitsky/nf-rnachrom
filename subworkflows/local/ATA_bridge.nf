@@ -1,6 +1,7 @@
 
 include { DEDUP          } from '../../modules/local/dedup'
 include { TRIMMOMATIC    } from '../../modules/nf-core/trimmomatic/main'
+include { BBMAP_BBDUK    } from '../../modules/nf-core/bbmap/bbduk/main'
 include { PEAR           } from '../../modules/nf-core/pear/main'
 include { BITAP_DEBRIDGE } from '../../modules/local/debridge'
 include { HISAT2_ALIGN   } from '../../modules/nf-core/hisat2/align/main'
@@ -16,6 +17,7 @@ ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) :
 ch_config_detect_strand =  Channel.fromPath( "$projectDir/assets/detect_strand.json", checkIfExists: true)
 ch_config_xrna          =  Channel.fromPath( "$projectDir/assets/xrna.json", checkIfExists: true)
 ch_config               =  Channel.fromPath( "$projectDir/assets/new_config.json", checkIfExists: true)
+adapters                =  Channel.fromPath( "$projectDir/bin/adapters/TruSeq3-PE.fa", checkIfExists: true)
 
 
 workflow ATA_BRIDGE {
@@ -25,17 +27,28 @@ workflow ATA_BRIDGE {
 
     main:
     ch_versions = Channel.empty()
+    ch_stats    = Channel.empty()
 
     DEDUP ( reads ) 
     ch_deduplicated = DEDUP.out.deduplicated
 
     // bioawk -c fastx '{print $seq}' ~/nf-rnachrom/data/imargi/SRR9900120_2.fastq | head -n200000  | cut -c1-2 | sort | uniq -c
 
-    TRIMMOMATIC ( ch_deduplicated )
-    ch_trimmed_reads    = TRIMMOMATIC.out.trimmed_reads
-    ch_unpaired_reads   = TRIMMOMATIC.out.unpaired_reads
-    ch_trimmed_summary  = TRIMMOMATIC.out.summary
-    ch_versions         = ch_versions.mix(TRIMMOMATIC.out.versions)
+
+    if (params.trim_tool == "trimmomatic") {
+        TRIMMOMATIC ( ch_deduplicated )
+        ch_trimmed_reads    = TRIMMOMATIC.out.trimmed_reads
+        ch_unpaired_reads   = TRIMMOMATIC.out.unpaired_reads
+        ch_trimmed_summary  = TRIMMOMATIC.out.summary
+        ch_stats            = ch_stats.mix(TRIMMOMATIC.out.summary)
+        ch_versions         = ch_versions.mix(TRIMMOMATIC.out.versions)
+    } else if (params.trim_tool == "bbduk") {
+        BBMAP_BBDUK ( ch_deduplicated, adapters )
+        ch_trimmed_reads    = BBMAP_BBDUK.out.reads
+        ch_bbduk_log        = BBMAP_BBDUK.out.log
+        ch_stats            = ch_stats.mix(BBMAP_BBDUK.out.log)
+        ch_versions         = ch_versions.mix(BBMAP_BBDUK.out.versions)
+    }
     
     // NUCLEOTIDE_DISTRIBUTION_RSITES( DEDUP4REDC.out.map{ meta, fastq -> fastq }.flatten() )
 
@@ -47,6 +60,7 @@ workflow ATA_BRIDGE {
     ch_pear_unassembled_r  = PEAR.out.unassembled_reverse
     ch_pear_discarded      = PEAR.out.discarded
     ch_pear_stats          = PEAR.out.stats
+    ch_stats               = ch_stats.mix(PEAR.out.log)
     ch_versions            = ch_versions.mix(PEAR.out.versions)
 
     ch_pear = Channel.empty()
