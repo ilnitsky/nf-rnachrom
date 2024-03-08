@@ -54,13 +54,13 @@ with `-profile test` before running the workflow on actual data.
 First, prepare a samplesheet with your input data that looks as follows:
 
 
-`samplesheet.csv`:
+`samplesheet_all-to-all_chimera.csv`:
 
 ```csv
 sample,fastq_1,fastq_2
 CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
 ```
-`samplesheet_one-to-all.csv`:
+`samplesheet_all-to-all.csv`:
 
 ```csv
 sample,rna,dna
