@@ -5,7 +5,7 @@ def print_purple = {  str -> ANSI_PURPLE + str + ANSI_RESET }
 
 process TRIM4REDC {
 //TO DO: Remove short reads after trimming? MINLEN:0 - in Redclib. -phred33 ?
-
+  
   publishDir (
       path: { "$params.outdir/trim" },
       mode: "copy"

@@ -51,14 +51,28 @@ WorkflowMain.initialise(workflow, params, log)
     NAMED WORKFLOW FOR PIPELINE
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
-include { RNACHROM } from './workflows/rnachrom'
+include { PrepareSoftware   } from './modules/local/prepare_software'
+include { RC } from './workflows/rc'
 
 //
 // WORKFLOW: Run main nf-core/rnachrom analysis pipeline
 //
 workflow NFCORE_RNACHROM {
-    RNACHROM ()
+
+
+    def rnachrom = new File("${projectDir}/bin/RnaChromATA/setup.py")
+    def bitap = new File("${projectDir}/bin/bitap")
+    def stereogene = new File("${projectDir}/bin/Smoother")
+
+    if (!rnachrom.exists() || !bitap.exists() || !stereogene.exists()) {
+        PrepareSoftware()
+        | collect 
+        RC ()
+    } else {
+        RC ()
+    }
+
+    
 }
 
 /*

@@ -41,7 +41,7 @@ def run_background(args):
     save_file_custom(rdc[['dna_chr', 'dna_bgn', 'dna_end', 'id']], args.outdir, args.rdc, Stereogene_bed, hdr =False)
     save_file_custom(stats_agg(all_stat, back_stat), args.outdir, args.rdc, bg_suffix_stat, idx = True, hdr = True)
 
-    mod_cfg = os.path.dirname(args.config) + '/cfg_mod.cfg'
+    mod_cfg = 'cfg_mod.cfg'
 
     prepeare_cfg(cfg_path = args.config, 
                  chrsizes_path = args.chrsizes,
@@ -69,7 +69,7 @@ def prepeare_cfg(cfg_path: str, chrsizes_path: str, mod_cfg_path: str):
         for name, value in [('CHRSIZE', chrsizes_path), ('REPLACE', args.outdir)]:
             content = content.replace(name, value)
 
-    with open(mod_cfg_path, 'w+') as mod_cfg:
+    with open(mod_cfg_path, 'w') as mod_cfg:
         mod_cfg.write(content)
     
     return 

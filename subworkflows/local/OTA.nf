@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
-include { DEDUP                       } from '../../modules/local/dedup'
+// include { DEDUP                       } from '../../modules/local/dedup'
 include { TRIMMOMATIC                 } from '../../modules/nf-core/trimmomatic/main'
 include { HISAT2_ALIGN                } from '../../modules/nf-core/hisat2/align/main'
 include { SAMTOOLS_VIEW as BAM_FILTER } from '../../modules/nf-core/samtools/view/main'

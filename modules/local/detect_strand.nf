@@ -16,13 +16,20 @@ process DETECT_STRAND {
 
 
     script:
-    def sample = ''
+    // def sample = ''
     def separate_rna_dna = ''
-    sample = params.procedure == 'new' ? meta.prefix + '_1' : meta.prefix
+
+    // String filePath = contacts.get(0) // Adjust this line according to your needs   
+    String filename = contacts[0]
+    String sample = extractPrefix2(filename)
+
+    // filename = new File(contacts[0]).getName()
+    // sample = extractPrefix(filename)
+    // sample = params.procedure == 'new' ? meta.prefix + '_1' : meta.prefix
     separate_rna_dna = params.procedure == 'new' ? 'true' : ''
 
     """
-    cat <<-END_JSON > ${meta.prefix}.config.json
+    cat <<-END_JSON > config.json
     {
       "input_dir":".",
       "output_dir":".",
@@ -32,8 +39,8 @@ process DETECT_STRAND {
       "exp_groups":{"${params.exp_type}":["${sample}"]}
     }
     END_JSON
-    
-    detect-strand -c ${meta.prefix}.config.json -v
+
+    detect-strand -c config.json -v
     strand=\$(grep "${sample}" ${meta.prefix}_wins.tsv | awk -F"\\t" '{print \$5}')
 
     case \$strand in
@@ -45,7 +52,7 @@ process DETECT_STRAND {
             ;;
         *)
             echo "Strand orientation has not been deduced!" 
-            exit 1
+            
             ;;
     esac
     mkdir res
@@ -55,4 +62,10 @@ process DETECT_STRAND {
     fi
     """
 
+}
+
+
+def extractPrefix2(String filename) {
+    def matcher = filename =~ /^(.+?)(\.bed|\.tab)(\.gz)?$/
+    return matcher ? matcher[0][1] : null
 }

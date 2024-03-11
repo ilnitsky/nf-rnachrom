@@ -1,0 +1,17 @@
+name: primary_processing
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip==20.2
+  - bioframe==0.6.1
+  - versioned-hdf5
+  - natsort
+  - numpy==1.26.4
+  - pandas==2.2.1
+  - pyranges==0.0.129
+  - scipy==1.12.0
+  - setuptools==68.2.2
+  - statsmodels==0.14.1
+  - tqdm==4.66.1
+  - ray-core

@@ -23,6 +23,8 @@ process BITAP_DEBRIDGE {
   def bridge_for  = params.forward_bridge_seq
   def min_seq_len = params.min_rna_dna_parts_length
   def mism        = params.max_mismatches
+  meta.RNA        = "${assembled}_RNA"
+  meta.DNA        = "${assembled}_DNA"
 
   def sample = ''
   def separate_rna_dna = ''
@@ -32,9 +34,9 @@ process BITAP_DEBRIDGE {
   if (params.exp_type == 'redc' ) {
 
     """
-    ${projectDir}/bin/beta -s -p -i ${assembled} -d '*<${bridge_for}(${mism}).' -l ${min_seq_len}
-    ${projectDir}/bin/beta -s -p -i ${unassembled_F} -d '*<${bridge_for}(${mism}).' -l ${min_seq_len} 
-    ${projectDir}/bin/beta -s -p -i ${unassembled_R} -d '*<${bridge_for}(${mism}).' -l ${min_seq_len}
+    ${projectDir}/bin/prefinal -s -i ${assembled} -d '*<${bridge_for}(${mism}).' -l ${min_seq_len}
+    ${projectDir}/bin/prefinal -s -i ${unassembled_F} -d '*<${bridge_for}(${mism}).' -l ${min_seq_len} 
+    ${projectDir}/bin/prefinal -s -i ${unassembled_R} -d '*<${bridge_for}(${mism}).' -l ${min_seq_len}
 
     bioawk -c fastx '{ if(substr(\$seq, length(\$seq)-2, 3) == "CCC") \\
       {print "@"\$name; print substr(\$seq, 1, length(\$seq)-3); print "+"; print substr(\$qual, 1, length(\$qual)-3);} \\
@@ -51,9 +53,9 @@ process BITAP_DEBRIDGE {
     """
   } else if (params.exp_type == 'char' )  {
     """
-    ${projectDir}/bin/beta -s -p -i ${assembled} -d '.b${bridge_for}(${mism})*!GATC(0)' -l ${min_seq_len}
-    ${projectDir}/bin/beta -s -p -i ${unassembled_F} -d '.b${bridge_for}(${mism})*!GATC(0)' -l ${min_seq_len} 
-    ${projectDir}/bin/beta -s -p -i ${unassembled_R} -d '.b${bridge_for}(${mism})*!GATC(0)' -l ${min_seq_len}
+    ${projectDir}/bin/bitap -s -p -i ${assembled} -d '.b${bridge_for}(${mism})*!GATC(0)' -l ${min_seq_len}
+    ${projectDir}/bin/bitap -s -p -i ${unassembled_F} -d '.b${bridge_for}(${mism})*!GATC(0)' -l ${min_seq_len} 
+    ${projectDir}/bin/bitap -s -p -i ${unassembled_R} -d '.b${bridge_for}(${mism})*!GATC(0)' -l ${min_seq_len}
     cut -f2,3 ${assembled}_types.tsv > ${meta.prefix}_as_positions.txt
     cut -f2,3 ${unassembled_F}_types.tsv > ${meta.prefix}_unF_positions.txt
     cut -f2,3 ${unassembled_R}_types.tsv > ${meta.prefix}_unR_positions.txt
