@@ -7,6 +7,7 @@ testing/
 cache/
 testing*
 *.pyc
+.devcontainer
 *ipynb_checkpoints*
 RnaChromATA
 Stereogene
