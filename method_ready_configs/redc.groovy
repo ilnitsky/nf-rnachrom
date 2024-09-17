@@ -386,17 +386,7 @@ profiles {
     radicl    { includeConfig 'conf/radicl.config'      }
 }
 
-// email settings
-// mail {
-//   from = 'info@nextflow.io'
-//   smtp.host = 'smtp.sendgrid.net'
-//   smtp.port = 587
-//   smtp.user = "apikey"
-//   smtp.password = "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"
-//   smtp.auth = true
-//   smtp.starttls.enable = true
-//   smtp.starttls.required = true
-// }
+
 
 // Set default registry for Apptainer, Docker, Podman and Singularity independent of -profile
 // Will not be used unless Apptainer / Docker / Podman / Singularity are enabled

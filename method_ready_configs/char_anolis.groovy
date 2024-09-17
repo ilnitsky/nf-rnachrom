@@ -43,7 +43,7 @@ params {
     reverse_bridge_seq          = "CTTGGACGCCGGTTT"
     max_mismatches              = 1
     min_rna_dna_parts_length    = 14
-    description_sequence        = "*s[CTAG|CTAG]b${params.reverse_bridge_seq}(${params.max_mismatches})-[5]."   //+[CATG]*bAGTCGGAGCGTTGCCTATCGCATTGATGGTGCTAGGA(1).s[CCC|]
+    description_sequence        = "*s[CTAG|CTAG]b${params.reverse_bridge_seq}(${params.max_mismatches})-[ ]."   //+[CATG]*bAGTCGGAGCGTTGCCTATCGCATTGATGGTGCTAGGA(1).s[CCC|]
     //                         --------------------------------------------------------------------------------
 
     // OTHER OPTIONS           --------------------------------------------------------------------------------
@@ -389,17 +389,6 @@ profiles {
     test_full { includeConfig 'conf/test_full.config' }
 }
 
-// email settings
-// mail {
-//   from = 'info@nextflow.io'
-//   smtp.host = 'smtp.sendgrid.net'
-//   smtp.port = 587
-//   smtp.user = "apikey"
-//   smtp.password = "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"
-//   smtp.auth = true
-//   smtp.starttls.enable = true
-//   smtp.starttls.required = true
-// }
 
 // Set default registry for Apptainer, Docker, Podman and Singularity independent of -profile
 // Will not be used unless Apptainer / Docker / Podman / Singularity are enabled
