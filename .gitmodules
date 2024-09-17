@@ -1,0 +1,3 @@
+[submodule "bin/rnachrom_pipeline_faster/BaRDIC"]
+	path = bin/rnachrom_pipeline_faster/BaRDIC
+	url = https://github.com/dmitrymyl/BaRDIC.git

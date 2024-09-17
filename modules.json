@@ -1,0 +1,226 @@
+{
+    "name": "nf-core/rnachrom",
+    "homePage": "https://github.com/nf-core/rnachrom",
+    "repos": {
+        "https://github.com/nf-core/modules.git": {
+            "modules": {
+                "nf-core": {
+                    "bbmap/bbduk": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bbmap/clumpify": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bedtools/bamtobed": {
+                        "branch": "master",
+                        "git_sha": "1d1cb7bfef6cf67fbc7faafa6992ad8bdc3045b3",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bowtie2/align": {
+                        "branch": "master",
+                        "git_sha": "0fe30831abbc2ed115e46e92330edf38f56edc3d",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bowtie2/build": {
+                        "branch": "master",
+                        "git_sha": "1fea64f5132a813ec97c1c6d3a74e0aee7142b6d",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bwa/index": {
+                        "branch": "master",
+                        "git_sha": "6278bf9afd4a4b2d00fa6052250e73da3d91546f",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "bwa/mem": {
+                        "branch": "master",
+                        "git_sha": "5908e575322666ccc33911a28b06e3f82260fe54",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "custom/dumpsoftwareversions": {
+                        "branch": "master",
+                        "git_sha": "911696ea0b62df80e900ef244d7867d177971f73",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "custom/getchromsizes": {
+                        "branch": "master",
+                        "git_sha": "1b0ffa4e5aed5b7e3cd4311af31bd3b2c8345051",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "fastp": {
+                        "branch": "master",
+                        "git_sha": "95cf5fe0194c7bf5cb0e3027a2eb7e7c89385080",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "fastqc": {
+                        "branch": "master",
+                        "git_sha": "bd8092b67b5103bdd52e300f75889442275c3117",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "gunzip": {
+                        "branch": "master",
+                        "git_sha": "3a5fef109d113b4997c9822198664ca5f2716208",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "hisat2/align": {
+                        "branch": "master",
+                        "git_sha": "400037f54de4b0c42712ec5a499d9fd9e66250d1",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "hisat2/build": {
+                        "branch": "master",
+                        "git_sha": "400037f54de4b0c42712ec5a499d9fd9e66250d1",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "hisat2/extractsplicesites": {
+                        "branch": "master",
+                        "git_sha": "400037f54de4b0c42712ec5a499d9fd9e66250d1",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "macs2/callpeak": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "multiqc": {
+                        "branch": "master",
+                        "git_sha": "911696ea0b62df80e900ef244d7867d177971f73",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "pear": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "samtools/flagstat": {
+                        "branch": "master",
+                        "git_sha": "f4596fe0bdc096cf53ec4497e83defdb3a94ff62",
+                        "installed_by": [
+                            "bam_stats_samtools"
+                        ]
+                    },
+                    "samtools/idxstats": {
+                        "branch": "master",
+                        "git_sha": "f4596fe0bdc096cf53ec4497e83defdb3a94ff62",
+                        "installed_by": [
+                            "bam_stats_samtools"
+                        ]
+                    },
+                    "samtools/index": {
+                        "branch": "master",
+                        "git_sha": "f4596fe0bdc096cf53ec4497e83defdb3a94ff62",
+                        "installed_by": [
+                            "bam_sort_stats_samtools"
+                        ]
+                    },
+                    "samtools/sort": {
+                        "branch": "master",
+                        "git_sha": "4352dbdb09ec40db71e9b172b97a01dcf5622c26",
+                        "installed_by": [
+                            "bam_sort_stats_samtools"
+                        ]
+                    },
+                    "samtools/stats": {
+                        "branch": "master",
+                        "git_sha": "f4596fe0bdc096cf53ec4497e83defdb3a94ff62",
+                        "installed_by": [
+                            "bam_stats_samtools"
+                        ]
+                    },
+                    "samtools/view": {
+                        "branch": "master",
+                        "git_sha": "0bd7d2333a88483aa0476acea172e9f5f6dd83bb",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "star/align": {
+                        "branch": "master",
+                        "git_sha": "a21faa6a3481af92a343a10926f59c189a2c16c9",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "star/genomegenerate": {
+                        "branch": "master",
+                        "git_sha": "a21faa6a3481af92a343a10926f59c189a2c16c9",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "trimgalore": {
+                        "branch": "master",
+                        "git_sha": "d2c5e76f291379f3dd403e48e46ed7e6ba5da744",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "trimmomatic": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    }
+                }
+            },
+            "subworkflows": {
+                "nf-core": {
+                    "bam_sort_stats_samtools": {
+                        "branch": "master",
+                        "git_sha": "4352dbdb09ec40db71e9b172b97a01dcf5622c26",
+                        "installed_by": [
+                            "subworkflows"
+                        ]
+                    },
+                    "bam_stats_samtools": {
+                        "branch": "master",
+                        "git_sha": "f4596fe0bdc096cf53ec4497e83defdb3a94ff62",
+                        "installed_by": [
+                            "bam_sort_stats_samtools"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

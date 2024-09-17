@@ -1,0 +1,47 @@
+{
+  "rna_ids": [
+    "/home/ryabykhgrigory/nf-rnachrom/data/grid/Grid_exp6/sub/SRR5035945.fastq\r",
+    "/home/ryabykhgrigory/nf-rnachrom/data/grid/Grid_exp6/sub/SRR5035947.fastq\r"
+  ],
+  "dna_ids": [
+    "SRR5035945",
+    "SRR5035947"
+  ],
+  "base_dir": ".",
+  "input_dir": "/home/ilnitsky/nf-rnachrom/results/results_fastqdupaway_loose/dedup",
+  "output_dir": "results_fastqdupaway_loose/more",
+  "cpus": 8,
+  "keep": [
+    "contacts",
+    "bam",
+    "rsites",
+    "trim",
+    "dedup"
+  ],
+  "dedup": {
+    "cpus": 8,
+    "tool": "skip",
+    "tool_path": "/home/ilnitsky/Tools/fastq-dupaway-main/fastq-dupaway",
+    "params": {
+      "memlimit": 10240,
+      "compare-seq": "loose"
+    }
+  },
+  "rsites": {
+    "type": "grid"
+  },
+  "trim": {
+    "tool": "trimmomatic",
+    "tool_path": "/home/ilnitsky/Tools/Trimmomatic-0.39/trimmomatic-0.39.jar",
+    "params": {
+      "window": 5,
+      "qual_th": 26,
+      "minlen": 14
+    }
+  },
+  "hisat": {
+    "genome": "/home/ilnitsky/nf-rnachrom/data/genomes/mm10/mm10",
+    "known_splice": "/home/ilnitsky/nf-rnachrom/data/splice_sites/gencode.vM25.basic.annotation.ss",
+    "hisat_threads": 12
+  }
+}

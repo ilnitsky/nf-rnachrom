@@ -1,0 +1,11 @@
+.nextflow*
+work/
+data/
+results/
+.DS_Store
+testing/
+cache/
+testing*
+*.pyc
+*ipynb_checkpoints*
+RnaChromATA

@@ -1,0 +1,9 @@
+name: dedup
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - boost=1.84.0
+  - fastuniq=1.1
+  - seqkit=2.7.0

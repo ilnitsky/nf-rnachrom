@@ -1,0 +1,37 @@
+{
+    "rna_ids": ["SRR5035944", "SRR5035946"],
+    "dna_ids": ["SRR5035945", "SRR5035947"],
+    "base_dir" : ".",
+    "input_dir": ".",
+    "output_dir": ".",
+    "cpus": 8,
+    "keep" : ["dedup", "rsites", "trim", "align", "bam", "bed", "contacts"],
+    "dedup": {
+        "cpus": 8,
+        "tool": "skip",
+        "tool_path": "/home/ilnitsky/Tools/fastq-dupaway-main/fastq-dupaway",
+        "params": {
+            "memlimit": 10240,
+            "compare-seq": "loose"
+        }
+    },
+    "rsites": {
+        "type": "grid"
+    },
+
+    "trim": {
+        "tool" : "trimmomatic",
+        "tool_path" : "/home/ilnitsky/Tools/Trimmomatic-0.39/trimmomatic-0.39.jar",
+        "params": {
+            "window": 5,
+            "qual_th": 26,
+            "minlen": 14
+        }
+    },
+    "align": {
+        "tool": "hisat2", 
+        "tool_threads": 12,
+        "dna_genome_path": "/home/ilnitsky/nf-rnachrom/data/genomes/mm10/mm10",
+        "known_splice": "/home/ilnitsky/nf-rnachrom/data/splice_sites/gencode.vM25.basic.annotation.ss"
+    }
+}

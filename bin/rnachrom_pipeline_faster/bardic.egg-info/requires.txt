@@ -1,0 +1,7 @@
+numpy
+scipy
+pandas
+bioframe>=0.3.0
+tqdm
+statsmodels
+h5py

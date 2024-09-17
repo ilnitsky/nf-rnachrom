@@ -1,0 +1,17 @@
+name: primary_processing
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pip==20.2
+  - hisat2=2.1.0 #2.2.1
+  - samtools=1.19.2
+  - htslib=1.19.1
+  - bedtools=2.31.1
+  - fastuniq=1.1
+  - bbmap=39.01
+  - trimmomatic=0.39
+
+
+

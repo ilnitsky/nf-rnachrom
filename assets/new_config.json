@@ -1,0 +1,27 @@
+{
+    "rna_ids": ["SRR8206679_1"],
+    "dna_ids": ["SRR8206679_2"],
+    "base_dir" : ".",
+    "input_dir": ".",
+    "output_dir": ".",
+    "cpus": 4,
+    "keep" : ["contacts", "rsites", "align", "bam", "bed", "dedup"],
+    "dedup": {
+        "cpus": 4,
+        "tool": "fastuniq",
+        "tool_path": "/home/ryabykhgrigory/anaconda3/envs/rdc-nf/bin/fastuniq"
+    },
+    "rsites": {
+        "type": "imargi"
+    },
+    "trim": {
+        "tool" : "trimmomatic",
+        "tool_path" : "/home/ilnitsky/tools/Trimmomatic-0.39/trimmomatic-0.39.jar"
+    },
+    "align": {
+        "tool": "hisat2", 
+        "tool_threads": 12,
+        "dna_genome_path": "/home/ryabykhgrigory/nf-rnachrom/clean_genomes/hg38/GRCh38.p13",
+        "known_splice": "/home/ryabykhgrigory/nf-rnachrom/data/splice_sites/gencode.v43.ss"
+    }
+}

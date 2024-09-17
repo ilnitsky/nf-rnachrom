@@ -1,0 +1,2 @@
+[console_scripts]
+bardic = bardic.__main__:main

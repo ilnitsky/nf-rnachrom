@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/home/anikolskaya/miniconda3/envs/bardic/bin/bardic", line 8, in <module>
+    sys.exit(main())
+  File "/home/anikolskaya/miniconda3/envs/bardic/lib/python3.8/site-packages/bardic/__main__.py", line 9, in main
+    func(**kwargs)
+  File "/home/anikolskaya/miniconda3/envs/bardic/lib/python3.8/site-packages/bardic/cli/commands.py", line 156, in run_pipeline_cli
+    run_pipeline(dna_parts_fname=dnaparts,
+  File "/home/anikolskaya/miniconda3/envs/bardic/lib/python3.8/site-packages/bardic/utils/pipeline.py", line 35, in run_pipeline
+    dna_dataset = bed2h5(dna_parts_fname, dna_dataset_fname, chromdict, annotation_dict)
+  File "/home/anikolskaya/miniconda3/envs/bardic/lib/python3.8/site-packages/bardic/utils/dnadataset.py", line 19, in bed2h5
+    dataset.write_dna_parts_batch(dna_frame)
+  File "/home/anikolskaya/miniconda3/envs/bardic/lib/python3.8/site-packages/bardic/api/formats.py", line 392, in write_dna_parts_batch
+    self.validate_dna_frame(dna_frame, annotation_dict, self.chromsizes)
+  File "/home/anikolskaya/miniconda3/envs/bardic/lib/python3.8/site-packages/bardic/api/formats.py", line 296, in validate_dna_frame
+    raise Exception
+Exception
+
+ERROR conda.cli.main_run:execute(49): `conda run bardic run /home/anikolskaya/gpfs/rnachrom_pipeline_faster/test_files/for_peaks/K562.4-for_peaks.bed /home/anikolskaya/gpfs/general/annot_hs/DB_annot/corrected_annot/overlap_0.95_gencode/All_RNAs_hS_DB_pipe_new.0-corrected_annot_no_header.bed /home/anikolskaya/gpfs/general/chrsizes/hg38_canonical_chromsizes.tsv /home/anikolskaya/gpfs/rnachrom_pipeline_faster/test_files/for_peaks/K562.4-pc.txt /home/anikolskaya/gpfs/rnachrom_pipeline_faster/test_files/for_peaks/peaks --cores 2 @configs/run.config` failed. (See above for error)

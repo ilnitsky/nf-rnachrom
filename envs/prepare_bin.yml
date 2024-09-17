@@ -1,0 +1,12 @@
+name: prepare_bin
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - make
+  - gcc
+  - gxx
+  - boost
+  - pip:
+    - git+https://github.com/AndrewSigorskih/RNAChrom_ALLvsALL_data_processing
