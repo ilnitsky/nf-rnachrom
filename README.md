@@ -78,6 +78,10 @@ SCIRT_chart_39,SRR10044362.fastq,,SCIRT_INPUT
 ```
 Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
 
+To run pipeline GTF file has to be included in the config alongside with BED-like file.
+The list of annotations should be provided in a BED-like format:
+chr     start     end     name     strand     biotype    source 
+
 Now, you can run the pipeline using:
 
 <!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
