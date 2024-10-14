@@ -23,7 +23,7 @@ python:
   install:
     - requirements: requirements_doc.txt
     - method: pip
-      path: .
+      path: ./docs
 
 # Optionally build your docs in additional formats such as PDF and ePub
 # formats:
