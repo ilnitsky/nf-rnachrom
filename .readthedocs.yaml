@@ -21,9 +21,8 @@ sphinx:
 
 python:
   install:
-    - requirements: requirements_doc.txt
+    - requirements: docs/requirements_doc.txt
     - method: pip
-      path: ./docs
 
 # Optionally build your docs in additional formats such as PDF and ePub
 # formats:
