@@ -1,5 +1,4 @@
 pandas
-bioframe
 click>=7.0
 sphinx-click
 ipython
@@ -7,4 +6,3 @@ nbsphinx
 Sphinx>=7.0
 sphinx_rtd_theme
 docutils>0.16
--e .
