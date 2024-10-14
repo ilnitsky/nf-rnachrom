@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>&lt;no title&gt; &mdash; nf-rnachrom 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            nf-rnachrom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#setup-and-installation">Setup and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">nf-rnachrom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/scalings_example.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>!wget https://osf.io/download/crgu8/ -O ./tmp/test.pairs
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+--2023-12-18 23:04:28--  https://osf.io/download/crgu8/
+Resolving osf.io (osf.io)... 35.190.84.173
+Connecting to osf.io (osf.io)|35.190.84.173|:443... connected.
+HTTP request sent, awaiting response... 302 FOUND
+Location: https://files.de-1.osf.io/v1/resources/638ue/providers/osfstorage/623993788d53ef082867e2b9 [following]
+--2023-12-18 23:04:28--  https://files.de-1.osf.io/v1/resources/638ue/providers/osfstorage/623993788d53ef082867e2b9
+Resolving files.de-1.osf.io (files.de-1.osf.io)... 35.186.249.111
+Connecting to files.de-1.osf.io (files.de-1.osf.io)|35.186.249.111|:443... connected.
+HTTP request sent, awaiting response...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+302 Found
+Location: https://storage.googleapis.com/cos-osf-prod-files-de-1/b72f21bb7e21d00541fb3cbc50ef77d67b75970f7d255912ca527fb4c8e5cc0a?response-content-disposition=attachment%3B%20filename%3D%22test_pairs.wp-all.pairs%22%3B%20filename%2A%3DUTF-8%27%27test_pairs.wp-all.pairs&amp;GoogleAccessId=files-de-1%40cos-osf-prod.iam.gserviceaccount.com&amp;Expires=1702937129&amp;Signature=0tM4rWv5RPZjFTYCKzHNbOZoInW3EOidpN5eHp1mlQv%2BWxUbUQ%2BqHDqVmJB4afWQ9CeQpovADOp%2BHNDVxr4GhotEENmyAd7GGdoGRkS%2FeSXM3G1hLxR5H3S5kBWfTVk57pRUXu%2FNj%2FZXOTJo5zKizIdmYlpPZ%2BDZZJvfXuExR3G6OWXcM3P7ufpFe6d53ZxiqpyhxIKVOU4uYo7zwFyxxofGrd5DONsz53sEH15S%2Fc84emZrxaFiQW5%2FEaupoEtLJQHcFc5au3fh8wApS4gtTU%2FDkINvnkyEDXyxND7%2FJDfQ0xJRRjelDXuFVHHDxbIqIfVhQnFK0QMEmlyoBLax1g%3D%3D [following]
+--2023-12-18 23:04:29--  https://storage.googleapis.com/cos-osf-prod-files-de-1/b72f21bb7e21d00541fb3cbc50ef77d67b75970f7d255912ca527fb4c8e5cc0a?response-content-disposition=attachment%3B%20filename%3D%22test_pairs.wp-all.pairs%22%3B%20filename%2A%3DUTF-8%27%27test_pairs.wp-all.pairs&amp;GoogleAccessId=files-de-1%40cos-osf-prod.iam.gserviceaccount.com&amp;Expires=1702937129&amp;Signature=0tM4rWv5RPZjFTYCKzHNbOZoInW3EOidpN5eHp1mlQv%2BWxUbUQ%2BqHDqVmJB4afWQ9CeQpovADOp%2BHNDVxr4GhotEENmyAd7GGdoGRkS%2FeSXM3G1hLxR5H3S5kBWfTVk57pRUXu%2FNj%2FZXOTJo5zKizIdmYlpPZ%2BDZZJvfXuExR3G6OWXcM3P7ufpFe6d53ZxiqpyhxIKVOU4uYo7zwFyxxofGrd5DONsz53sEH15S%2Fc84emZrxaFiQW5%2FEaupoEtLJQHcFc5au3fh8wApS4gtTU%2FDkINvnkyEDXyxND7%2FJDfQ0xJRRjelDXuFVHHDxbIqIfVhQnFK0QMEmlyoBLax1g%3D%3D
+Resolving storage.googleapis.com (storage.googleapis.com)... 142.251.37.123, 142.251.36.91, 142.251.36.123, ...
+Connecting to storage.googleapis.com (storage.googleapis.com)|142.251.37.123|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 564902846 (539M) [application/octet-stream]
+Saving to: ‘./tmp/test.pairs’
+
+./tmp/test.pairs    100%[===================&gt;] 538.73M   163MB/s    in 3.5s
+
+2023-12-18 23:04:33 (156 MB/s) - ‘./tmp/test.pairs’ saved [564902846/564902846]
+
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>%load_ext autoreload
+%autoreload 2
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>import warnings
+warnings.filterwarnings(&quot;ignore&quot;)
+
+import numpy as np
+import pandas as pd
+
+import matplotlib.pyplot as plt
+import matplotlib.ticker
+import matplotlib.gridspec
+
+%matplotlib inline
+plt.style.use(&#39;seaborn-poster&#39;)
+
+import pairtools
+import pairtools.lib.scaling as scaling
+import bioframe
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>pairs_path = &#39;./tmp/test.pairs&#39;
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>mm10_chromsizes = bioframe.fetch_chromsizes(&#39;mm10&#39;, as_bed=True)
+mm10_arms = mm10_chromsizes
+
+# hg38_chromsizes = bioframe.fetch_chromsizes(&#39;hg38&#39;, as_bed=True)
+# hg38_cens = bioframe.fetch_centromeres(&#39;hg38&#39;)
+# hg38_arms = bioframe.split(hg38_chromsizes, hg38_cens, cols_points=[&#39;chrom&#39;, &#39;mid&#39;])
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>cis_scalings, trans_levels = scaling.compute_scaling(
+                pairs_path,
+                regions=mm10_arms,
+                chromsizes=mm10_chromsizes,
+                dist_range=(10, 1000000000),
+                n_dist_bins_decade=8,
+                chunksize=int(1e7),
+                #cmd_in=&quot;gzip -dc &quot;
+            )
+
+# calculate average trans contact frequency _per directionality pair_
+# convert from int to float64 to avoid overflow
+avg_trans = (
+    trans_levels.n_pairs.astype(&#39;float64&#39;).sum()
+    / trans_levels.n_bp2.astype(&#39;float64&#39;).sum()
+)
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>fig = plt.figure(figsize=(6,10))
+gs = matplotlib.gridspec.GridSpec(2,1, height_ratios=[8, 1.5])
+ax1 = fig.add_subplot(gs[0,0])
+ax2 = fig.add_subplot(gs[1,0])
+
+strand_gb = cis_scalings.groupby([&#39;strand1&#39;, &#39;strand2&#39;])
+for strands in [&#39;+-&#39;, &#39;-+&#39;, &#39;++&#39;, &#39;--&#39;]:
+    sc_strand = strand_gb.get_group(tuple(strands))
+    sc_agg = (sc_strand
+        .groupby([&#39;min_dist&#39;,&#39;max_dist&#39;])
+        .agg({&#39;n_pairs&#39;:&#39;sum&#39;, &#39;n_bp2&#39;:&#39;sum&#39;})
+        .reset_index())
+
+    dist_bin_mids = np.sqrt(sc_agg.min_dist * sc_agg.max_dist)
+    pair_frequencies = sc_agg.n_pairs / sc_agg.n_bp2
+    mask = pair_frequencies&gt;0
+    label = f&#39;{strands[0]}{strands[1]}&#39;
+
+    ax1.loglog(
+        dist_bin_mids[mask],
+        pair_frequencies[mask],
+        label=label,
+        lw=2
+    )
+
+    ax2.semilogx(
+        np.sqrt(dist_bin_mids.values[1:]*dist_bin_mids.values[:-1]),
+        np.diff(np.log10(pair_frequencies.values)) / np.diff(np.log10(dist_bin_mids.values)),
+        label=label
+    )
+
+ax1.axhline(avg_trans, ls=&#39;--&#39;, c=&#39;gray&#39;, label=&#39;average trans&#39;)
+
+plt.sca(ax1)
+plt.gca().set_aspect(1.0)
+plt.gca().xaxis.set_major_locator(matplotlib.ticker.LogLocator(base=10.0,numticks=20))
+plt.gca().yaxis.set_major_locator(matplotlib.ticker.LogLocator(base=10.0,numticks=20))
+plt.xlim(1e1,1e9)
+# plt.ylim(avg_trans / 3, plt.ylim()[1])
+
+plt.grid(lw=0.5,color=&#39;gray&#39;)
+plt.legend(loc=(1.1,0.4))
+plt.ylabel(&#39;contact frequency, \nHi-C molecule per bp pair&#39;)
+plt.xlabel(&#39;distance, bp&#39;)
+
+plt.sca(ax2)
+plt.xlim(1e1,1e9)
+plt.ylim(-2,0.5)
+plt.gca().set_aspect(1.0)
+plt.ylabel(&#39;log-log slope&#39;)
+plt.xlabel(&#39;distance, bp&#39;)
+
+plt.yticks(np.arange(-2,0.6,0.5))
+plt.gca().xaxis.set_major_locator(matplotlib.ticker.LogLocator(base=10.0,numticks=20))
+plt.grid(lw=0.5,color=&#39;gray&#39;)
+
+# fig.tight_layout()
+<br/><br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_scalings_example_6_0.png" src="../_images/examples_scalings_example_6_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ivan Ilnitskiy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,595 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Should one consider pairs with sligthly mismatching coordinates as duplicates? &mdash; nf-rnachrom 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            nf-rnachrom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#setup-and-installation">Setup and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">nf-rnachrom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Should one consider pairs with sligthly mismatching coordinates as duplicates?</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/duplicate_distance.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Should-one-consider-pairs-with-sligthly-mismatching-coordinates-as-duplicates?">
+<h1>Should one consider pairs with sligthly mismatching coordinates as duplicates?<a class="headerlink" href="#Should-one-consider-pairs-with-sligthly-mismatching-coordinates-as-duplicates?" title="Link to this heading"></a></h1>
+<p>Is there a significant enrichment of pairs shifted on one or both sides by just a few base pairs? If so, we should allow small offsets in the deduplication procedure.</p>
+<p>Let’s investigate it in an example dataset. It was generated using the Arima Hi-C kit, and published in Ghurye et al. 2019.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>import numpy as np
+from pairtools.lib import headerops, fileio
+import pandas as pd
+from scipy.spatial import KDTree # Change to cKDTree for faster performance with scipy &lt;1.6.0
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+import seaborn as sns
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span># Read in the pairs file and get the header, take columns from the header
+def read_pairs(pairs_file):
+    pairs_stream = fileio.auto_open(pairs_file, &#39;r&#39;)
+    header, pairs_stream = headerops.get_header(pairs_stream)
+    columns = headerops.get_colnames(header)
+    df = pd.read_table(pairs_stream, comment=&quot;#&quot;, header=None, names=columns)
+    return df
+
+def dup_dist(df, r, cols=[&#39;pos1&#39;, &#39;pos2&#39;], p=1):
+    # KDtree is a data structure that allows for fast nearest-neighbor lookup
+    tree = KDTree(df[cols].to_numpy())
+    # Find all pairs within a distance r of each other
+    pairs = tree.query_pairs(r, p=p, output_type=&#39;ndarray&#39;)
+    df[&#39;dist1&#39;] = pd.NA
+    df[&#39;dist2&#39;] = pd.NA
+    ids1 = df[&#39;readID&#39;].to_numpy()[pairs[:, 0]]
+    ids2 = df[&#39;readID&#39;].to_numpy()[pairs[:, 1]]
+    # Calculate the distance between the pairs (we know they are within r of each other, but not the exact distance)
+    dists1 = np.abs(df[cols[0]].to_numpy()[pairs[:, 1]]-df[cols[0]].to_numpy()[pairs[:, 0]].astype(int))
+    dists2 = np.abs(df[cols[1]].to_numpy()[pairs[:, 1]]-df[cols[1]].to_numpy()[pairs[:, 0]].astype(int))
+    return pd.DataFrame({&#39;id1&#39;:ids1, &#39;id2&#39;:ids2, &#39;dist1&#39;:dists1, &#39;dist2&#39;:dists2}).sort_values(by=[&#39;id1&#39;, &#39;id2&#39;]).reset_index(drop=True)
+
+def calculate_dup_dists(df, cols=[&#39;pos1&#39;, &#39;pos2&#39;], r=20):
+    df = df.drop(columns=&#39;readID&#39;).reset_index().rename(columns={&#39;index&#39;: &#39;readID&#39;}) # Add fake read IDs, according to the order of the pairs
+    dup_dists = df.groupby([&#39;chrom1&#39;, &#39;chrom2&#39;, &#39;strand1&#39;, &#39;strand2&#39;]).apply(dup_dist, r=r, p=np.inf, # p specifies the Minkowski distance parameter, inf means the maximum distance on either side is r
+                                                                             cols=cols, include_groups=False).sort_values(by=[&#39;id1&#39;, &#39;id2&#39;]).reset_index(drop=True)
+    return dup_dists
+</pre></div>
+</div>
+</div>
+<p>This is a file created by merging the nodups and dups output from the distiller pipeline using pairtools merge. This way it contains all the original duplicates, but not unmapped reads.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>pairs_df = read_pairs(&#39;SRR6675327.hg19.pairs.gz&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span># Remove unnecessary chromosomes and sample 10 mln pairs for faster computation
+pairs_df = pairs_df[pairs_df[&#39;chrom1&#39;].isin([f&#39;chr{x}&#39; for x in list(range(1, 23))+[&#39;X&#39;, &#39;Y&#39;]]) &amp; \
+                    pairs_df[&#39;chrom2&#39;].isin([f&#39;chr{x}&#39; for x in list(range(1, 23))+[&#39;X&#39;, &#39;Y&#39;]])].sample(int(1e7))
+</pre></div>
+</div>
+</div>
+<p>Now we find pairs that are within 50 bp of each other on both sides, and calculate distances between them.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>dup_dists = calculate_dup_dists(pairs_df,
+                                         cols=[&#39;pos51&#39;, &#39;pos52&#39;], # Use 5-prime positions of alignment (in this case, stored in the pairs file)
+                                         r=50, # Consider pairs with distance less than 50 bp
+                                         )
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span># id1/2 correspond to the fake readIDs we created earlier
+dup_dists.head()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id1</th>
+      <th>id2</th>
+      <th>dist1</th>
+      <th>dist2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>3303</td>
+      <td>3302</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>3719</td>
+      <td>3720</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>9587</td>
+      <td>9586</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>10507</td>
+      <td>10508</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>19741</td>
+      <td>19740</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span># Convert the distances to a matrix of counts
+counts = dup_dists[[&#39;dist1&#39;, &#39;dist2&#39;]].value_counts().sort_index()
+counts_2d = counts.reset_index().pivot(index=&#39;dist1&#39;, columns=&#39;dist2&#39;, values=&#39;count&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span># Rows correspond to the distance between the left ends of the pairs, columns to the distance between the right ends
+counts_2d.head()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>dist2</th>
+      <th>0</th>
+      <th>1</th>
+      <th>2</th>
+      <th>3</th>
+      <th>4</th>
+      <th>5</th>
+      <th>6</th>
+      <th>7</th>
+      <th>8</th>
+      <th>9</th>
+      <th>...</th>
+      <th>41</th>
+      <th>42</th>
+      <th>43</th>
+      <th>44</th>
+      <th>45</th>
+      <th>46</th>
+      <th>47</th>
+      <th>48</th>
+      <th>49</th>
+      <th>50</th>
+    </tr>
+    <tr>
+      <th>dist1</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>54050</td>
+      <td>6997</td>
+      <td>7417</td>
+      <td>5254</td>
+      <td>6224</td>
+      <td>5844</td>
+      <td>5417</td>
+      <td>4896</td>
+      <td>5075</td>
+      <td>4846</td>
+      <td>...</td>
+      <td>3342</td>
+      <td>3137</td>
+      <td>2772</td>
+      <td>2612</td>
+      <td>2646</td>
+      <td>2567</td>
+      <td>2879</td>
+      <td>2792</td>
+      <td>2594</td>
+      <td>2602</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>18570</td>
+      <td>3684</td>
+      <td>3909</td>
+      <td>2105</td>
+      <td>2599</td>
+      <td>2601</td>
+      <td>2270</td>
+      <td>2081</td>
+      <td>2407</td>
+      <td>2438</td>
+      <td>...</td>
+      <td>1748</td>
+      <td>1361</td>
+      <td>1168</td>
+      <td>1198</td>
+      <td>1247</td>
+      <td>1094</td>
+      <td>1434</td>
+      <td>1231</td>
+      <td>1197</td>
+      <td>1120</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>11672</td>
+      <td>2980</td>
+      <td>1716</td>
+      <td>1665</td>
+      <td>1745</td>
+      <td>1652</td>
+      <td>1529</td>
+      <td>1572</td>
+      <td>1583</td>
+      <td>1795</td>
+      <td>...</td>
+      <td>1562</td>
+      <td>1324</td>
+      <td>1120</td>
+      <td>1077</td>
+      <td>1025</td>
+      <td>967</td>
+      <td>1263</td>
+      <td>1051</td>
+      <td>1047</td>
+      <td>998</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>12716</td>
+      <td>2941</td>
+      <td>1878</td>
+      <td>1764</td>
+      <td>1731</td>
+      <td>1827</td>
+      <td>1627</td>
+      <td>1593</td>
+      <td>1768</td>
+      <td>1814</td>
+      <td>...</td>
+      <td>1573</td>
+      <td>1374</td>
+      <td>1123</td>
+      <td>1144</td>
+      <td>1092</td>
+      <td>995</td>
+      <td>1435</td>
+      <td>1077</td>
+      <td>1089</td>
+      <td>1020</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>12715</td>
+      <td>3070</td>
+      <td>2351</td>
+      <td>1997</td>
+      <td>1956</td>
+      <td>1969</td>
+      <td>2010</td>
+      <td>1835</td>
+      <td>1784</td>
+      <td>2090</td>
+      <td>...</td>
+      <td>1569</td>
+      <td>1429</td>
+      <td>1131</td>
+      <td>1256</td>
+      <td>1178</td>
+      <td>1083</td>
+      <td>1383</td>
+      <td>1132</td>
+      <td>1138</td>
+      <td>1069</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 51 columns</p>
+</div></div>
+</div>
+<p>Now we plot the data as a heatmap. We use log scale since the range of values is huge.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span># Now we plot
+f, ax = plt.subplots()
+im = ax.imshow(counts_2d,
+               norm=LogNorm(),
+               cmap=&#39;rocket_r&#39;,
+               )
+cb = plt.colorbar(im, ax=ax)
+ax.set(xticks=np.arange(0, 51, 5), yticks=np.arange(0, 51, 5), ylabel=&#39;Distance 1 (bp)&#39;, xlabel=&#39;Distance 2 (bp)&#39;)
+cb.set_label(&#39;Number of duplicates&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_duplicate_distance_12_0.png" src="../_images/examples_duplicate_distance_12_0.png" />
+</div>
+</div>
+<p>Interestingly, there is a strong enrichment of the first columns / top row, which almost doesn’t get weaker with increasing distance.</p>
+<p>Probably it corresponds to pairs where one end of the final sequenced fragment is at an unligated restriction site used in the procedure. When this analysis is performed with micro-C data, where the enzyme doesn’t cut at specific sequences, this is not observed.</p>
+<p>Let’s zoom into the top-left corner. That’s where one might observe enrichment of nor precisely matching duplicates.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>f, ax = plt.subplots()
+im = ax.imshow(counts_2d.iloc[:20, :20],
+               norm=LogNorm(),
+               cmap=&#39;rocket_r&#39;,
+               )
+cb = plt.colorbar(im, ax=ax)
+ax.set(xticks=np.arange(20), yticks=np.arange(20), ylabel=&#39;Distance 1 (bp)&#39;, xlabel=&#39;Distance 2 (bp)&#39;)
+cb.set_label(&#39;Number of duplicates&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_duplicate_distance_15_0.png" src="../_images/examples_duplicate_distance_15_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>normed = counts_2d / np.sqrt(counts_2d.mean(axis=0).to_numpy() * counts_2d.mean(axis=1).to_numpy()[:, np.newaxis])
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>f, ax = plt.subplots()
+im = ax.imshow(normed,
+               norm=LogNorm(vmin=0.1, vmax=10),
+               cmap=&#39;coolwarm&#39;,
+               )
+cb = plt.colorbar(im, ax=ax)
+ax.set(xticks=np.arange(0, 51, 5), yticks=np.arange(0, 51, 5), ylabel=&#39;Distance 1 (bp)&#39;, xlabel=&#39;Distance 2 (bp)&#39;)
+cb.set_label(&#39;number of duplicates / expected (product of marginals)&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_duplicate_distance_18_0.png" src="../_images/examples_duplicate_distance_18_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>f, ax = plt.subplots()
+im = ax.imshow(normed.iloc[:20, :20],
+               norm=LogNorm(vmin=0.1, vmax=10),
+               cmap=&#39;coolwarm&#39;,
+               )
+cb = plt.colorbar(im, ax=ax)
+ax.set(xticks=np.arange(20), yticks=np.arange(20), ylabel=&#39;Distance 1 (bp)&#39;, xlabel=&#39;Distance 2 (bp)&#39;)
+cb.set_label(&#39;Number of duplicates / expected (product of marginals)&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_duplicate_distance_19_0.png" src="../_images/examples_duplicate_distance_19_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-none notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ivan Ilnitskiy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

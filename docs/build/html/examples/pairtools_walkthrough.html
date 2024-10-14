@@ -1,0 +1,652 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pairtools walkthrough &mdash; nf-rnachrom 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            nf-rnachrom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#setup-and-installation">Setup and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">nf-rnachrom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pairtools walkthrough</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/pairtools_walkthrough.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Pairtools-walkthrough">
+<h1>Pairtools walkthrough<a class="headerlink" href="#Pairtools-walkthrough" title="Link to this heading"></a></h1>
+<p>Welcome to the pairtools walkthrough.</p>
+<p>Pairtools is a tool for extraction of pairwise contacts out of sequencing chromosomes conformation capture data, such as Hi-C, Micro-C or MC-3C. Pairtools is used for obtaining .cool files by <a class="reference external" href="https://github.com/open2c/distiller-nf/blob/master/distiller.nf">distiller</a>, and has many more applications (see single-cell walkthrough or phasing walkthrough).</p>
+<p>Here, we will cover the basic steps from raw reads to .cool file with binned contacts.</p>
+<p>Outline:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#Download-raw-data"><span class="std std-ref">Download raw data</span></a></p></li>
+<li><p><a class="reference internal" href="#Install-reference-genome"><span class="std std-ref">Install reference genome</span></a></p></li>
+<li><p><a class="reference internal" href="#Map-data-with-bwa-mem"><span class="std std-ref">Map data with bwa mem</span></a></p></li>
+<li><p><a class="reference internal" href="#Contacts-extraction"><span class="std std-ref">Extract contacts</span></a></p></li>
+<li><p><a class="reference internal" href="#MultiQC"><span class="std std-ref">MultiQC</span></a></p></li>
+<li><p><a class="reference internal" href="#Load-pairs-to-cooler"><span class="std std-ref">Load pairs to cooler</span></a></p></li>
+<li><p><a class="reference internal" href="#Visualize-cooler"><span class="std std-ref">Visualize cooler</span></a></p></li>
+</ul>
+<section id="Download-raw-data">
+<h2>Download raw data<a class="headerlink" href="#Download-raw-data" title="Link to this heading"></a></h2>
+<p>“Raw” data, or .fastq files are generated by sequencing facilities or can be taken from public databases, such as SRA. We will take a sample from Rao et at al. 2017, human datasets. To reduce computateion time, take 5 mln reads instead of full sample:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span><span class="w"> </span>fastq-dump<span class="w"> </span>SRR13849430<span class="w"> </span>--gzip<span class="w"> </span>--split-spot<span class="w"> </span>--split-3<span class="w"> </span>--minSpotId<span class="w"> </span><span class="m">0</span><span class="w"> </span>--maxSpotId<span class="w"> </span><span class="m">5000000</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span><span class="w"> </span>ls<span class="w"> </span>SRR13849430*.fastq.gz
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+gzip<span class="w"> </span>-dc<span class="w"> </span>SRR13849430_1.fastq.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+@SRR13849430.1 1 length=150
+NTCTCAGCCTTTATAAGATAGAAGAGAGTTGGGACCTTGCTCTAAATTCTGCTTTAGCAAGGGACTTTTGTACCTGCTTTCTTCCTTTATCCAGATCTAAAAATAGTTTATATGCTGACAACTCCCTGATGTTATTCTTTGTAGTATTTG
++SRR13849430.1 1 length=150
+#AAFFJJJJJJJJJJJAJAJJJJFJJJAFFFFFFA7A-FJ7JJJ-AJAJJF-&lt;-JJFFJ7FJJF7FJJFJJ&lt;JFAF&lt;JJJJAJJJJA-AFJ-FJ-FF&lt;7-A-7A-FFF&lt;J-FJJJ&lt;F7)A-F--7))))--77--7------A---7-7-
+@SRR13849430.2 2 length=150
+NAAAAGGTTTATCTCTGTGAGATGAAGCCACATAAAACCAAGCAGTTTCACAGAAACTTGTTTGTAGATTTTAAATCCGCACATCACAAAGCCATTTCACAGACAGCTTCTTTCTACTTTTTATCTGCGGCCCTTCCGTATTCCCGCATA
++SRR13849430.2 2 length=150
+#AAFAJJFJJJJFAAFJA&lt;JJJFJJFJJJJJFFJ-FF&lt;FFJJJJJJ7AFFF&lt;FJJ-&lt;-F7&lt;7&lt;A-AF7AJAJ-A-7FF7JJJFJJFJJFFFFAJFJJ7-7-A-F--777FJFJF7---AAAF&lt;AAA--))--))-&lt;))-------)))7-
+</pre></div></div>
+</div>
+<p>We next map the sequencing data to the reference genome.</p>
+</section>
+<section id="Install-reference-genome">
+<h2>Install reference genome<a class="headerlink" href="#Install-reference-genome" title="Link to this heading"></a></h2>
+<p>Although you may download and build bwa index for any genome manually, <code class="docutils literal notranslate"><span class="pre">genompy</span></code> can do that for you automatically:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate bwa plugin for genomepy:</span>
+<span class="o">!</span><span class="w"> </span>genomepy<span class="w"> </span>plugin<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>bwa
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install hg38 genome by genomepy:</span>
+<span class="o">!</span><span class="w"> </span>genomepy<span class="w"> </span>install<span class="w"> </span>hg38
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check the location of the genome:</span>
+<span class="o">!</span><span class="w"> </span>ls<span class="w"> </span>~/.local/share/genomes/hg38/
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+bwa-mem2               hg38_DpnII.bed  hg38.fa      hg38.fa.sizes  index
+hg38.blacklist.bed.gz  hg38.DpnII.bed  hg38.fa.fai  hg38.gaps.bed  README.txt
+</pre></div></div>
+</div>
+</section>
+<section id="Map-data-with-bwa-mem">
+<h2>Map data with bwa mem<a class="headerlink" href="#Map-data-with-bwa-mem" title="Link to this heading"></a></h2>
+<p>Note that you may use <a class="reference external" href="https://github.com/bwa-mem2/bwa-mem2">bwa mem2</a>, which is x2 times faster. It <a class="reference external" href="https://github.com/open2c/pairtools/discussions/118">proved to produce</a> results very similar to bwa mem.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Map test data:</span>
+<span class="o">!</span><span class="w"> </span>bwa<span class="w"> </span>mem<span class="w"> </span>-t<span class="w"> </span><span class="m">5</span><span class="w"> </span>-SP<span class="w"> </span>~/.local/share/genomes/hg38/index/bwa/hg38.fa<span class="w"> </span>SRR13849430_1.fastq.gz<span class="w"> </span>SRR13849430_2.fastq.gz<span class="w"> </span>&gt;<span class="w"> </span>test.bam
+</pre></div>
+</div>
+</div>
+<p>After mapping, you have .sam/.bam alignment file, which cannot be interpreted as pairs directly. You need to extract contacts from it:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+samtools<span class="w"> </span>view<span class="w"> </span>test.bam<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+SRR13849430.1   121     chr12   78795720        60      53S97M  =       78795720        0       CAAATACTACAAAGAATAACATCAGGGAGTTGTCAGCATATAAACTATTTTTAGATCTGGATAAAGGAAGAAAGCAGGTACAAAAGTCCCTTGCTAAAGCAGAATTTAGAGCAAGGTCCCAACTCTCTTCTATCTTATAAAGGCTGAGAN  -7-7---A------7--77--))))7--F-A)7F&lt;JJJF-J&lt;FFF-A7-A-7&lt;FF-JF-JFA-AJJJJAJJJJ&lt;FAFJ&lt;JJFJJF7FJJF7JFFJJ-&lt;-FJJAJA-JJJ7JF-A7AFFFFFFAJJJFJJJJAJAJJJJJJJJJJJFFAA#        NM:i:1  MD:Z:96G0       AS:i:96 XS:i:21
+SRR13849430.1   181     chr12   78795720        0       *       =       78795720        0       TTATATGCTGACGTCGTCCATTGTTGATTCTTTGTGGTCTGTGTTCCCTCTGAAGCTCTCTGTACTTGTATATACAATTAGGCACCAACAATTCAACATGGGTAGTTATTATACTGCTAAAGCGACCCCAGAGCGAACCGGGCTACCTTN  ---7---7-7)))-7---7-----7-7&lt;---7-)&lt;)&lt;-----)-)&lt;77--7---)7-&lt;7-7----A-F&lt;&lt;-AF7-A777--77-7-----7--&lt;--7-F777-A7-7---&lt;7--7&lt;7-&lt;--77-77--77--7-7A---7-7---FF&lt;A#      MC:Z:53S97M     AS:i:0  XS:i:0
+SRR13849430.2   73      chr8    43879758        60      75M75S  =       43879758        0       NAAAAGGTTTATCTCTGTGAGATGAAGCCACATAAAACCAAGCAGTTTCACAGAAACTTGTTTGTAGATTTTAAATCCGCACATCACAAAGCCATTTCACAGACAGCTTCTTTCTACTTTTTATCTGCGGCCCTTCCGTATTCCCGCATA  #AAFAJJFJJJJFAAFJA&lt;JJJFJJFJJJJJFFJ-FF&lt;FFJJJJJJ7AFFF&lt;FJJ-&lt;-F7&lt;7&lt;A-AF7AJAJ-A-7FF7JJJFJJFJJFFFFAJFJJ7-7-A-F--777FJFJF7---AAAF&lt;AAA--))--))-&lt;))-------)))7-  NM:i:2  MD:Z:0A58C15    AS:i:69 XS:i:29 SA:Z:chr8,43877720,+,73S54M23S,44,1;
+SRR13849430.2   2121    chr8    43877720        44      73H54M23H       =       43877720        0       AATCCGCACATCACAAAGCCATTTCACAGACAGCTTCTTTCTACTTTTTATCTG  A-7FF7JJJFJJFJJFFFFAJFJJ7-7-A-F--777FJFJF7---AAAF&lt;AAA-       NM:i:1  MD:Z:5A48       AS:i:49 XS:i:35 SA:Z:chr8,43879758,+,75M75S,60,2;
+</pre></div></div>
+</div>
+</section>
+<section id="Contacts-extraction">
+<h2>Contacts extraction<a class="headerlink" href="#Contacts-extraction" title="Link to this heading"></a></h2>
+<p>Challenges of contacts extraction solved by <code class="docutils literal notranslate"><span class="pre">pairtools</span></code>:</p>
+<ul class="simple">
+<li><p>multiple walks in each Hi-C read</p></li>
+<li><p>alignments spaced by short genomic distance may be reported as single alignment with a gap by bwa</p></li>
+<li><p>PCR and optical duplicates</p></li>
+</ul>
+<section id="pairtools-parse">
+<h3>pairtools parse<a class="headerlink" href="#pairtools-parse" title="Link to this heading"></a></h3>
+<p>The next step is to parse .sam/.bam into pairs. <code class="docutils literal notranslate"><span class="pre">pairtools</span> <span class="pre">parse</span></code> automatically detect the file format.</p>
+<p>Full parse documentation: <a class="reference external" href="https://github.com/open2c/pairtools/blob/master/doc/parsing.rst">https://github.com/open2c/pairtools/blob/master/doc/parsing.rst</a></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+pairtools<span class="w"> </span>parse<span class="w"> </span>-o<span class="w"> </span>test.pairs.gz<span class="w"> </span>-c<span class="w"> </span>~/.local/share/genomes/hg38/hg38.fa.sizes<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--drop-sam<span class="w"> </span>--drop-seq<span class="w"> </span>--output-stats<span class="w"> </span>test.stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--assembly<span class="w"> </span>hg38<span class="w"> </span>--no-flip<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--add-columns<span class="w"> </span>mapq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--walks-policy<span class="w"> </span>mask<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>test.bam
+</pre></div>
+</div>
+</div>
+<p>Parse will result in .pairs file. .pairs is a simple tabular format for storing DNA contacts detected in a Hi-C experiment. The detailed <a class="reference external" href="https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md">.pairs specification</a> is defined by the 4DN Consortium.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Header</span>
+gzip<span class="w"> </span>-dc<span class="w"> </span>test.pairs.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">5</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+## pairs format v1.0.0
+#shape: whole matrix
+#genome_assembly: hg38
+#chromsize: chr1 248956422
+#chromsize: chr10 133797422
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Last lines of the header contain the list of columns:</span>
+gzip<span class="w"> </span>-dc<span class="w"> </span>test.pairs.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-n<span class="w"> </span><span class="m">5</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+#samheader: @SQ SN:chrX LN:156040895
+#samheader: @SQ SN:chrY LN:57227415
+#samheader: @PG ID:bwa  PN:bwa  VN:0.7.17-r1188 CL:./bwa mem -t 5 -SP /home/agalicina/.local/share/genomes/hg38/index/bwa/hg38.fa SRR13849430_1.fastq.gz SRR13849430_2.fastq.gz
+#samheader: @PG ID:pairtools_parse      PN:pairtools_parse      CL:./pairtools parse -o test.pairs.gz -c /home/agalicina/.local/share/genomes/hg38/hg38.fa.sizes --drop-sam --drop-seq --output-stats test.stats --assembly hg38 --no-flip --add-columns mapq --walks-policy mask test.bam      PP:bwa  VN:1.0.0-dev1
+#columns: readID chrom1 pos1 chrom2 pos2 strand1 strand2 pair_type mapq1 mapq2
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Body of the .pairs file</span>
+gzip<span class="w"> </span>-dc<span class="w"> </span>test.pairs.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">5</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+SRR13849430.1   chr12   78795816        !       0       -       -       UN      60      0
+SRR13849430.2   !       0       !       0       -       -       WW      60      0
+SRR13849430.3   chr2    72005391        !       0       +       -       UN      60      0
+SRR13849430.4   chr2    20530788        !       0       +       -       UN      60      0
+SRR13849430.5   !       0       !       0       -       -       WW      0       0
+</pre></div></div>
+</div>
+</section>
+<section id="pairtools-sort">
+<h3>pairtools sort<a class="headerlink" href="#pairtools-sort" title="Link to this heading"></a></h3>
+<p>After parsing each pair is listed in the orderthat it appeared in the reads file. Sorting makes it more organised, and also helps to perform deduplication which cannot work on non-sorted files.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+pairtools<span class="w"> </span>sort<span class="w"> </span>--nproc<span class="w"> </span><span class="m">5</span><span class="w"> </span>-o<span class="w"> </span>test.sorted.pairs.gz<span class="w"> </span>test.pairs.gz
+</pre></div>
+</div>
+</div>
+</section>
+<section id="pairtools-dedup">
+<h3>pairtools dedup<a class="headerlink" href="#pairtools-dedup" title="Link to this heading"></a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+pairtools<span class="w"> </span>dedup<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-mismatch<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mark-dups<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>&gt;<span class="o">(</span><span class="w"> </span>pairtools<span class="w"> </span>split<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--output-pairs<span class="w"> </span>test.nodups.pairs.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--output-sam<span class="w"> </span>test.nodups.bam<span class="w"> </span><span class="se">\</span>
+<span class="w">         </span><span class="o">)</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-unmapped<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>&gt;<span class="o">(</span><span class="w"> </span>pairtools<span class="w"> </span>split<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--output-pairs<span class="w"> </span>test.unmapped.pairs.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--output-sam<span class="w"> </span>test.unmapped.bam<span class="w"> </span><span class="se">\</span>
+<span class="w">         </span><span class="o">)</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-dups<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>&gt;<span class="o">(</span><span class="w"> </span>pairtools<span class="w"> </span>split<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--output-pairs<span class="w"> </span>test.dups.pairs.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>--output-sam<span class="w"> </span>test.dups.bam<span class="w"> </span><span class="se">\</span>
+<span class="w">         </span><span class="o">)</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output-stats<span class="w"> </span>test.dedup.stats<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>test.pairs.gz
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Unique pairs:</span>
+gzip<span class="w"> </span>-dc<span class="w"> </span>test.nodups.pairs.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+SRR13849430.513 chr20   23502312        chr20   23063544        +       +       RU      60      60
+SRR13849430.1442        chr7    57224960        chrX    82818236        +       +       UU      60      30
+SRR13849430.2378        chr5    115925933       chr21   24124840        +       +       UU      60      50
+SRR13849430.2547        chr1    52097837        chr12   1888807 -       -       UU      60      60
+SRR13849430.3015        chr17   74750879        chr11   117356318       +       -       UR      60      60
+SRR13849430.3027        chr15   34977762        chr15   31897447        -       +       UR      11      60
+SRR13849430.3406        chr11   1171960 chr9    121265592       +       -       UU      60      60
+SRR13849430.3988        chr16   86824176        chr13   104521019       -       +       UU      60      17
+SRR13849430.4030        chr17   73189645        chr4    49092470        -       +       UU      60      31
+SRR13849430.4316        chr8    124329308       chr8    124336541       -       -       UU      60      60
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Only duplicated  pairs:</span>
+gzip<span class="w"> </span>-dc<span class="w"> </span>test.dups.pairs.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+SRR13849430.60371       chr2    44507613        chr7    116276932       -       +       DD      60      57
+SRR13849430.67567       chr5    62425895        chr5    62425612        -       +       DD      60      60
+SRR13849430.97623       chr3    162233323       chr3    162154449       -       +       DD      60      52
+SRR13849430.108366      chr8    48691403        chr8    48872239        -       -       DD      60      60
+SRR13849430.138622      chr16   8435050 chr16   6032751 +       -       DD      60      60
+SRR13849430.146482      chr14   86385083        chr2    119648648       +       +       DD      60      60
+SRR13849430.148232      chrX    21885792        chrX    21887418        +       -       DD      60      60
+SRR13849430.149771      chr16   6646543 chr16   6648097 -       -       DD      60      60
+SRR13849430.156983      chr4    55704089        chr4    76039070        +       +       DD      60      13
+SRR13849430.157962      chr6    47656758        chr6    47748395        +       -       DD      60      35
+</pre></div></div>
+</div>
+</section>
+<section id="pairtools-select">
+<h3>pairtools select<a class="headerlink" href="#pairtools-select" title="Link to this heading"></a></h3>
+<p>Sometimes you may need certain types of pairs based on their properties, such as mapq, pair type, distance or orientation. For all these manipulations, there is <code class="docutils literal notranslate"><span class="pre">pairtools</span> <span class="pre">select</span></code> which requires a file and pythonic condition as an input:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+pairtools<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="s2">&quot;mapq1&gt;0 and mapq2&gt;0&quot;</span><span class="w"> </span>test.nodups.pairs.gz<span class="w"> </span>-o<span class="w"> </span>test.nodups.UU.pairs.gz
+</pre></div>
+</div>
+</div>
+</section>
+<section id="pairtools-stats">
+<h3>pairtools stats<a class="headerlink" href="#pairtools-stats" title="Link to this heading"></a></h3>
+<p>Describe the types fo distance properties of pairs:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+pairtools<span class="w"> </span>stats<span class="w"> </span>test.pairs.gz<span class="w"> </span>-o<span class="w"> </span>test.stats
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="MultiQC">
+<h2>MultiQC<a class="headerlink" href="#MultiQC" title="Link to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+multiqc<span class="w"> </span>test.stats
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">IFrame</span>
+
+<span class="n">IFrame</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="s1">&#39;./multiqc_report.html&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1200</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">700</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<iframe
+    width="1200"
+    height="700"
+    src="./multiqc_report.html"
+    frameborder="0"
+    allowfullscreen
+
+></iframe></div>
+</div>
+</section>
+<section id="Load-pairs-to-cooler">
+<h2>Load pairs to cooler<a class="headerlink" href="#Load-pairs-to-cooler" title="Link to this heading"></a></h2>
+<p>Finally, when you obtained a list of appropriate pairs, you may create coolers with it:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+cooler<span class="w"> </span>cload<span class="w"> </span>pairs<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-c1<span class="w"> </span><span class="m">2</span><span class="w"> </span>-p1<span class="w"> </span><span class="m">3</span><span class="w"> </span>-c2<span class="w"> </span><span class="m">4</span><span class="w"> </span>-p2<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--assembly<span class="w"> </span>hg38<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>~/.local/share/genomes/hg38/hg38.fa.sizes:1000000<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>test.nodups.UU.pairs.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>test.hg38.1000000.cool
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+cooler<span class="w"> </span>zoomify<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--nproc<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--out<span class="w"> </span>test.hg38.1000000.mcool<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--resolutions<span class="w"> </span><span class="m">1000000</span>,2000000<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--balance<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>test.hg38.1000000.cool
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Visualize-cooler">
+<h2>Visualize cooler<a class="headerlink" href="#Visualize-cooler" title="Link to this heading"></a></h2>
+<p>Based on <a class="reference external" href="https://github.com/open2c/open2c_examples/blob/master/viz.ipynb">open2c vis example</a></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cooler</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">cooltools.lib.plotting</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LogNorm</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">import</span> <span class="nn">bioframe</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">file</span> <span class="o">=</span> <span class="s2">&quot;test.hg38.1000000.mcool::/resolutions/1000000&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">clr</span> <span class="o">=</span> <span class="n">cooler</span><span class="o">.</span><span class="n">Cooler</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define chromosome starts</span>
+<span class="n">chromstarts</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">clr</span><span class="o">.</span><span class="n">chromnames</span><span class="p">:</span>
+        <span class="n">chromstarts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clr</span><span class="o">.</span><span class="n">extent</span><span class="p">(</span><span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="kn">import</span> <span class="n">EngFormatter</span>
+<span class="n">bp_formatter</span> <span class="o">=</span> <span class="n">EngFormatter</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">format_ticks</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rotate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">y</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">bp_formatter</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">bp_formatter</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">tick_bottom</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">rotate</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define the bounds of the continuous fragment of whole-genome interaction map</span>
+<span class="n">chrom_start</span><span class="p">,</span> <span class="n">chrom_end</span> <span class="o">=</span> <span class="n">clr</span><span class="o">.</span><span class="n">chromnames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;chr3&#39;</span><span class="p">),</span> <span class="n">clr</span><span class="o">.</span><span class="n">chromnames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;chr6&#39;</span><span class="p">)</span>
+<span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">chromstarts</span><span class="p">[</span><span class="n">chrom_start</span><span class="p">],</span> <span class="n">chromstarts</span><span class="p">[</span><span class="n">chrom_end</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">vmax</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="n">norm</span> <span class="o">=</span> <span class="n">LogNorm</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">)</span>
+
+<span class="n">f</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+    <span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">sharex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Interaction maps (chr1)&#39;</span><span class="p">)</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">clr</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">balance</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;chr1&#39;</span><span class="p">),</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;fall&#39;</span><span class="p">);</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span> <span class="p">,</span><span class="n">fraction</span><span class="o">=</span><span class="mf">0.046</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;chr1&#39;</span><span class="p">);</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Chromosomes 3-5&#39;</span><span class="p">)</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">clr</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span><span class="n">balance</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">],</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;fall&#39;</span><span class="p">);</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span> <span class="p">,</span><span class="n">fraction</span><span class="o">=</span><span class="mf">0.046</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Whole-genome&#39;</span><span class="p">);</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">chromstarts</span><span class="p">[</span><span class="n">chrom_start</span><span class="p">:</span><span class="n">chrom_end</span><span class="p">])</span><span class="o">-</span><span class="n">start</span><span class="p">,</span> <span class="n">clr</span><span class="o">.</span><span class="n">chromnames</span><span class="p">[</span><span class="n">chrom_start</span><span class="p">:</span><span class="n">chrom_end</span><span class="p">],</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">);</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">chromstarts</span><span class="p">[</span><span class="n">chrom_start</span><span class="p">:</span><span class="n">chrom_end</span><span class="p">])</span><span class="o">-</span><span class="n">start</span><span class="p">,</span> <span class="n">clr</span><span class="o">.</span><span class="n">chromnames</span><span class="p">[</span><span class="n">chrom_start</span><span class="p">:</span><span class="n">chrom_end</span><span class="p">],</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">);</span>
+
+<span class="n">format_ticks</span><span class="p">(</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rotate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_pairtools_walkthrough_43_0.png" src="../_images/examples_pairtools_walkthrough_43_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ivan Ilnitskiy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

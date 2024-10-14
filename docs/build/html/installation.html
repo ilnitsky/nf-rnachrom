@@ -1,0 +1,199 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup and Installation &mdash; nf-rnachrom 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration" href="configuration.html" />
+    <link rel="prev" title="Overview" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            nf-rnachrom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Overview</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Setup and Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-nextflow">Installing Nextflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline-dependencies">Pipeline Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-process">Installation Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-pipeline">Running the Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nf-rnachrom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Setup and Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="setup-and-installation">
+<span id="id1"></span><h1>Setup and Installation<a class="headerlink" href="#setup-and-installation" title="Link to this heading"></a></h1>
+<p>This guide will walk you through the process of setting up and installing the RNAchrom Nextflow pipeline.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>Before you begin, ensure you have the following installed on your system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Java</span> <span class="mi">8</span> <span class="ow">or</span> <span class="n">later</span>
+<span class="n">Nextflow</span> <span class="p">(</span><span class="n">version</span> <span class="mf">20.04.0</span> <span class="ow">or</span> <span class="n">later</span><span class="p">)</span>
+<span class="n">Anaconda</span>
+</pre></div>
+</div>
+<p>The pipeline uses Conda environments specified in <code class="docutils literal notranslate"><span class="pre">envs/</span></code> directory . Ensure you have Conda installed on your system.</p>
+</section>
+<section id="installing-nextflow">
+<h2>Installing Nextflow<a class="headerlink" href="#installing-nextflow" title="Link to this heading"></a></h2>
+<blockquote>
+<div><p>To install Nextflow, run the following commands:</p>
+</div></blockquote>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>https://get.nextflow.io<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
+$<span class="w"> </span>mv<span class="w"> </span>nextflow<span class="w"> </span>~/bin/
+</pre></div>
+</div>
+<p>Make sure ~/bin is in your PATH.</p>
+<p>Cloning the Repository
+Clone the RNAchrom repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/your-repo/rnachrom.git
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>rnachrom
+</pre></div>
+</div>
+</section>
+<section id="pipeline-dependencies">
+<h2>Pipeline Dependencies<a class="headerlink" href="#pipeline-dependencies" title="Link to this heading"></a></h2>
+<p>The pipeline automatically installs several tools during execution. These include:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">RnaChromATA</span>
+<span class="n">Bitap</span>
+<span class="n">StereoGene</span>
+<span class="n">fastq</span><span class="o">-</span><span class="n">dupaway</span>
+</pre></div>
+</div>
+</section>
+<section id="installation-process">
+<h2>Installation Process<a class="headerlink" href="#installation-process" title="Link to this heading"></a></h2>
+<p>The PrepareSoftware process in the pipeline handles the installation of these tools:</p>
+<p><strong>RnaChromATA</strong></p>
+<p>Installed from the bin/RnaChromATA/setup.py file in the project directory.</p>
+<p><strong>Bitap</strong></p>
+<p>Cloned from the GitHub repository and compiled:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ikm4rkov/RawReadsProcessor.git
+</pre></div>
+</div>
+<p><strong>StereoGene</strong></p>
+<p>Cloned from GitHub and compiled:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/favorov/stereogene.git
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>stereogene/src
+$<span class="w"> </span>make
+</pre></div>
+</div>
+<p><strong>fastq-dupaway</strong></p>
+<p>Cloned from GitHub and compiled:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/AndrewSigorskih/fastq-dupaway.git
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>fastq-dupaway
+$<span class="w"> </span>make
+</pre></div>
+</div>
+</section>
+<section id="running-the-pipeline">
+<h2>Running the Pipeline<a class="headerlink" href="#running-the-pipeline" title="Link to this heading"></a></h2>
+<p>To run the pipeline:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span>--input<span class="w"> </span>samples.csv<span class="w"> </span>--outdir<span class="w"> </span>results
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<p>If you encounter issues during installation or execution:</p>
+<p>Ensure all prerequisites are correctly installed.
+Check the log files in the work directory for error messages.
+Verify that all required input files are present and correctly formatted.
+For more detailed information, refer to the pipeline documentation or open an issue on the GitHub repository.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="configuration.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ivan Ilnitskiy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

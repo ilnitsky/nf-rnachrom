@@ -1,0 +1,652 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pairtools restrict walkthrough &mdash; nf-rnachrom 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            nf-rnachrom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#setup-and-installation">Setup and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">nf-rnachrom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pairtools restrict walkthrough</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/pairtools_restrict_walkthrough.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.ticker</span>
+<span class="kn">import</span> <span class="nn">matplotlib.gridspec</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;seaborn-poster&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pairtools</span>
+<span class="kn">import</span> <span class="nn">bioframe</span>
+</pre></div>
+</div>
+</div>
+<section id="Pairtools-restrict-walkthrough">
+<h1>Pairtools restrict walkthrough<a class="headerlink" href="#Pairtools-restrict-walkthrough" title="Link to this heading"></a></h1>
+<p>The common approach to analyse Hi-C data is based to analyse the contacts of the restriction fragments. It is used in <em>hiclib</em>, Juicer, HiC-Pro.</p>
+<p>Throughout this notebook, we will work with one of <a class="reference external" href="https://data.4dnucleome.org/experiment-set-replicates/4DNES1ZEJNRU/">Rao et al. 2014 datasets for IMR90 cells</a> [1].</p>
+<p>[1] Rao, S. S., Huntley, M. H., Durand, N. C., Stamenova, E. K., Bochkov, I. D., Robinson, J. T., Sanborn, A. L., Machol, I., Omer, A. D., Lander, E. S., &amp; Aiden, E. L. (2014). A 3D map of the human genome at kilobase resolution reveals principles of chromatin looping. Cell, 159(7), 1665–1680. <a class="reference external" href="https://doi.org/10.1016/j.cell.2014.11.021">https://doi.org/10.1016/j.cell.2014.11.021</a></p>
+<section id="Download-the-data-from-4DN-portal">
+<h2>Download the data from 4DN portal<a class="headerlink" href="#Download-the-data-from-4DN-portal" title="Link to this heading"></a></h2>
+<p>To download the data from 4DN, you may need to <a class="reference external" href="https://data.4dnucleome.org/help/user-guide/downloading-files">register, get key and secret and write a spceialized curl command for your user</a>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>curl<span class="w"> </span>-O<span class="w"> </span>-L<span class="w"> </span>--user<span class="w"> </span>RG6CSRMC:xlii3stnkphfygmu<span class="w"> </span>https://data.4dnucleome.org/files-processed/4DNFIW2BKSNF/@@download/4DNFIW2BKSNF.pairs.gz
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   330  100   330    0     0    931      0 --:--:-- --:--:-- --:--:--   932
+100 3395M  100 3395M    0     0  29.7M      0  0:01:54  0:01:54 --:--:-- 33.1M 0:01:48  0:00:12  0:01:36 32.8M
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Get total number of contacts to assess how many reads you can read in the future:</span>
+pairtools<span class="w"> </span>stats<span class="w"> </span>4DNFIW2BKSNF.pairs.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span>
+<span class="c1"># This will produce around 173 M pairs</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Sample the fraction of pairs that will produce ~ 1 M of pairs:</span>
+pairtools<span class="w"> </span>sample<span class="w"> </span><span class="m">0</span>.007<span class="w"> </span>4DNFIW2BKSNF.pairs.gz<span class="w"> </span>-o<span class="w"> </span>4DNFIW2BKSNF.pairs.sampled.gz
+</pre></div>
+</div>
+</div>
+<section id="Annotate-restriction-fragments">
+<h3>Annotate restriction fragments<a class="headerlink" href="#Annotate-restriction-fragments" title="Link to this heading"></a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Digest the genome into restriction fragments:</span>
+cooler<span class="w"> </span>digest<span class="w"> </span>../tests_chromap/hg38/hg38.fa.sizes<span class="w"> </span>../tests_chromap/hg38/hg38.fa<span class="w"> </span>MboI<span class="w"> </span>&gt;<span class="w"> </span>hg38/hg38.MboI.restricted.bed
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-bash notranslate"><div class="highlight"><pre><span></span>%%bash
+<span class="c1"># Annotate restriction fragments in the sampled file:</span>
+pairtools<span class="w"> </span>restrict<span class="w"> </span>-f<span class="w"> </span>hg38/hg38.MboI.restricted.bed<span class="w"> </span>4DNFIW2BKSNF.pairs.sampled.gz<span class="w"> </span>-o<span class="w"> </span>4DNFIW2BKSNF.pairs.sampled.restricted.gz
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Read-the-pairs-and-analyse-them-as-dataframe">
+<h3>Read the pairs and analyse them as dataframe<a class="headerlink" href="#Read-the-pairs-and-analyse-them-as-dataframe" title="Link to this heading"></a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pairtools.lib</span> <span class="kn">import</span> <span class="n">headerops</span><span class="p">,</span> <span class="n">fileio</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pairs_file</span> <span class="o">=</span> <span class="s1">&#39;4DNFIW2BKSNF.pairs.sampled.restricted.gz&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pairs_stream</span> <span class="o">=</span> <span class="n">fileio</span><span class="o">.</span><span class="n">auto_open</span><span class="p">(</span><span class="n">pairs_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+<span class="n">header</span><span class="p">,</span> <span class="n">pairs_stream</span> <span class="o">=</span> <span class="n">headerops</span><span class="o">.</span><span class="n">get_header</span><span class="p">(</span><span class="n">pairs_stream</span><span class="p">)</span>
+<span class="n">columns</span> <span class="o">=</span> <span class="n">headerops</span><span class="o">.</span><span class="n">get_colnames</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="n">pairs_stream</span><span class="p">,</span> <span class="n">comment</span><span class="o">=</span><span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s1">&#39;dist_rfrag1_left&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pos1</span> <span class="o">-</span> <span class="n">df</span><span class="o">.</span><span class="n">rfrag_start1</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s1">&#39;dist_rfrag1_right&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rfrag_end1</span> <span class="o">-</span> <span class="n">df</span><span class="o">.</span><span class="n">pos1</span>
+
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s1">&#39;dist_rfrag2_left&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pos2</span> <span class="o">-</span> <span class="n">df</span><span class="o">.</span><span class="n">rfrag_start2</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s1">&#39;dist_rfrag2_right&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rfrag_end2</span> <span class="o">-</span> <span class="n">df</span><span class="o">.</span><span class="n">pos2</span>
+</pre></div>
+</div>
+</div>
+<p>Many of the 5’-ends of reads are mapped to the restriction sites:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">xmin</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">xmax</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">step</span> <span class="o">=</span> <span class="mi">20</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;strand1==&quot;+&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">dist_rfrag1_left</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">step</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Distance from the 5</span><span class="se">\&#39;</span><span class="s1"> read end to the nearest upstream rsite, + mapped reads&#39;</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;strand1==&quot;+&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">dist_rfrag1_right</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">step</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Distance from the 5</span><span class="se">\&#39;</span><span class="s1"> read end to the nearest downstream rsite, + mapped reads&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_pairtools_restrict_walkthrough_18_0.png" src="../_images/examples_pairtools_restrict_walkthrough_18_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">xmin</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">xmax</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">step</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;strand1==&quot;+&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">dist_rfrag1_left</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">step</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Distance from the 5</span><span class="se">\&#39;</span><span class="s1"> read end to the nearest upstream rsite, + mapped reads&#39;</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;strand1==&quot;+&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">dist_rfrag1_right</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">step</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Distance from the 5</span><span class="se">\&#39;</span><span class="s1"> read end to the nearest downstream rsite, + mapped reads&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_pairtools_restrict_walkthrough_19_0.png" src="../_images/examples_pairtools_restrict_walkthrough_19_0.png" />
+</div>
+</div>
+<p>However, if we select only the pairs that map to the restriction sites, there is no significant skew in scaling:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hg38_chromsizes</span> <span class="o">=</span> <span class="n">bioframe</span><span class="o">.</span><span class="n">fetch_chromsizes</span><span class="p">(</span><span class="s1">&#39;hg38&#39;</span><span class="p">,</span>
+                                            <span class="n">as_bed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">hg38_cens</span> <span class="o">=</span> <span class="n">bioframe</span><span class="o">.</span><span class="n">fetch_centromeres</span><span class="p">(</span><span class="s1">&#39;hg38&#39;</span><span class="p">)</span>
+<span class="n">hg38_arms</span> <span class="o">=</span> <span class="n">bioframe</span><span class="o">.</span><span class="n">make_chromarms</span><span class="p">(</span><span class="n">hg38_chromsizes</span><span class="p">,</span>
+                                    <span class="nb">dict</span><span class="p">(</span><span class="n">hg38_cens</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;chrom&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mid</span><span class="p">),</span>
+                                    <span class="n">cols_chroms</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;chrom&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">)</span> <span class="p">)</span>
+
+<span class="c1"># To fix pandas bug in some versions:</span>
+<span class="n">hg38_arms</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hg38_arms</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">hg38_arms</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hg38_arms</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pairtools.lib.scaling</span> <span class="k">as</span> <span class="nn">scaling</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="n">cis_scalings</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="mf">1e1</span><span class="p">,</span><span class="mf">1e9</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;&#39;</span> <span class="p">):</span>
+    <span class="n">strand_gb</span> <span class="o">=</span> <span class="n">cis_scalings</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;strand1&#39;</span><span class="p">,</span> <span class="s1">&#39;strand2&#39;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">strands</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;+-&#39;</span><span class="p">,</span> <span class="s1">&#39;-+&#39;</span><span class="p">,</span> <span class="s1">&#39;++&#39;</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">]:</span>
+        <span class="n">sc_strand</span> <span class="o">=</span> <span class="n">strand_gb</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">strands</span><span class="p">))</span>
+        <span class="n">sc_agg</span> <span class="o">=</span> <span class="p">(</span><span class="n">sc_strand</span>
+            <span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;min_dist&#39;</span><span class="p">,</span><span class="s1">&#39;max_dist&#39;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">agg</span><span class="p">({</span><span class="s1">&#39;n_pairs&#39;</span><span class="p">:</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;n_bp2&#39;</span><span class="p">:</span><span class="s1">&#39;sum&#39;</span><span class="p">})</span>
+            <span class="o">.</span><span class="n">reset_index</span><span class="p">())</span>
+
+        <span class="n">dist_bin_mids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sc_agg</span><span class="o">.</span><span class="n">min_dist</span> <span class="o">*</span> <span class="n">sc_agg</span><span class="o">.</span><span class="n">max_dist</span><span class="p">)</span>
+        <span class="n">pair_frequencies</span> <span class="o">=</span> <span class="n">sc_agg</span><span class="o">.</span><span class="n">n_pairs</span> <span class="o">/</span> <span class="n">sc_agg</span><span class="o">.</span><span class="n">n_bp2</span>
+        <span class="n">pair_frequencies</span> <span class="o">=</span> <span class="n">pair_frequencies</span><span class="o">/</span><span class="n">cis_scalings</span><span class="o">.</span><span class="n">n_pairs</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">pair_frequencies</span><span class="o">&gt;</span><span class="mi">0</span>
+        <span class="n">label_long</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">strands</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}{</span><span class="n">strands</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s1">&#39;</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span>
+                <span class="n">dist_bin_mids</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span>
+                <span class="n">pair_frequencies</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label_long</span><span class="p">,</span>
+                <span class="n">lw</span><span class="o">=</span><span class="mi">2</span>
+            <span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">LogLocator</span><span class="p">(</span><span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span><span class="n">numticks</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">ticker</span><span class="o">.</span><span class="n">LogLocator</span><span class="p">(</span><span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span><span class="n">numticks</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span><span class="mf">0.4</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;contact frequency, </span><span class="se">\n</span><span class="s1">Hi-C molecule per bp pair normalized by total&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;distance, bp&#39;</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the pairs where R1 is far enough from site of restriction, but not too far</span>
+<span class="n">df_subset</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;(strand1==&#39;+&#39; and dist_rfrag1_left&gt;5 and dist_rfrag1_left&lt;=250)&quot;</span><span class="p">)</span>
+<span class="n">n_distant</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_subset</span><span class="p">)</span>
+<span class="n">cis_scalings_distant</span><span class="p">,</span> <span class="n">trans_levels_distant</span> <span class="o">=</span> <span class="n">scaling</span><span class="o">.</span><span class="n">compute_scaling</span><span class="p">(</span>
+                <span class="n">df_subset</span><span class="p">,</span>
+                <span class="n">regions</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">chromsizes</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">dist_range</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">1e9</span><span class="p">),</span>
+                <span class="n">n_dist_bins</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                <span class="n">chunksize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e7</span><span class="p">),</span>
+            <span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">cis_scalings_distant</span><span class="p">,</span> <span class="n">n_distant</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pairs, 5&#39; distant from rsite&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># Get the pairs where R1 is too far enough from site of restriction</span>
+<span class="n">df_subset</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;(strand1==&#39;+&#39; and dist_rfrag1_left&gt;550)&quot;</span><span class="p">)</span>
+<span class="n">n_toodistant</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_subset</span><span class="p">)</span>
+<span class="n">cis_scalings_toodistant</span><span class="p">,</span> <span class="n">trans_levels_toodistant</span> <span class="o">=</span> <span class="n">scaling</span><span class="o">.</span><span class="n">compute_scaling</span><span class="p">(</span>
+                <span class="n">df_subset</span><span class="p">,</span>
+                <span class="n">regions</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">chromsizes</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">dist_range</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">1e9</span><span class="p">),</span>
+                <span class="n">n_dist_bins</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                <span class="n">chunksize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e7</span><span class="p">),</span>
+            <span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">cis_scalings_toodistant</span><span class="p">,</span> <span class="n">n_toodistant</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pairs, 5&#39; too far from rsite&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># Get the pairs where R1 is very close to the site of restriction</span>
+<span class="n">df_subset</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;(strand1==&#39;+&#39; and dist_rfrag1_left&lt;5)&quot;</span><span class="p">)</span>
+<span class="n">n_tooclose</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_subset</span><span class="p">)</span>
+<span class="n">cis_scalings_tooclose</span><span class="p">,</span> <span class="n">trans_levels_tooclose</span> <span class="o">=</span> <span class="n">scaling</span><span class="o">.</span><span class="n">compute_scaling</span><span class="p">(</span>
+                <span class="n">df_subset</span><span class="p">,</span>
+                <span class="n">regions</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">chromsizes</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">dist_range</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">1e9</span><span class="p">),</span>
+                <span class="n">n_dist_bins</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                <span class="n">chunksize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e7</span><span class="p">),</span>
+            <span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">cis_scalings_tooclose</span><span class="p">,</span> <span class="n">n_tooclose</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pairs, 5&#39; close to rsite&quot;</span><span class="p">)</span>
+<span class="c1"># Try another replicate of replicate, maybe the last one</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_pairtools_restrict_walkthrough_24_0.png" src="../_images/examples_pairtools_restrict_walkthrough_24_0.png" />
+</div>
+</div>
+</section>
+<section id="How-many-pairs-we-take-if-not-strictly-filtering-by-dangling-ends-and-self-circles?">
+<h3>How many pairs we take if not strictly filtering by dangling ends and self-circles?<a class="headerlink" href="#How-many-pairs-we-take-if-not-strictly-filtering-by-dangling-ends-and-self-circles?" title="Link to this heading"></a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;type_rfrag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Regular pair&quot;</span>
+
+<span class="n">mask_neighboring_rfrags</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">rfrag1</span><span class="o">-</span><span class="n">df</span><span class="o">.</span><span class="n">rfrag2</span><span class="p">)</span><span class="o">&lt;=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">mask_DE</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand1</span><span class="o">==</span><span class="s2">&quot;+&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand2</span><span class="o">==</span><span class="s2">&quot;-&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">mask_neighboring_rfrags</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask_DE</span><span class="p">,</span> <span class="s2">&quot;type_rfrag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DanglingEnd&quot;</span>
+
+<span class="n">mask_SS</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand1</span><span class="o">==</span><span class="s2">&quot;-&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand2</span><span class="o">==</span><span class="s2">&quot;+&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">mask_neighboring_rfrags</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask_SS</span><span class="p">,</span> <span class="s2">&quot;type_rfrag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;SelfCircle&quot;</span>
+
+<span class="n">mask_Err</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand1</span><span class="o">==</span><span class="n">df</span><span class="o">.</span><span class="n">strand2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">mask_neighboring_rfrags</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask_Err</span><span class="p">,</span> <span class="s2">&quot;type_rfrag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Mirror&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;type_rfrag&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;type_rfrag&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()[</span><span class="s1">&#39;readID&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+type_rfrag
+DanglingEnd       76902
+Mirror             3214
+Regular pair    1132002
+SelfCircle         3036
+Name: readID, dtype: int64
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Full scaling</span>
+
+<span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="n">cis_scalings</span><span class="p">,</span> <span class="n">trans_levels</span> <span class="o">=</span> <span class="n">scaling</span><span class="o">.</span><span class="n">compute_scaling</span><span class="p">(</span>
+                <span class="n">df</span><span class="p">,</span>
+                <span class="n">regions</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">chromsizes</span><span class="o">=</span><span class="n">hg38_arms</span><span class="p">,</span>
+                <span class="n">dist_range</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">1e9</span><span class="p">),</span>
+                <span class="n">n_dist_bins</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                <span class="n">chunksize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e7</span><span class="p">),</span>
+            <span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">cis_scalings</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pairs&quot;</span><span class="p">)</span>
+
+<span class="c1"># The point where the scalings by distance become balanced:</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mf">2e3</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Balancing point&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;./oriented_scalings.pdf&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_pairtools_restrict_walkthrough_28_0.png" src="../_images/examples_pairtools_restrict_walkthrough_28_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;type_bydist&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Regular pair&quot;</span>
+
+<span class="n">mask_ondiagonal</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">pos2</span><span class="o">-</span><span class="n">df</span><span class="o">.</span><span class="n">pos1</span><span class="p">)</span><span class="o">&lt;=</span><span class="mf">2e3</span><span class="p">)</span>
+
+<span class="n">mask_DE</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand1</span><span class="o">==</span><span class="s2">&quot;+&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand2</span><span class="o">==</span><span class="s2">&quot;-&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">mask_ondiagonal</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask_DE</span><span class="p">,</span> <span class="s2">&quot;type_bydist&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DanglingEnd&quot;</span>
+
+<span class="n">mask_SS</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand1</span><span class="o">==</span><span class="s2">&quot;-&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand2</span><span class="o">==</span><span class="s2">&quot;+&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">mask_ondiagonal</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask_SS</span><span class="p">,</span> <span class="s2">&quot;type_bydist&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;SelfCircle&quot;</span>
+
+<span class="n">mask_Err</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">strand1</span><span class="o">==</span><span class="n">df</span><span class="o">.</span><span class="n">strand2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">mask_ondiagonal</span>
+<span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask_Err</span><span class="p">,</span> <span class="s2">&quot;type_bydist&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Mirror&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;type_bydist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;type_bydist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()[</span><span class="s1">&#39;readID&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+type_bydist
+DanglingEnd      135381
+Mirror            18383
+Regular pair    1053213
+SelfCircle         8177
+Name: readID, dtype: int64
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">&quot;type_rfrag&quot;</span><span class="p">,</span> <span class="s2">&quot;type_bydist&quot;</span><span class="p">])</span>\
+    <span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;type_rfrag&quot;</span><span class="p">,</span> <span class="s2">&quot;type_bydist&quot;</span><span class="p">])</span>\
+    <span class="o">.</span><span class="n">count</span><span class="p">()[[</span><span class="s1">&#39;readID&#39;</span><span class="p">]]</span>\
+    <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>\
+    <span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s2">&quot;type_bydist&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="s2">&quot;type_rfrag&quot;</span><span class="p">)</span>\
+    <span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead tr th {
+        text-align: left;
+    }
+
+    .dataframe thead tr:last-of-type th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th colspan="4" halign="left">readID</th>
+    </tr>
+    <tr>
+      <th>type_bydist</th>
+      <th>DanglingEnd</th>
+      <th>Mirror</th>
+      <th>Regular pair</th>
+      <th>SelfCircle</th>
+    </tr>
+    <tr>
+      <th>type_rfrag</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>DanglingEnd</th>
+      <td>76898</td>
+      <td>0</td>
+      <td>4</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>Mirror</th>
+      <td>0</td>
+      <td>3176</td>
+      <td>38</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>Regular pair</th>
+      <td>58483</td>
+      <td>15207</td>
+      <td>1052994</td>
+      <td>5318</td>
+    </tr>
+    <tr>
+      <th>SelfCircle</th>
+      <td>0</td>
+      <td>0</td>
+      <td>177</td>
+      <td>2859</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>False Positives are in 3rd row, False Negatives are in 3rd column. Filtering by distance is, thus, nearly as effective as filtering by restriction fragment, but removes additional pairs that can be potential undercut by restriction enzyme.</p>
+<p>Removing all contacts closer than 2 Kb will remove Hi-C artifacts.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ivan Ilnitskiy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
