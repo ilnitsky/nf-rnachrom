@@ -20,7 +20,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Setup and Installation" href="installation.html" /> 
+    <link rel="next" title="Stages of Data Analysis" href="stages.html" />
+    <link rel="prev" title="Input file preparation" href="input.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,6 +48,7 @@
 </ul>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Setup and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input file preparation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">RNAchrom Configuration</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#input-options">Input Options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#processing-tools">Processing Tools</a></li>
@@ -59,6 +61,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#included-configs">Included Configs</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="stages.html">Stages of  Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">Results</a></li>
 </ul>
 
         </div>
@@ -87,7 +91,26 @@
              
   <section id="rnachrom-configuration">
 <span id="id1"></span><h1>RNAchrom Configuration<a class="headerlink" href="#rnachrom-configuration" title="Link to this heading"></a></h1>
-<p>The RNAchrom workflow uses a configuration file to specify various parameters and options. This document describes the key sections and parameters in the configuration file.</p>
+<p>The RNAchrom workflow uses a configuration file to specify various parameters and options. This document describes the key sections and parameters in the configuration file.
+We have provided a list of configurations most suitable for data processing of each experiment type. While core tools and parameters are constant across pipelines to ensure reliability,
+each configuration uniquely tailors settings to align with the specific analysis type. Those options are the ones used while preparing raw files
+for <a class="reference external" href="https://rnachrom2.bioinf.fbb.msu.ru">RNA-Chrom</a>  database.</p>
+<p>The pipeline supports various all-to-all experiment types, each with its own configuration file. Click on the configuration file name to view more details.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples/iMARGI.html"><span class="doc">iMARGI</span></a>: iMARGI experiment configuration</p></li>
+<li><p><a class="reference internal" href="examples/grid.html"><span class="doc">GRID</span></a>: GRID experiment configuration</p></li>
+<li><p><a class="reference internal" href="examples/char.html"><span class="doc">CHAR-seq</span></a>: CHAR-seq experiment configuration</p></li>
+<li><p><a class="reference internal" href="examples/redc.html"><span class="doc">Red-C</span></a>: Red-C experiment configuration</p></li>
+<li><p><a class="reference internal" href="examples/redchip.html"><span class="doc">Red-ChIP</span></a>: Red-ChIP experiment configuration</p></li>
+</ul>
+<p>These configs share a common structure but differ in key aspects:</p>
+<ul class="simple">
+<li><p>Experiment type</p></li>
+<li><p>Bridge processing settings and sequences</p></li>
+<li><p>Alignment tools and parameters</p></li>
+<li><p>Other specific flags for processing tools</p></li>
+</ul>
+<p>Below you can explore options in details.</p>
 <section id="input-options">
 <h2>Input Options<a class="headerlink" href="#input-options" title="Link to this heading"></a></h2>
 <table class="docutils align-default">
@@ -315,7 +338,8 @@ All available tools from modules are listed below:</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="installation.html" class="btn btn-neutral float-left" title="Setup and Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="input.html" class="btn btn-neutral float-left" title="Input file preparation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="stages.html" class="btn btn-neutral float-right" title="Stages of Data Analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

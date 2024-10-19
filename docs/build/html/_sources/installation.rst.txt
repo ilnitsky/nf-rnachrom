@@ -93,6 +93,10 @@ Cloned from GitHub and compiled:
 Running the Pipeline
 --------------------
 
+
+Before running pipeline with real data, try running the pipeline in test mode. Thus,
+all required tools and conda environments will be installed. 
+
 To run the pipeline:
 
 .. code-block:: bash

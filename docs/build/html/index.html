@@ -47,7 +47,10 @@
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Setup and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input file preparation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">RNAchrom Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stages.html">Stages of  Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">Results</a></li>
 </ul>
 
         </div>
@@ -141,6 +144,12 @@
 <li class="toctree-l2"><a class="reference internal" href="installation.html#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input file preparation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="input.html#gene-annotation">Gene Annotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#requirements-for-bed-like-gene-annotation-file">Requirements for Bed-like Gene Annotation File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#shared-gene-annotation-issues">Shared Gene Annotation Issues</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">RNAchrom Configuration</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="configuration.html#input-options">Input Options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration.html#processing-tools">Processing Tools</a></li>
@@ -151,6 +160,47 @@
 <li class="toctree-l2"><a class="reference internal" href="configuration.html#command-flags">Command Flags</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration.html#environment-variables">Environment Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration.html#included-configs">Included Configs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="stages.html">Stages of  Data Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#input-and-preprocessing">1. Input and Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#deduplication-optional">2. Deduplication (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#trimming">3. Trimming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#bridge-processing-for-specific-experiment-types">4. Bridge Processing (for specific experiment types)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#restriction-sites-filtering">5. Restriction sites filtering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#alignment">6. Alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#post-alignment-processing">6. Post-alignment Processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#contact-generation">7. Contact Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#cigar-filtering-optional">8. CIGAR Filtering (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#merging-replicates">9. Merging Replicates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#chromosome-splitting-optional">10. Chromosome Splitting (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#annotation-and-voting">11. Annotation and Voting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#background-model-generation">12. Background Model Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#normalization">13. Normalization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#peak-calling-for-one-to-all-experiments">14. Peak Calling (for One-to-All experiments)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#statistics-and-visualization">15. Statistics and Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#multiqc-report">16. MultiQC Report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html#main-results">Main Results</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">Results</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="results.html#input-and-preprocessing">1. Input and Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#deduplication-optional">2. Deduplication (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#trimming">3. Trimming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#bridge-processing-for-specific-experiment-types">4. Bridge Processing (for specific experiment types)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#alignment">5. Alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#post-alignment-processing">6. Post-alignment Processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#contact-generation">7. Contact Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#cigar-filtering-optional">8. CIGAR Filtering (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#merging-replicates">9. Merging Replicates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#chromosome-splitting-optional">10. Chromosome Splitting (optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#annotation-and-voting">11. Annotation and Voting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#background-model-generation">12. Background Model Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#normalization">13. Normalization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#peak-calling-for-one-to-all-experiments">14. Peak Calling (for One-to-All experiments)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#statistics-and-visualization">15. Statistics and Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#multiqc-report">16. MultiQC Report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="results.html#main-results">Main Results</a></li>
 </ul>
 </li>
 </ul>

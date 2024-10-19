@@ -48,7 +48,10 @@ Contents:
 
    quickstart
    installation
+   input
    configuration
+   stages
+   results
 
 .. toctree::
   :maxdepth: 3

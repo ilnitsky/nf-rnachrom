@@ -4,6 +4,27 @@ RNAchrom Configuration
 ======================
 
 The RNAchrom workflow uses a configuration file to specify various parameters and options. This document describes the key sections and parameters in the configuration file.
+We have provided a list of configurations most suitable for data processing of each experiment type. While core tools and parameters are constant across pipelines to ensure reliability, 
+each configuration uniquely tailors settings to align with the specific analysis type. Those options are the ones used while preparing raw files
+for `RNA-Chrom <https://rnachrom2.bioinf.fbb.msu.ru>`_  database.
+
+
+The pipeline supports various all-to-all experiment types, each with its own configuration file. Click on the configuration file name to view more details.
+
+- `iMARGI <./examples/iMARGI.ipynb>`_: iMARGI experiment configuration
+- `GRID <./examples/grid.ipynb>`_: GRID experiment configuration
+- `CHAR-seq <./examples/char.ipynb>`_: CHAR-seq experiment configuration
+- `Red-C <./examples/redc.ipynb>`_: Red-C experiment configuration
+- `Red-ChIP <./examples/redchip.ipynb>`_: Red-ChIP experiment configuration
+
+These configs share a common structure but differ in key aspects:
+
+- Experiment type 
+- Bridge processing settings and sequences
+- Alignment tools and parameters
+- Other specific flags for processing tools
+
+Below you can explore options in details.
 
 Input Options
 -------------
