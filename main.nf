@@ -53,7 +53,8 @@ WorkflowMain.initialise(workflow, params, log)
 */
 include { PrepareSoftware   } from './modules/local/prepare_software'
 include { RC } from './workflows/rc'
-
+include { OTA_RC } from './workflows/ota'
+include { RNASEQ } from './workflows/rnaseq'
 //
 // WORKFLOW: Run main nf-core/rnachrom analysis pipeline
 //
@@ -61,9 +62,25 @@ workflow NFCORE_RNACHROM {
 
 
     ch_input = Channel.empty()
-    // if (!rnachrom.exists() || !bitap.exists() || !stereogene.exists()) {
+    
     PrepareSoftware() | collect(flat: false) | flatMap | view 
     RC (PrepareSoftware.out)
+
+    // INPUT_CHECK (
+    //     file(params.input),
+    //     // binaries_ready
+    // )
+    // ch_samplesheet       = INPUT_CHECK.out.csv
+    // ch_input_check_reads = INPUT_CHECK.out.reads
+    // ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+    // ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
+
+
+    // if (params.exp_type in ['rap', 'chirp', 'chart']) {
+    //     OTA_RC (PrepareSoftware.out)
+    // } else if (params.exp_type in ['grid', 'char', 'radicl', 'imargi', 'redc', 'redchip'])  {
+    //     RC (PrepareSoftware.out)
+    // }
 
     
 }

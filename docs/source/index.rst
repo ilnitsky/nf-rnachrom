@@ -55,7 +55,7 @@ Contents:
 
 .. toctree::
   :maxdepth: 3
-  :caption: Tutorials
+  :caption: Stages
   :titlesonly:
 
   ./examples/RNAchrom_pipeline_walkthrough.ipynb

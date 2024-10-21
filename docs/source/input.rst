@@ -1,11 +1,34 @@
 Input file preparation
 ======================
 
-Please follow through our guidelines for preparing gene annotation in a format compatible with various bioinformatics tools.
+
+Samplesheet
+-----------
+
+**Valid file extensions**
+  - ".fq.gz",
+  - ".fastq.gz",
+  - ".fastq",
+  - ".fq"
+
+
+Genome
+------
+
+REMOVE UNCANONICAL CHROMOSOMES
+
+    .. code-block:: console
+
+        seqkit grep -vrp "^chrUn" file.fa > cleaned.fa
+
+
+Chromosome mappings NCBI -> UCSC  
+
+
 
 Gene Annotation
 ---------------
-
+Please follow through our guidelines for preparing gene annotation in a format compatible with various bioinformatics tools.
 We require the gene annotation in ``GTF/GFF`` format suitable for the aligner and a ``"bed-like`` format with the following columns:
 
 :: 
