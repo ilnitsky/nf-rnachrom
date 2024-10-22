@@ -51,7 +51,7 @@ include { DEDUP                   } from '../subworkflows/local/deduplicators'
 include { TRIM                    } from '../subworkflows/local/trimming'
 include { ALIGN                   } from '../subworkflows/local/align'
 include { OTA                     } from '../subworkflows/local/OTA'
-include { ATA                     } from '../subworkflows/local/ATA'
+// include { ATA                     } from '../subworkflows/local/ATA'
 include { ATA_BRIDGE              } from '../subworkflows/local/ATA_bridge'
 include { BAM_SORT_STATS_SAMTOOLS } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'  
 
@@ -74,7 +74,6 @@ include { SMARTSEQ_FILTER                        } from '../modules/local/smarts
 include { RSITES                                 } from '../modules/local/rsites'
 include { NUCL_DISTR_RSITES as NUCL_DISTR        } from '../modules/local/nucleotide_distribution_rsites'
 include { NUCL_DISTR_RSITES as NUCL_DISTR_BRIDGE } from '../modules/local/nucleotide_distribution_rsites'
-// include { CONFIG                                 } from '../modules/local/rnachromprocessing'
 // include { XRNA_CONFIG                            } from '../modules/local/xrna_assembly'
 include { HISAT2_ALIGN                           } from '../modules/nf-core/hisat2/align/main'
 include { SAMTOOLS_VIEW as BAM_FILTER            } from '../modules/nf-core/samtools/view/main'
@@ -124,22 +123,28 @@ def print_bold = { str -> ANSI_BOLD + str + ANSI_RESET }
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN MAIN WORKFLOW
+    RUN MAIN WORKFLOW:
+
+--------------------------------------------------------------------------------
+ ALL-TO-ALL EXPERIMENTS : GRID-seq, RADICL-seq, iMARGI, Red-C, RedChip          
+--------------------------------------------------------------------------------
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
 // Info required for completion email and summary
 def multiqc_report = []
 
-workflow RC {
+workflow ATA {
 
-    take: binaries_ready
+    take: 
+    ch_input_check_reads
+    ch_chrom_sizes
+    ch_statistic
+    ch_versions
+    
     main:
 
-
-
-    ch_versions = Channel.empty()
-    ch_statistic = Channel.empty()
+    // ch_versions = Channel.empty()
     ch_statistic_merged = Channel.empty()
     ch_logs = Channel.empty()
 
@@ -147,64 +152,28 @@ workflow RC {
     ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
     ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
 
-    println ("""${colors['green']}
-             __                              _                         
-            / _|                            | |                        
-      _ __ | |_ ______ _ __ _ __   __ _  ___| |__  _ __ ___  _ __ ___  
-     | '_ \\|  _|______| '__| '_ \\ / _` |/ __| '_ \\| '__/ _ \\| '_ ` _ \\ 
-     | | | | |        | |  | | | | (_| | (__| | | | | | (_) | | | | | |
-     |_| |_|_|        |_|  |_| |_|\\__,_|\\___|_| |_|_|  \\___/|_| |_| |_|
-     
-     ${colors['reset']}""")
+    // INPUT_CHECK (
+    //     file(params.input),
+    //     // binaries_ready
+    // )
+    // ch_samplesheet       = INPUT_CHECK.out.csv
+    // ch_input_check_reads = INPUT_CHECK.out.reads
+    // ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+    // ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
 
-    //
-    // SUBWORKFLOW: Read in samplesheet, validate and stage input files
-    //
-
-    INPUT_CHECK (
-        file(params.input),
-        // binaries_ready
-    )
-    ch_samplesheet       = INPUT_CHECK.out.csv
-    ch_input_check_reads = INPUT_CHECK.out.reads
-    ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
-    ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
-
-    INPUT_CHECK.out.reads.view{"Valid_Reads: $it"}
-    INPUT_CHECK.out.rnaseq_reads.view{"Rnaseq_Reads: $it"}
+    // INPUT_CHECK.out.reads.view{"Valid_Reads: $it"}
+    // INPUT_CHECK.out.rnaseq_reads.view{"Rnaseq_Reads: $it"}
 
     FASTQC (
         ch_input_check_reads
     )
     ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
+    // ch_input_check_reads.view()
     
-
- 
-    // PREPARE GENOME       --------------------------------------------------------------------------------
-
-    if (params.genome_fasta.endsWith('.gz')) {
-        ch_genome_fasta    = GUNZIP_FASTA ( [ [:], params.genome_fasta ] ).gunzip.map { it[1] }
-        ch_versions = ch_versions.mix(GUNZIP_FASTA.out.versions)
-    } else {
-        ch_genome_fasta = Channel.value(params.genome_fasta)
-    }
-
-    // REMOVE UNCANONICAL CHROMOSOMES
-    // seqkit grep -vrp "^chrUn" file.fa > cleaned.fa
-    // Chromosome mappings NCBI -> UCSC or 
-
-    ch_gtf = Channel.value(params.annot_GTF)
-
-
-    CUSTOM_GETCHROMSIZES ( ch_genome_fasta.map { [ [:], it ] } )
-    ch_fai         = CUSTOM_GETCHROMSIZES.out.fai.map { it[1] }
-    ch_chrom_sizes = CUSTOM_GETCHROMSIZES.out.sizes.map { it[1] }
-    ch_versions    = ch_versions.mix(CUSTOM_GETCHROMSIZES.out.versions)
-
     // DEDUPLICATION -------------------------------------------------------------------------------------  
     if (!params.skip_dedup) {
-        DEDUP(ch_input_check_reads)
+        DEDUP( ch_input_check_reads ) 
         ch_for_trimming = DEDUP.out.reads
         ch_statistic = ch_statistic.concat(DEDUP.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Dedup", files instanceof List ? files[0].countFastq() : files.countFastq()] })
         ch_versions = ch_versions.mix(DEDUP.out.versions)
@@ -220,8 +189,7 @@ workflow RC {
 
         ch_rna = ch_for_trimming.map { meta, files -> def rnaFiles = files.findAll { file -> file.toString().contains(meta.RNA) }
             return rnaFiles ? [meta, rnaFiles] : [meta, []] }
-        // ch_rna = ch_for_trimming.map{meta, files -> [meta, [rna]]}
-        // ch_dna = ch_for_trimming.map{meta, files -> [meta, [dna]]}
+
 
         RSITES ( 
             ch_dna,
@@ -297,7 +265,8 @@ workflow RC {
         ch_versions     = ch_versions.mix(BAM_SORT_STATS_SAMTOOLS.out.versions)                          // channel: [ versions.yml ]
     }
 
-    // PAIRTOOLS PARSE
+
+    ch_bam.view()
 
     // FILTERING UNIQUE AND MISMATCHES --------------------------------------------------------------------
     BAM_FILTER ( ch_bam )
@@ -312,267 +281,180 @@ workflow RC {
 
         //TO DO: CHeck spelling of exp type?
 
-    //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-    // ☰ ONE-TO-ALL EXPERIMENTS : RAP, CHIRP, CHART                                 ☰   
-    //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-    if (params.exp_type in ['rap', 'chirp', 'chart']) {
 
-      
-        // Combine input and treatment (without merging replicas)
-        ch_bed_files
-        | branch { meta, bed ->
-                treatment: meta.control != ''
-                    return [meta.control, ['id':meta.control, 'single_end':meta.single_end], bed]
-                input: meta.control == ''
-                    return [meta.id.replace("_INPUT", ""), ['id':meta.id, 'single_end':meta.single_end], bed]
-                }
-        | set { ch_bed_files }
-
-        ch_inputs = ch_bed_files.input.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
-        ch_treatments = ch_bed_files.treatment.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
-        ch_combine_input_treatment =  ch_treatments.join(ch_inputs, by:0).map{it, meta1, treatment, meta2, input -> [meta1, treatment, input]}
-        
-        //TODO: chromsizes channel
-        Channel
-        .fromPath(params.chromsizes)
-        .splitCsv ( header:false, sep:'\t' )
-        .map { it[1].toLong() }
-        .reduce { a,b -> a + b }
-        .set { genomeSize }
-
-        genomeSize.subscribe { println "Genome size: $it" }
-
-        MACS2_CALLPEAK(
-            ch_combine_input_treatment,
-            genomeSize
-        )
-        ch_macs2_peaks      = MACS2_CALLPEAK.out.peak                       // channel: [ val(meta), [ bam ] ]
-        ch_macs2_bed        = MACS2_CALLPEAK.out.bed
-        ch_macs2_log        = MACS2_CALLPEAK.out.xls
-        ch_versions         = ch_versions.mix(MACS2_CALLPEAK.out.versions)
-        
-        // ch_input_bed_files     = ch_bed_files.filter { meta, files -> meta.control == '' }.map{ meta, file -> [meta.id, file] }.groupTuple(by: 0)
-        // ch_treatment_bed_files = ch_bed_files.filter { meta, files -> meta.control != '' }.map{ meta, file -> [meta.control, file] }.groupTuple(by: 0)
-
-        GENERATE_BINS()
-        ch_genome_bins      = GENERATE_BINS.out
-
-        SMOOTH_INPUT(
-            ch_inputs.map{id, meta, bed -> [meta, bed]},
-            ch_genome_bins.first()
-        )
-        ch_input_smoothed   = SMOOTH_INPUT.out.smoothed
-        ch_smooth_log       = SMOOTH_INPUT.out.log
-
-        ch_treatments.map{id, meta, bed -> [meta, bed]}.view{"Treatment_bed: $it"}
-        ch_input_smoothed.map{meta, input -> [[meta.id.replace("_INPUT", ""), meta.single_end], input]}.view{"Input_sm: $it"}
-        ch_macs2_peaks.view{"MACS_peaks: $it"}
-        ch_genome_bins.view{"genome_bins: $it"}
-
-        NORMALIZE_TREATMENT(
-            ch_treatments.map{id, meta, bed -> [meta, bed]},
-            ch_input_smoothed,
-            ch_macs2_peaks,
-            ch_genome_bins.first()
-        )
-        ch_normalized_treatment = NORMALIZE_TREATMENT.out.bed
-        ch_normalized_stats     = NORMALIZE_TREATMENT.out.stats
-
-        //TODO: check if everything ok with annotate
-        ANNOTATE_DNA(ch_normalized_treatment)
-
-        // UPSTREAM_DOWNSTREAM()
-
-    //--------------------------------------------------------------------------------
-    // ALL-TO-ALL EXPERIMENTS : GRID-seq, RADICL-seq, iMARGI, Red-C, RedChip          
-    //--------------------------------------------------------------------------------
-    } else if (params.exp_type in ['grid', 'char', 'radicl', 'imargi', 'redc', 'redchip'])  {
-
-        ch_bed_files                                                //   [meta, rna.bam]    ->    [meta, [rna.bam, dna.bam]] 
-        | groupTuple (sort: true)                                   //   [meta, dna.bam]
-        | map { meta,bed -> tuple( meta, bed.sort{it.name})}
-        | multiMap { meta, bed ->
-            join_bed_raw : [meta, bed[0], bed[1]]
-            rna_beds     : [meta, bed[0]]
-            dna_beds     : [meta, bed[1]]
-            rna_dna_bed  : [meta, bed]                              
-        }
-        | set { ch_beds }
-        ch_statistic          = ch_statistic.concat(ch_beds.join_bed_raw.map { id, rna, dna -> ["${id.id} (${id.prefix})", "FilteredAlignedRNA", rna.countLines()] } )
-        ch_statistic          = ch_statistic.concat(ch_beds.join_bed_raw.map { id, rna, dna -> ["${id.id} (${id.prefix})", "FilteredAlignedDNA", dna.countLines()] } )
-
-        ch_bam_filter_stat
-        | groupTuple (sort: true)                         
-        | map { meta,file -> tuple( meta, file.sort{it.name})}
-        | set {ch_bam_filter_stat_grouped}
-
-        ch_join_raw_contacts = ch_beds.join_bed_raw
-
-
-        JOIN_CONTACTS_OLD(
-            ch_join_raw_contacts  //  tuple val(meta), path(rna_bed), path(dna_bed)
-        )
-        ch_raw_contacts        = JOIN_CONTACTS_OLD.out.raw_contacts             // --> [redchip, /gpfs/.../redchip.tab]
-        ch_raw_contacts_stat   = JOIN_CONTACTS_OLD.out.stat
-        ch_input_annotation    = ch_raw_contacts
-        ch_statistic           = ch_statistic.concat(JOIN_CONTACTS_OLD.out.raw_contacts.map { id, files -> ["${id.id} (${id.prefix})", "RawContacts", files.countLines()] })
-        
-
-        ch_detect = ch_raw_contacts
-        DETECT_STRAND( ch_detect  )                          // tuple val(meta), path(contacts)
-        ch_strand_vote_result = DETECT_STRAND.out.strand_vote_result
-        ch_files_fixed_strand = DETECT_STRAND.out.files_fixed_strand
-        
-        if (!params.skip_cigar_filter) {
-            CIGAR_FILTER( ch_files_fixed_strand )                           
-            ch_cigar_filtered     = CIGAR_FILTER.out.tab                // OUT --> [meta, [prefix.CIGAR.rna.bed, prefix.dna.bed]]
-            ch_cigar_stat         = CIGAR_FILTER.out.stat               // [[id:redchip, single_end:false, prefix:SRR17331254, method:ATA, RNA:SRR17331254_1, DNA:SRR17331254_2], [SRR17331254_1.CIGAR.rna.tab, SRR17331254_2.dna.tab]]
-            ch_statistic          = ch_statistic.concat(CIGAR_FILTER.out.tab.map { id, files -> ["${id.id} (${id.prefix})", "CigarFiltered", files.countLines()] } )
-        } else {
-            ch_cigar_filtered = ch_files_fixed_strand
-        }
-
-        ADD_SRR ( ch_cigar_filtered.map { meta, files -> [meta, [files] ] } )
-        ch_input_merge = ADD_SRR.out.tab.map { meta, files -> [meta.id, files ] }.groupTuple(by: 0)
-
-        MERGE_REPLICAS ( ch_input_merge )
-        ch_input_annotation     = MERGE_REPLICAS.out
-        ch_statistic_merged    = ch_statistic_merged.concat(MERGE_REPLICAS.out.map { id, tab -> [id, "MergedReplicas", tab.countLines()] } )
-
-        if (params.split_by_chromosomes) {
-
-            SPLIT_BY_CHRS( ch_input_annotation )
-            ch_split_by_chrs   = SPLIT_BY_CHRS.out
-            ch_split_by_chrs
-            | transpose
-            | set { ch_input_annotation }
-        }
-
-        ANNOTATION_VOTING( ch_input_annotation )
-        ch_voted               = ANNOTATION_VOTING.out.voted
-        ch_singletons          = ANNOTATION_VOTING.out.singletons
-        ch_complement_annot    = ANNOTATION_VOTING.out.complement_annot
-        ch_selected_annot      = ANNOTATION_VOTING.out.selected_annot
-        // ch_stat                = ANNOTATION_VOTING.out.stat
-
-        if (params.split_by_chromosomes) {
-            ch_voted
-            | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.voted.tab", file.text] }
-            | map { it -> [it.baseName.split('.voted')[0], it] }
-            | set { ch_voted }
-            ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
-
-            ch_singletons
-            | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.singleton.tab", file.text] }
-            | map { it -> [it.baseName.split('.singleton')[0], it] }
-            | set { ch_singletons }
-            ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
-
-        } else {
-            ch_voted
-            | map { it -> [it.baseName.split('.voted')[0], it.countLines(), it] }
-            | set { ch_voted }
-            ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
-
-            ch_singletons
-            | map { it -> [it.baseName.split('.singleton')[0], it.countLines(), it] }
-            | set { ch_singletons }
-            ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
-        }
-        
-        ch_input_bgr = ch_voted
-
-
-        ch_statistic
-        .groupTuple(by: 0)
-        .map { sample, channels, counts ->
-            def mappedCounts = [:]                      // Create an empty map to hold  channel:count mappings
-            channels.eachWithIndex { channel, i ->
-                mappedCounts[channel] = counts[i]       // Map each channel to its corresponding count
-            }
-            return [sample, mappedCounts]               
-        }
-        .toList()                                      
-        .map { allSamples ->
-            def maxWidths = allSamples.collect { it[0].toString().length() }.max()
-            def channelWidths = allSamples*.get(1).collectMany { it.keySet() }.unique().collectEntries { [(it): it.toString().length()] }
-
-            allSamples.each { sample, counts ->  counts.each { k, v -> channelWidths[k] = Math.max(channelWidths[k], v.toString().length()) } }
-            def header = "sample".padRight(maxWidths) + "\t" + channelWidths.collect { k, v -> k.padRight(v) }.join("\t")
-            def rows = allSamples.collect { sample, counts ->
-                def row = sample.toString().padRight(maxWidths) + "\t" + channelWidths.collect { k, v -> counts.get(k, "0").toString().padRight(v) }.join("\t")
-                return row
-            }
-            return ([header] + rows).join("\n")
-        }
-        .set { sample_statistic_table }
-
-        PLOT_STATS { sample_statistic_table }
-
-        ch_m = sample_statistic_table.subscribe { table ->
-            println "${colors['bgblue']} $table \n ${colors['reset']}"
-            // Output the table to a file
-            new File("$params.outdir/stats/Before_Merging_Replicas.stats.txt").text = table + "\n"
-        }
-
-        ch_statistic = Channel.empty()
-        sample_statistic_table = Channel.empty()
-
-
-        ch_statistic_merged
-        .groupTuple(by: 0)
-        .map { sample, channels, counts ->
-            def mappedCounts = [:]                      
-            channels.eachWithIndex { channel, i ->
-                mappedCounts[channel] = counts[i]       
-            }
-            def stats = mappedCounts.collect { k, v -> "$k: $v" }.join(", ")
-            return "$sample: $stats"
-        }
-        .set { sample_statistic_merged }
-
-        sample_statistic_merged.subscribe { id ->  println "${colors['bgblue']}  $id ${colors['reset']}"   }
-        sample_statistic_merged.collectFile(storeDir: "$params.outdir/stats", name: 'After_Merging_Replicas.stats.txt') { it + "\n" }
-
-        ch_statistic_merged = Channel.empty()
-        sample_statistic_merged = Channel.empty()
-
-        BACKGROUND( 
-            ch_input_bgr,
-            ch_chrom_sizes.first()
-        )
-        // | map { bgr -> tuple(file(bgr).name.split('.5-background_sm.bgr')[0], file(bgr))}
-        | set { bgr_ch }
-
-        // ch_raw_contacts
-        // | combine( bgr_ch, by: 0 )
-        // | set { norm_raw_ch }
-
-        ch_voted
-        | combine( bgr_ch, by: 0 )
-        | set { norm_raw_ch }
-
-        NORMALIZE_RAW( norm_raw_ch )
-
-        NORMALIZE_RAW.out.raw_stat
-        | collectFile(storeDir: "$params.outdir/Normalize_raw", keepHeader: true) { group, file -> [ "${group}.5-N2_raw_merged.stat.tab", file.text] }
-        | map{stat -> tuple(file(stat).name.split('.5-N2_raw_merged.stat')[0], file(stat))}
-        | combine( NORMALIZE_RAW.out.raw_norm, by: 0 )
-        | NORMALIZE_N2 
-        | SCALING
-        // | view
-
-        Channel.fromPath(params.annot_BED).ifEmpty { exit 1, "Input file not found: ${params.annot_BED}" }
-        | set { annot_file_ch }
-
-        // VALIDATE_ANNOT( annot_file_ch )
-
-        // bed6_annot_files_ch = VALIDATE_ANNOT.out.flatten().filter { it.toString().endsWith('.0-corrected_annot.bed6') }
-        // bed_annot_files_ch  = VALIDATE_ANNOT.out.flatten().filter { it.toString().endsWith('.0-corrected_annot.bed') }
-
-        // BARDIC( voted_ch, bed6_annot_files_ch )
-
+    ch_bed_files                                                //   [meta, rna.bam]    ->    [meta, [rna.bam, dna.bam]] 
+    | groupTuple (sort: true)                                   //   [meta, dna.bam]
+    | map { meta,bed -> tuple( meta, bed.sort{it.name})}
+    | multiMap { meta, bed ->
+        join_bed_raw : [meta, bed[0], bed[1]]
+        rna_beds     : [meta, bed[0]]
+        dna_beds     : [meta, bed[1]]
+        rna_dna_bed  : [meta, bed]                              
     }
+    | set { ch_beds }
+    ch_statistic          = ch_statistic.concat(ch_beds.join_bed_raw.map { id, rna, dna -> ["${id.id} (${id.prefix})", "FilteredAlignedRNA", rna.countLines()] } )
+    ch_statistic          = ch_statistic.concat(ch_beds.join_bed_raw.map { id, rna, dna -> ["${id.id} (${id.prefix})", "FilteredAlignedDNA", dna.countLines()] } )
+    ch_bam_filter_stat
+    | groupTuple (sort: true)                         
+    | map { meta,file -> tuple( meta, file.sort{it.name})}
+    | set {ch_bam_filter_stat_grouped}
+    ch_join_raw_contacts = ch_beds.join_bed_raw
+
+    JOIN_CONTACTS_OLD(
+        ch_join_raw_contacts  //  tuple val(meta), path(rna_bed), path(dna_bed)
+    )
+    ch_raw_contacts        = JOIN_CONTACTS_OLD.out.raw_contacts             // --> [redchip, /gpfs/.../redchip.tab]
+    ch_raw_contacts_stat   = JOIN_CONTACTS_OLD.out.stat
+    ch_input_annotation    = ch_raw_contacts
+    ch_statistic           = ch_statistic.concat(JOIN_CONTACTS_OLD.out.raw_contacts.map { id, files -> ["${id.id} (${id.prefix})", "RawContacts", files.countLines()] })
+    
+    ch_detect = ch_raw_contacts
+
+    DETECT_STRAND( ch_detect  )                          // tuple val(meta), path(contacts)
+    ch_strand_vote_result = DETECT_STRAND.out.strand_vote_result
+    ch_files_fixed_strand = DETECT_STRAND.out.files_fixed_strand
+    
+    if (!params.skip_cigar_filter) {
+        CIGAR_FILTER( ch_files_fixed_strand )                           
+        ch_cigar_filtered     = CIGAR_FILTER.out.tab                // OUT --> [meta, [prefix.CIGAR.rna.bed, prefix.dna.bed]]
+        ch_cigar_stat         = CIGAR_FILTER.out.stat               // [[id:redchip, single_end:false, prefix:SRR17331254, method:ATA, RNA:SRR17331254_1, DNA:SRR17331254_2], [SRR17331254_1.CIGAR.rna.tab, SRR17331254_2.dna.tab]]
+        ch_statistic          = ch_statistic.concat(CIGAR_FILTER.out.tab.map { id, files -> ["${id.id} (${id.prefix})", "CigarFiltered", files.countLines()] } )
+    } else {
+        ch_cigar_filtered = ch_files_fixed_strand
+    }
+
+    ADD_SRR ( ch_cigar_filtered.map { meta, files -> [meta, [files] ] } )
+    ch_input_merge = ADD_SRR.out.tab.map { meta, files -> [meta.id, files ] }.groupTuple(by: 0)
+
+    MERGE_REPLICAS ( ch_input_merge )
+    ch_input_annotation     = MERGE_REPLICAS.out
+    ch_statistic_merged    = ch_statistic_merged.concat(MERGE_REPLICAS.out.map { id, tab -> [id, "MergedReplicas", tab.countLines()] } )
+
+    if (params.split_by_chromosomes) {
+        SPLIT_BY_CHRS( ch_input_annotation )
+        ch_split_by_chrs   = SPLIT_BY_CHRS.out
+        ch_split_by_chrs
+        | transpose
+        | set { ch_input_annotation }
+    }
+    ANNOTATION_VOTING( ch_input_annotation )
+    ch_voted               = ANNOTATION_VOTING.out.voted
+    ch_singletons          = ANNOTATION_VOTING.out.singletons
+    ch_complement_annot    = ANNOTATION_VOTING.out.complement_annot
+    ch_selected_annot      = ANNOTATION_VOTING.out.selected_annot
+    // ch_stat                = ANNOTATION_VOTING.out.stat
+
+    if (params.split_by_chromosomes) {
+        ch_voted
+        | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.voted.tab", file.text] }
+        | map { it -> [it.baseName.split('.voted')[0], it] }
+        | set { ch_voted }
+        ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
+        ch_singletons
+        | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.singleton.tab", file.text] }
+        | map { it -> [it.baseName.split('.singleton')[0], it] }
+        | set { ch_singletons }
+        ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
+    } else {
+        ch_voted
+        | map { it -> [it.baseName.split('.voted')[0], it.countLines(), it] }
+        | set { ch_voted }
+        ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
+        ch_singletons
+        | map { it -> [it.baseName.split('.singleton')[0], it.countLines(), it] }
+        | set { ch_singletons }
+        ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
+    }
+    
+    ch_input_bgr = ch_voted
+
+
+
+    // AGGREGATE RAW UNMERGED STATS
+    ch_statistic
+    .groupTuple(by: 0)
+    .map { sample, channels, counts ->
+        def mappedCounts = [:]                      // Create an empty map to hold  channel:count mappings
+        channels.eachWithIndex { channel, i ->
+            mappedCounts[channel] = counts[i]       // Map each channel to its corresponding count
+        }
+        return [sample, mappedCounts]               
+    }
+    .toList()                                      
+    .map { allSamples ->
+        def maxWidths = allSamples.collect { it[0].toString().length() }.max()
+        def channelWidths = allSamples*.get(1).collectMany { it.keySet() }.unique().collectEntries { [(it): it.toString().length()] }
+        allSamples.each { sample, counts ->  counts.each { k, v -> channelWidths[k] = Math.max(channelWidths[k], v.toString().length()) } }
+        def header = "sample".padRight(maxWidths) + "\t" + channelWidths.collect { k, v -> k.padRight(v) }.join("\t")
+        def rows = allSamples.collect { sample, counts ->
+            def row = sample.toString().padRight(maxWidths) + "\t" + channelWidths.collect { k, v -> counts.get(k, "0").toString().padRight(v) }.join("\t")
+            return row
+        }
+        return ([header] + rows).join("\n")
+    }
+    .set { sample_statistic_table }
+
+    PLOT_STATS { sample_statistic_table }
+
+    ch_m = sample_statistic_table.subscribe { table ->
+        println "${colors['bgblue']} $table \n ${colors['reset']}"
+        // Output the table to a file
+        new File("$params.outdir/stats/Before_Merging_Replicas.stats.txt").text = table + "\n"
+    }
+
+    ch_statistic = Channel.empty()
+    sample_statistic_table = Channel.empty()
+
+
+    // AGGREGATE RAW MERGED CONTACTS STATS
+    ch_statistic_merged
+    .groupTuple(by: 0)
+    .map { sample, channels, counts ->
+        def mappedCounts = [:]                      
+        channels.eachWithIndex { channel, i ->
+            mappedCounts[channel] = counts[i]       
+        }
+        def stats = mappedCounts.collect { k, v -> "$k: $v" }.join(", ")
+        return "$sample: $stats"
+    }
+    .set { sample_statistic_merged }
+
+    sample_statistic_merged.subscribe { id ->  println "${colors['bgblue']}  $id ${colors['reset']}"   }
+    sample_statistic_merged.collectFile(storeDir: "$params.outdir/stats", name: 'After_Merging_Replicas.stats.txt') { it + "\n" }
+    ch_statistic_merged = Channel.empty()
+    sample_statistic_merged = Channel.empty()
+
+    BACKGROUND( 
+        ch_input_bgr,
+        ch_chrom_sizes.first()
+    )
+    // | map { bgr -> tuple(file(bgr).name.split('.5-background_sm.bgr')[0], file(bgr))}
+    | set { bgr_ch }
+
+    ch_voted
+    | combine( bgr_ch, by: 0 )
+    | set { norm_raw_ch }
+
+    NORMALIZE_RAW( norm_raw_ch )
+
+    NORMALIZE_RAW.out.raw_stat
+    | collectFile(storeDir: "$params.outdir/Normalize_raw", keepHeader: true) { group, file -> [ "${group}.5-N2_raw_merged.stat.tab", file.text] }
+    | map{stat -> tuple(file(stat).name.split('.5-N2_raw_merged.stat')[0], file(stat))}
+    | combine( NORMALIZE_RAW.out.raw_norm, by: 0 )
+    | NORMALIZE_N2 
+    | SCALING
+    // | view
+
+    Channel.fromPath(params.annot_BED).ifEmpty { exit 1, "Input file not found: ${params.annot_BED}" }
+    | set { annot_file_ch }
+
+
+    // VALIDATE_ANNOT( annot_file_ch )
+    // bed6_annot_files_ch = VALIDATE_ANNOT.out.flatten().filter { it.toString().endsWith('.0-corrected_annot.bed6') }
+    // bed_annot_files_ch  = VALIDATE_ANNOT.out.flatten().filter { it.toString().endsWith('.0-corrected_annot.bed') }
+
+    // BARDIC( voted_ch, bed6_annot_files_ch )
+
 
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
@@ -645,6 +527,93 @@ workflow.onComplete {
 
 
 
+
+
+
+
+
+
+
+    // //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+    // // ☰ ONE-TO-ALL EXPERIMENTS : RAP, CHIRP, CHART                                 ☰   
+    // //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+    // if (params.exp_type in ['rap', 'chirp', 'chart']) {
+
+      
+    //     // Combine input and treatment (without merging replicas)
+    //     ch_bed_files
+    //     | branch { meta, bed ->
+    //             treatment: meta.control != ''
+    //                 return [meta.control, ['id':meta.control, 'single_end':meta.single_end], bed]
+    //             input: meta.control == ''
+    //                 return [meta.id.replace("_INPUT", ""), ['id':meta.id, 'single_end':meta.single_end], bed]
+    //             }
+    //     | set { ch_bed_files }
+
+    //     ch_inputs = ch_bed_files.input.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
+    //     ch_treatments = ch_bed_files.treatment.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
+    //     ch_combine_input_treatment =  ch_treatments.join(ch_inputs, by:0).map{it, meta1, treatment, meta2, input -> [meta1, treatment, input]}
+        
+    //     //TODO: chromsizes channel
+    //     Channel
+    //     .fromPath(params.chromsizes)
+    //     .splitCsv ( header:false, sep:'\t' )
+    //     .map { it[1].toLong() }
+    //     .reduce { a,b -> a + b }
+    //     .set { genomeSize }
+
+    //     genomeSize.subscribe { println "Genome size: $it" }
+
+    //     MACS2_CALLPEAK(
+    //         ch_combine_input_treatment,
+    //         genomeSize
+    //     )
+    //     ch_macs2_peaks      = MACS2_CALLPEAK.out.peak                       // channel: [ val(meta), [ bam ] ]
+    //     ch_macs2_bed        = MACS2_CALLPEAK.out.bed
+    //     ch_macs2_log        = MACS2_CALLPEAK.out.xls
+    //     ch_versions         = ch_versions.mix(MACS2_CALLPEAK.out.versions)
+        
+    //     // ch_input_bed_files     = ch_bed_files.filter { meta, files -> meta.control == '' }.map{ meta, file -> [meta.id, file] }.groupTuple(by: 0)
+    //     // ch_treatment_bed_files = ch_bed_files.filter { meta, files -> meta.control != '' }.map{ meta, file -> [meta.control, file] }.groupTuple(by: 0)
+
+    //     GENERATE_BINS()
+    //     ch_genome_bins      = GENERATE_BINS.out
+
+    //     SMOOTH_INPUT(
+    //         ch_inputs.map{id, meta, bed -> [meta, bed]},
+    //         ch_genome_bins.first()
+    //     )
+    //     ch_input_smoothed   = SMOOTH_INPUT.out.smoothed
+    //     ch_smooth_log       = SMOOTH_INPUT.out.log
+
+    //     ch_treatments.map{id, meta, bed -> [meta, bed]}.view{"Treatment_bed: $it"}
+    //     ch_input_smoothed.map{meta, input -> [[meta.id.replace("_INPUT", ""), meta.single_end], input]}.view{"Input_sm: $it"}
+    //     ch_macs2_peaks.view{"MACS_peaks: $it"}
+    //     ch_genome_bins.view{"genome_bins: $it"}
+
+    //     NORMALIZE_TREATMENT(
+    //         ch_treatments.map{id, meta, bed -> [meta, bed]},
+    //         ch_input_smoothed,
+    //         ch_macs2_peaks,
+    //         ch_genome_bins.first()
+    //     )
+    //     ch_normalized_treatment = NORMALIZE_TREATMENT.out.bed
+    //     ch_normalized_stats     = NORMALIZE_TREATMENT.out.stats
+
+    //     //TODO: check if everything ok with annotate
+    //     ANNOTATE_DNA(ch_normalized_treatment)
+
+    //     // UPSTREAM_DOWNSTREAM()
+
+
+
+
+
+
+
+
+        // ch_rna = ch_for_trimming.map{meta, files -> [meta, [rna]]}
+        // ch_dna = ch_for_trimming.map{meta, files -> [meta, [dna]]}
 
 
         //     def stats = mappedCounts.collect { k, v -> "$k: $v" }.join(", ")

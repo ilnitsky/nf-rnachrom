@@ -131,15 +131,18 @@ def print_bold = { str -> ANSI_BOLD + str + ANSI_RESET }
 // Info required for completion email and summary
 def multiqc_report = []
 
-workflow RC {
+workflow RNASEQ {
 
-    take: binaries_ready
+    take: 
+    ch_input_check_reads
+    ch_statistic
+    
     main:
 
 
 
     ch_versions = Channel.empty()
-    ch_statistic = Channel.empty()
+    // ch_statistic = Channel.empty()
     ch_statistic_merged = Channel.empty()
     ch_logs = Channel.empty()
 
@@ -148,30 +151,24 @@ workflow RC {
     ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
 
     println ("""${colors['green']}
-             __                              _                         
-            / _|                            | |                        
-      _ __ | |_ ______ _ __ _ __   __ _  ___| |__  _ __ ___  _ __ ___  
-     | '_ \\|  _|______| '__| '_ \\ / _` |/ __| '_ \\| '__/ _ \\| '_ ` _ \\ 
-     | | | | |        | |  | | | | (_| | (__| | | | | | (_) | | | | | |
-     |_| |_|_|        |_|  |_| |_|\\__,_|\\___|_| |_|_|  \\___/|_| |_| |_|
-     
+        STARTED PROCESSING RNA-SEQ DATASETS
      ${colors['reset']}""")
 
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //
 
-    INPUT_CHECK (
-        file(params.input),
-        // binaries_ready
-    )
-    ch_samplesheet       = INPUT_CHECK.out.csv
-    ch_input_check_reads = INPUT_CHECK.out.reads
-    ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
-    ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
+    // INPUT_CHECK (
+    //     file(params.input),
+    //     // binaries_ready
+    // )
+    // ch_samplesheet       = INPUT_CHECK.out.csv
+    // ch_input_check_reads = INPUT_CHECK.out.reads
+    // ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+    // ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
 
-    INPUT_CHECK.out.reads.view{"Valid_Reads: $it"}
-    INPUT_CHECK.out.rnaseq_reads.view{"Rnaseq_Reads: $it"}
+    // INPUT_CHECK.out.reads.view{"Valid_Reads: $it"}
+    // INPUT_CHECK.out.rnaseq_reads.view{"Rnaseq_Reads: $it"}
 
     FASTQC (
         ch_input_check_reads
@@ -189,10 +186,6 @@ workflow RC {
     } else {
         ch_genome_fasta = Channel.value(params.genome_fasta)
     }
-
-    // REMOVE UNCANONICAL CHROMOSOMES
-    // seqkit grep -vrp "^chrUn" file.fa > cleaned.fa
-    // Chromosome mappings NCBI -> UCSC or 
 
     ch_gtf = Channel.value(params.annot_GTF)
 

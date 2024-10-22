@@ -16,6 +16,9 @@ This pipeline outlines the key stages for analyzing all-to-all interactome seque
   - fastuniq
   - clumpify
 
+PCR duplicates are identified and removed. This step also implements our own software: `fastq-dupaway <https://github.com/AndrewSigorskih/fastq-dupaway>`_   
+for removing duplicate reads, which in contrast to programs such as FastUniq [] works optimally with memory and has other problems fixed.
+
 3. Trimming
 -----------
 * Trim low-quality bases and adapters using tools like:

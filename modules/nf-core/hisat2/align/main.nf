@@ -38,8 +38,8 @@ process HISAT2_ALIGN {
     }
     ss = "$splicesites" ? "--known-splicesite-infile $splicesites" : ''
     // def seq_center = params.seq_center ? "--rg-id ${prefix} --rg SM:$prefix --rg CN:${params.seq_center.replaceAll('\\s','_')}" : "--rg-id ${prefix} --rg SM:$prefix"
-    
-    if (meta.method == "OTA"){
+    // if (meta.method == "OTA" || meta.method == "RNA-seq" ){    
+    if (meta.method == "OTA" ){
         if (meta.single_end) {
             // def unaligned = params.save_unaligned ? "--un-gz ${prefix}.unmapped.fastq.gz" : ''
             """
@@ -52,7 +52,7 @@ process HISAT2_ALIGN {
                 --summary-file ${prefix}.hisat2.summary.log \\
                 --threads $task.cpus \\
                 $args \\
-                | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
+                | samtools view -bS -F 4 -F 256 - > ${meta.id}_${prefix}.bam
 
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":
@@ -75,7 +75,7 @@ process HISAT2_ALIGN {
                 --no-mixed \\
                 --no-discordant \\
                 $args \\
-                | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}.bam
+                | samtools view -bS -F 4 -F 8 -F 256 - > ${meta.id}_${prefix}.bam
 
             if [ -f ${prefix}.unmapped.fastq.1.gz ]; then
                 mv ${prefix}.unmapped.fastq.1.gz ${prefix}.unmapped_1.fastq.gz
@@ -107,7 +107,7 @@ process HISAT2_ALIGN {
                 --threads $task.cpus \\
                 $args_rna \\
                 $strandedness \\
-                | samtools view -bSh - > ${rna_prefix}.rna.bam
+                | samtools view -bSh - > ${meta.id}_${rna_prefix}.rna.bam
 
             hisat2 \\
                 -x \$INDEX \\
@@ -116,7 +116,7 @@ process HISAT2_ALIGN {
                 --threads $task.cpus \\
                 $args_dna \\
                 $strandedness \\
-                | samtools view -bSh - > ${dna_prefix}.dna.bam
+                | samtools view -bSh - > ${meta.id}_${dna_prefix}.dna.bam
 
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":

@@ -50,8 +50,8 @@ include { INPUT_CHECK             } from '../subworkflows/local/input_check'
 include { DEDUP                   } from '../subworkflows/local/deduplicators'
 include { TRIM                    } from '../subworkflows/local/trimming'
 include { ALIGN                   } from '../subworkflows/local/align'
-include { OTA                     } from '../subworkflows/local/OTA'
-include { ATA                     } from '../subworkflows/local/ATA'
+// include { OTA                     } from '../subworkflows/local/OTA'
+// include { ATA                     } from '../subworkflows/local/ATA'
 include { ATA_BRIDGE              } from '../subworkflows/local/ATA_bridge'
 include { BAM_SORT_STATS_SAMTOOLS } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'  
 
@@ -131,7 +131,7 @@ def print_bold = { str -> ANSI_BOLD + str + ANSI_RESET }
 // Info required for completion email and summary
 def multiqc_report = []
 
-workflow OTA_RC {
+workflow OTA {
 
     take: binaries_ready
     main:

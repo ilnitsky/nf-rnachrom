@@ -8,31 +8,18 @@ include { SAMPLESHEET_CHECK } from '../../modules/local/samplesheet_check'
 workflow INPUT_CHECK {
     take:
     samplesheet // file: /path/to/samplesheet.csv
-    // binaries
+    binaries
 
     main:
 
     SAMPLESHEET_CHECK ( samplesheet )
         .csv
         .splitCsv ( header:true, sep:',' )
-        .branch {
-            rnaseq: it.sample == 'rnaseq'
-            rnachrom: true
-        }
-        .set { split_reads }
-
-    split_reads.rnachrom
         .map { params.bridge_processing || ['chart', 'rap', 'chirp'].contains(params.exp_type) ? create_fastq_channel(it) : create_fastq_channel_rna_dna(it) }
         .set { reads }
 
-    split_reads.rnaseq
-        .map { create_rnaseq_channel(it) }
-        .ifEmpty { Channel.empty() }
-        .set { rnaseq_reads }
-
     emit:
     reads                                     // channel: [ val(meta), [ reads ] ]
-    rnaseq_reads                              // channel: [ val(meta), [ reads ] ]
     versions = SAMPLESHEET_CHECK.out.versions // channel: [ versions.yml ]
     csv = SAMPLESHEET_CHECK.out.csv           // channel: [ samplesheet.csv ]
 }
@@ -71,7 +58,9 @@ def create_fastq_channel(LinkedHashMap row) {
         meta.method = "OTA"
     }
 
-
+    if (meta.id == "rnaseq") {
+        meta.method = "RNA-seq"
+    }
 
     // add path(s) of the fastq file(s) to the meta map
     def fastq_meta = []
@@ -101,6 +90,11 @@ def create_fastq_channel_rna_dna(LinkedHashMap row) {
     meta.single_end = false
     meta.method     = "ATA"                      // All-to-all type of methods
 
+
+    if (meta.id == "rnaseq") {
+        meta.method = "RNA-seq"
+    }
+    
     // add path(s) of the fastq file(s) to the meta map
     def fastq_meta = []
     if (!file(row.rna).exists()) {
