@@ -59,6 +59,14 @@ Contents:
   :titlesonly:
 
   ./examples/RNAchrom_pipeline_walkthrough.ipynb
+
+.. toctree::
+  :maxdepth: 3
+  :caption: Optional Stages
+  :titlesonly:
+
+  ./examples/ucaRNA_identififcation.ipynb
+  ./examples/Chromatin_potential.ipynb
   
 Setup and Configuration
 -----------------------
