@@ -14,6 +14,7 @@
 ## Introduction
 
 **nf-core/rnachrom** is a bioinformatics pipeline that ...
+Full documentation is available at ([`ReadTheDocs`](https://nf-rnachrom.readthedocs.io/en/latest/))
 
 <!-- TODO nf-core:
    Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the

@@ -148,7 +148,7 @@ workflow ATA {
     ch_statistic_merged = Channel.empty()
     ch_logs = Channel.empty()
 
-            
+    ch_gtf = Channel.value(params.annot_GTF)        
     ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
     ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
 

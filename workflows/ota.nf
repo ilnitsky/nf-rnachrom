@@ -12,7 +12,6 @@ def summary_params = paramsSummaryMap(workflow)
 
 Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
-// Print parameter summary log to screen
 log.info logo + paramsSummaryLog(workflow) + citation
 
 WorkflowRnachrom.initialise(params, log)
@@ -38,13 +37,6 @@ ch_config               =  Channel.fromPath( "$projectDir/assets/new_config.json
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-//
-// SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
-// OTA -- One-to-all experiments processing subworkflow
-// ATA -- All-to-all experiments processing subworkflow
-// ATA_BRIDGE -- All-to-all experiments processing if raw reads have bridge/linker sequence 
-//
-
 include { PrepareSoftware         } from '../modules/local/prepare_software'
 include { INPUT_CHECK             } from '../subworkflows/local/input_check'
 include { DEDUP                   } from '../subworkflows/local/deduplicators'
@@ -61,17 +53,15 @@ include { BAM_SORT_STATS_SAMTOOLS } from '../subworkflows/nf-core/bam_sort_stats
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-//
 // MODULE: Installed directly from nf-core/modules
-//
 include { FASTQC                                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                                } from '../modules/nf-core/multiqc/main'
 include { GUNZIP as GUNZIP_FASTA                 } from '../modules/nf-core/gunzip/main'
 include { CUSTOM_GETCHROMSIZES                   } from '../modules/nf-core/custom/getchromsizes/main'
 include { HISAT2_EXTRACTSPLICESITES              } from '../modules/nf-core/hisat2/extractsplicesites/main'
 include { HISAT2_BUILD                           } from '../modules/nf-core/hisat2/build'
-include { SMARTSEQ_FILTER                        } from '../modules/local/smartseq_filter'
-include { RSITES                                 } from '../modules/local/rsites'
+// include { SMARTSEQ_FILTER                        } from '../modules/local/smartseq_filter'
+// include { RSITES                                 } from '../modules/local/rsites'
 include { NUCL_DISTR_RSITES as NUCL_DISTR        } from '../modules/local/nucleotide_distribution_rsites'
 include { NUCL_DISTR_RSITES as NUCL_DISTR_BRIDGE } from '../modules/local/nucleotide_distribution_rsites'
 // include { CONFIG                                 } from '../modules/local/rnachromprocessing'
@@ -81,15 +71,15 @@ include { SAMTOOLS_VIEW as BAM_FILTER            } from '../modules/nf-core/samt
 include { BEDTOOLS_BAMTOBED                      } from '../modules/nf-core/bedtools/bamtobed/main'
 include { DETECT_STRAND                          } from '../modules/local/detect_strand'
 include { CIGAR_FILTER                           } from '../modules/local/cigar_filter.nf'
-include { ADD_SRR                                } from '../modules/local/add_srr.nf'
+// include { ADD_SRR                                } from '../modules/local/add_srr.nf'
 include { MERGE_REPLICAS                         } from '../modules/local/merge_replicas'
 include { SPLIT_BY_CHRS                          } from '../modules/local/split_by_chrs'
 include { ANNOTATION_VOTING                      } from '../modules/local/annotation'
-include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_NEW } from '../modules/local/join_raw_contacts.nf'
-include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_OLD } from '../modules/local/join_raw_contacts.nf'
-include { BACKGROUND                             } from '../modules/local/background_ata'
-include { NORMALIZE_RAW; NORMALIZE_N2; SCALING   } from '../modules/local/rnachromprocessing'
-include { VALIDATE_ANNOT                         } from '../modules/local/rnachromprocessing'
+// include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_NEW } from '../modules/local/join_raw_contacts.nf'
+// include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_OLD } from '../modules/local/join_raw_contacts.nf'
+// include { BACKGROUND                             } from '../modules/local/background_ata'
+// include { NORMALIZE_RAW; NORMALIZE_N2; SCALING   } from '../modules/local/rnachromprocessing'
+// include { VALIDATE_ANNOT                         } from '../modules/local/rnachromprocessing'
 include { BARDIC                                 } from '../modules/local/bardic'
 include { MACS2_CALLPEAK                         } from '../modules/nf-core/macs2/callpeak/main'  
 include { GENERATE_BINS; SMOOTH_INPUT            } from '../modules/local/ota_secondary_processing'
@@ -125,6 +115,11 @@ def print_bold = { str -> ANSI_BOLD + str + ANSI_RESET }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
+
+    //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+    // ☰ ONE-TO-ALL EXPERIMENTS : RAP, CHIRP, CHART                                    
+    //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -136,69 +131,21 @@ workflow OTA {
     take: binaries_ready
     main:
 
-
-
     ch_versions = Channel.empty()
     ch_statistic = Channel.empty()
     ch_statistic_merged = Channel.empty()
     ch_logs = Channel.empty()
-
-            
+     
     ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
     ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
-
-    println ("""${colors['green']}
-             __                              _                         
-            / _|                            | |                        
-      _ __ | |_ ______ _ __ _ __   __ _  ___| |__  _ __ ___  _ __ ___  
-     | '_ \\|  _|______| '__| '_ \\ / _` |/ __| '_ \\| '__/ _ \\| '_ ` _ \\ 
-     | | | | |        | |  | | | | (_| | (__| | | | | | (_) | | | | | |
-     |_| |_|_|        |_|  |_| |_|\\__,_|\\___|_| |_|_|  \\___/|_| |_| |_|
-     
-     ${colors['reset']}""")
-
-    //
-    // SUBWORKFLOW: Read in samplesheet, validate and stage input files
-    //
-
-    INPUT_CHECK (
-        file(params.input),
-        // binaries_ready
-    )
-    ch_samplesheet       = INPUT_CHECK.out.csv
-    ch_input_check_reads = INPUT_CHECK.out.reads
-    ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
-    ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
-
+    ch_gtf = Channel.value(params.annot_GTF
 
     FASTQC (
         ch_input_check_reads
     )
     ch_versions = ch_versions.mix(FASTQC.out.versions.first())
 
-    
-
- 
-    // PREPARE GENOME       --------------------------------------------------------------------------------
-
-    if (params.genome_fasta.endsWith('.gz')) {
-        ch_genome_fasta    = GUNZIP_FASTA ( [ [:], params.genome_fasta ] ).gunzip.map { it[1] }
-        ch_versions = ch_versions.mix(GUNZIP_FASTA.out.versions)
-    } else {
-        ch_genome_fasta = Channel.value(params.genome_fasta)
-    }
-
-    // REMOVE UNCANONICAL CHROMOSOMES
-    // seqkit grep -vrp "^chrUn" file.fa > cleaned.fa
-    // Chromosome mappings NCBI -> UCSC or 
-
-    ch_gtf = Channel.value(params.annot_GTF)
-
-
-    CUSTOM_GETCHROMSIZES ( ch_genome_fasta.map { [ [:], it ] } )
-    ch_fai         = CUSTOM_GETCHROMSIZES.out.fai.map { it[1] }
-    ch_chrom_sizes = CUSTOM_GETCHROMSIZES.out.sizes.map { it[1] }
-    ch_versions    = ch_versions.mix(CUSTOM_GETCHROMSIZES.out.versions)
+)
 
     // DEDUPLICATION -------------------------------------------------------------------------------------  
     if (!params.skip_dedup) {
@@ -211,35 +158,10 @@ workflow OTA {
         ch_for_trimming = ch_input_check_reads
     }
 
-    // RESTR. SITES PROCESSING ---------------------------------------------------------------------------    
-    if ( !params.bridge_processing && ( params.exp_type in ['imargi', 'radicl', 'grid', 'char', 'redc', 'redchip'] ) ) {
-        ch_dna = ch_for_trimming.map { meta, files -> def dnaFiles = files.findAll { file -> file.toString().contains(meta.DNA) }
-            return dnaFiles ? [meta, dnaFiles] : [meta, []]  }
-
-        ch_rna = ch_for_trimming.map { meta, files -> def rnaFiles = files.findAll { file -> file.toString().contains(meta.RNA) }
-            return rnaFiles ? [meta, rnaFiles] : [meta, []] }
-        // ch_rna = ch_for_trimming.map{meta, files -> [meta, [rna]]}
-        // ch_dna = ch_for_trimming.map{meta, files -> [meta, [dna]]}
-
-        RSITES ( 
-            ch_dna,
-            ch_rna
-         )
-        ch_for_trimming    = RSITES.out.fastq.map{meta, rna, dna -> [meta, [rna, dna]]}
-        ch_statistic           = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
-    }
-
-
-    if ( params.smartseq_filter && params.bridge_processing ) {
-        SMARTSEQ_FILTER ( ch_for_trimming )
-        ch_for_trimming     = SMARTSEQ_FILTER.out.fastq
-    }
 
     // TRIMMING ------------------------------------------------------------------------------------------
-       /*
-        *  Trimming can be done either on compressed fastq file, or on uncompressed.
-        *  Available tools: FastP, Trimmomatic, BBduc, TrimGalore 
-        */ 
+    // Trimming can be done either on compressed fastq file, or on uncompressed.
+          
     if (!params.skip_trim) {
         TRIM(ch_for_trimming)
         ch_input_align = TRIM.out.reads
@@ -253,10 +175,8 @@ workflow OTA {
 
     
     // ALIGNMENT -----------------------------------------------------------------------------------------
-       /*
-        *  Aligning separated RNA and DNA parts with alignment tool of choice:
-        *  HISAT2, STAR, bowtie2
-        */
+    // Aligning  RNA and DNA parts separately with alignment tool of choice
+
     ALIGN ( 
         ch_input_align,
         ch_splicesites 
@@ -289,84 +209,72 @@ workflow OTA {
     ch_bed_files        = BEDTOOLS_BAMTOBED.out.bed
     ch_versions         = ch_versions.mix(BEDTOOLS_BAMTOBED.out.versions)
 
+    // Combine input and treatment (without merging replicas)
+    ch_bed_files
+    | branch { meta, bed ->
+            treatment: meta.control != ''
+                return [meta.control, ['id':meta.control, 'single_end':meta.single_end], bed]
+            input: meta.control == ''
+                return [meta.id.replace("_INPUT", ""), ['id':meta.id, 'single_end':meta.single_end], bed]
+            }
+    | set { ch_bed_files }
+    
+    ch_inputs = ch_bed_files.input.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
+    ch_treatments = ch_bed_files.treatment.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
+    ch_combine_input_treatment =  ch_treatments.join(ch_inputs, by:0).map{it, meta1, treatment, meta2, input -> [meta1, treatment, input]}
+    
+    //TODO: chromsizes channel
+    Channel
+    .fromPath(params.chromsizes)
+    .splitCsv ( header:false, sep:'\t' )
+    .map { it[1].toLong() }
+    .reduce { a,b -> a + b }
+    .set { genomeSize }
 
-        //TO DO: CHeck spelling of exp type?
+    genomeSize.subscribe { println "Genome size: $it" }
 
-    //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-    // ☰ ONE-TO-ALL EXPERIMENTS : RAP, CHIRP, CHART                                 ☰   
-    //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-    if (params.exp_type in ['rap', 'chirp', 'chart']) {
+    MACS2_CALLPEAK(
+        ch_combine_input_treatment,
+        genomeSize
+    )
+    ch_macs2_peaks      = MACS2_CALLPEAK.out.peak                       // channel: [ val(meta), [ bam ] ]
+    ch_macs2_bed        = MACS2_CALLPEAK.out.bed
+    ch_macs2_log        = MACS2_CALLPEAK.out.xls
+    ch_versions         = ch_versions.mix(MACS2_CALLPEAK.out.versions)
+    
+    // ch_input_bed_files     = ch_bed_files.filter { meta, files -> meta.control == '' }.map{ meta, file -> [meta.id, file] }.groupTuple(by: 0)
+    // ch_treatment_bed_files = ch_bed_files.filter { meta, files -> meta.control != '' }.map{ meta, file -> [meta.control, file] }.groupTuple(by: 0)
 
-      
-        // Combine input and treatment (without merging replicas)
-        ch_bed_files
-        | branch { meta, bed ->
-                treatment: meta.control != ''
-                    return [meta.control, ['id':meta.control, 'single_end':meta.single_end], bed]
-                input: meta.control == ''
-                    return [meta.id.replace("_INPUT", ""), ['id':meta.id, 'single_end':meta.single_end], bed]
-                }
-        | set { ch_bed_files }
+    GENERATE_BINS()
+    ch_genome_bins      = GENERATE_BINS.out
 
-        ch_inputs = ch_bed_files.input.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
-        ch_treatments = ch_bed_files.treatment.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
-        ch_combine_input_treatment =  ch_treatments.join(ch_inputs, by:0).map{it, meta1, treatment, meta2, input -> [meta1, treatment, input]}
-        
-        //TODO: chromsizes channel
-        Channel
-        .fromPath(params.chromsizes)
-        .splitCsv ( header:false, sep:'\t' )
-        .map { it[1].toLong() }
-        .reduce { a,b -> a + b }
-        .set { genomeSize }
+    SMOOTH_INPUT(
+        ch_inputs.map{id, meta, bed -> [meta, bed]},
+        ch_genome_bins.first()
+    )
+    ch_input_smoothed   = SMOOTH_INPUT.out.smoothed
+    ch_smooth_log       = SMOOTH_INPUT.out.log
+    ch_treatments.map{id, meta, bed -> [meta, bed]}.view{"Treatment_bed: $it"}
+    ch_input_smoothed.map{meta, input -> [[meta.id.replace("_INPUT", ""), meta.single_end], input]}.view{"Input_sm: $it"}
+    ch_macs2_peaks.view{"MACS_peaks: $it"}
+    ch_genome_bins.view{"genome_bins: $it"}
 
-        genomeSize.subscribe { println "Genome size: $it" }
+    NORMALIZE_TREATMENT(
+        ch_treatments.map{id, meta, bed -> [meta, bed]},
+        ch_input_smoothed,
+        ch_macs2_peaks,
+        ch_genome_bins.first()
+    )
 
-        MACS2_CALLPEAK(
-            ch_combine_input_treatment,
-            genomeSize
-        )
-        ch_macs2_peaks      = MACS2_CALLPEAK.out.peak                       // channel: [ val(meta), [ bam ] ]
-        ch_macs2_bed        = MACS2_CALLPEAK.out.bed
-        ch_macs2_log        = MACS2_CALLPEAK.out.xls
-        ch_versions         = ch_versions.mix(MACS2_CALLPEAK.out.versions)
-        
-        // ch_input_bed_files     = ch_bed_files.filter { meta, files -> meta.control == '' }.map{ meta, file -> [meta.id, file] }.groupTuple(by: 0)
-        // ch_treatment_bed_files = ch_bed_files.filter { meta, files -> meta.control != '' }.map{ meta, file -> [meta.control, file] }.groupTuple(by: 0)
+    ch_normalized_treatment = NORMALIZE_TREATMENT.out.bed
+    ch_normalized_stats     = NORMALIZE_TREATMENT.out.stats
 
-        GENERATE_BINS()
-        ch_genome_bins      = GENERATE_BINS.out
+    //TODO: check if everything ok with annotate
+    ANNOTATE_DNA(ch_normalized_treatment)
 
-        SMOOTH_INPUT(
-            ch_inputs.map{id, meta, bed -> [meta, bed]},
-            ch_genome_bins.first()
-        )
-        ch_input_smoothed   = SMOOTH_INPUT.out.smoothed
-        ch_smooth_log       = SMOOTH_INPUT.out.log
+    // UPSTREAM_DOWNSTREAM()
 
-        ch_treatments.map{id, meta, bed -> [meta, bed]}.view{"Treatment_bed: $it"}
-        ch_input_smoothed.map{meta, input -> [[meta.id.replace("_INPUT", ""), meta.single_end], input]}.view{"Input_sm: $it"}
-        ch_macs2_peaks.view{"MACS_peaks: $it"}
-        ch_genome_bins.view{"genome_bins: $it"}
 
-        NORMALIZE_TREATMENT(
-            ch_treatments.map{id, meta, bed -> [meta, bed]},
-            ch_input_smoothed,
-            ch_macs2_peaks,
-            ch_genome_bins.first()
-        )
-        ch_normalized_treatment = NORMALIZE_TREATMENT.out.bed
-        ch_normalized_stats     = NORMALIZE_TREATMENT.out.stats
-
-        //TODO: check if everything ok with annotate
-        ANNOTATE_DNA(ch_normalized_treatment)
-
-        // UPSTREAM_DOWNSTREAM()
-
-    //--------------------------------------------------------------------------------
-    // ALL-TO-ALL EXPERIMENTS : GRID-seq, RADICL-seq, iMARGI, Red-C, RedChip          
-    //--------------------------------------------------------------------------------
-    } 
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
