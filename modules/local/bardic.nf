@@ -24,6 +24,8 @@ process BARDIC {
     grep -w 'protein_coding' ${voted_merged} | awk '{print \$11}' | sort | uniq > ${name}.4-pc.txt
     sed 1d ${voted_merged} | awk -F"\\t" '{OFS=FS} {print \$6,\$7,\$8,\$11,".",\$9};' > ${name}.4-for_peaks.bed
 
+    bardic -v
+
     bardic run ${name}.4-for_peaks.bed ${annot} ${params.chromsizes} ${name}.4-pc.txt  ./peaks \\
         --min_contacts 1000  \\
         --trans_min 10000    \\
@@ -44,3 +46,7 @@ process BARDIC {
     """
 
 }
+
+
+// protein_coding  -- тэг есть не у всех организмов
+// нужно пользователю самому передавать список белок-кодирующих

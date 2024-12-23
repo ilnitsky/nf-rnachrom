@@ -8,7 +8,7 @@ process FASTQ_DUPAWAY {
     //TODO: CHECK FOR CORRECTNESS OF DEDUP TOOL NAME
     // TODO: Add default compare seq mode for fastq-dupaway
     //TODO: conda create -n gcc-boost -c conda-forge gcc make boost    export BOOST_ROOT=\$CONDA_PREFIX/include
-    tag "$meta.id $meta.prefix"
+    tag "$meta.id,$meta.prefix"
     publishDir (
         path: { "$params.outdir/dedup" },
         mode: "copy",
@@ -29,22 +29,25 @@ process FASTQ_DUPAWAY {
     script:
     println print_purple("Started deduplication " + meta.prefix  + " with fastq-dupaway" )
     def args                 = task.ext.args ?: ''
-    def prefix               = task.ext.prefix ?: "${meta.id}"
+    def prefix               = task.ext.prefix ?: "${meta.prefix}"
     def fastq_dupaway_input  = ''
     def fastq_dupaway_output = ''
     
     fastq_dupaway_input = meta.single_end ? "-i ${reads[0]}" : "-i ${reads[0]} -u ${reads[1]}"
-    fastq_dupaway_output = meta.single_end ? "-o dedup/${reads[0]}" : "-o dedup/${reads[0]} -p dedup/${reads[1]}"
+    fastq_dupaway_output = meta.single_end ? "-o dedup/${prefix}.dedup.fastq" : "-o dedup/${prefix}_1.dedup.fastq -p dedup/${prefix}_2.dedup.fastq"
 
     
     """
     export BOOST_ROOT=\$CONDA_PREFIX/include
-    mkdir dedup
+    [[ ! -d "dedup" ]] && mkdir dedup
+    
     ${projectDir}/bin/fastq-dupaway \
             ${fastq_dupaway_input} \
             ${fastq_dupaway_output} \
             -m ${task.memory.mega} \
             $args
+
+            
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

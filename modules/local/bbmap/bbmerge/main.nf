@@ -1,5 +1,5 @@
 process BBMAP_BBMERGE {
-    tag "$meta.id $meta.prefix"
+    tag "$meta.id,$meta.prefix"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"

@@ -94,7 +94,7 @@ include { BARDIC                                 } from '../modules/local/bardic
 include { MACS2_CALLPEAK                         } from '../modules/nf-core/macs2/callpeak/main'  
 include { GENERATE_BINS; SMOOTH_INPUT            } from '../modules/local/ota_secondary_processing'
 include { NORMALIZE_TREATMENT; ANNOTATE_DNA      } from '../modules/local/ota_secondary_processing'
-include { CALC_STATS                             } from '../modules/local/calc_stats'
+// include { CALC_STATS                             } from '../modules/local/calc_stats'
 include { PLOT_STATS                             } from '../modules/local/plot_stats'
 include { CUSTOM_DUMPSOFTWAREVERSIONS            } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 

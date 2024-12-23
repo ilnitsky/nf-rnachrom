@@ -1,82 +1,64 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+import sys
 import numpy as np
 
-df = pd.read_csv('stats.tsv', sep='\t', index_col="sample               ")
+def create_combined_plots(replica_file, merged_file):
 
-df_transposed = df.T
-
-plt.figure(figsize=(10, 6))
-
-for column in df_transposed.columns:
-    initial_value = df_transposed[column].iloc[0]  
-    print(initial_value)
-    percentages = df_transposed[column] / initial_value * 100  # Calculate percentages
+    df_replica = pd.read_csv(replica_file, sep='\s+')
+    df_merged = pd.read_csv(merged_file, sep='\s+')
+   
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
     
-    plt.plot(df_transposed.index, df_transposed[column], marker='o', label=column)
+    # Set style
+    sns.set_style("whitegrid")
     
-    # Annotate each point with its percentage
-    for x, y, pct in zip(df_transposed.index, df_transposed[column], percentages):
-        plt.text(x, y, f'{pct:.0f}%', ha='center', va='bottom')  
+    steps = ['Raw', 'SmartSeqFilter', 'Dedup', 'Trimming', 'OverlapMerged', 
+             'Debridged', 'RestrSites', 'UniqueRawContacts', 'FilteredUniqueRawContacts']
+    
+    for idx, row in df_replica.iterrows():
+        sample_name = row['sample']  
+        values = [row[step] for step in steps]
+        ax1.plot(range(len(steps)), values, marker='o', label=sample_name, 
+                linewidth=2, markersize=8)
+    
+    ax1.set_title('Read/Contact Extinction Plot', fontsize=16, pad=20)
+    ax1.set_xlabel('Processing Step', fontsize=12)
+    ax1.set_ylabel('Number of Reads/Contacts', fontsize=12)
+    ax1.set_xticks(range(len(steps)))
+    ax1.set_xticklabels(steps, rotation=45, ha='right')
+    ax1.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=8)  
+    
+    merged_steps = ['MergedReplicas', 'Voted', 'Singletons']
+    
+    x = np.arange(len(merged_steps))
+    width = 0.8 / len(df_merged)
+    
+    for idx, row in df_merged.iterrows():
+        sample_name = row['sample']  
+        values = [row[step] for step in merged_steps]
+        ax2.bar(x + idx * width, values, width, label=sample_name, alpha=0.8)
+    
+    ax2.set_title('Merged Statistics Plot', fontsize=16, pad=20)
+    ax2.set_xlabel('Processing Step', fontsize=12)
+    ax2.set_ylabel('Number of Contacts', fontsize=12)
+    ax2.set_xticks(x + (width * (len(df_merged) - 1)) / 2)
+    ax2.set_xticklabels(merged_steps, rotation=45, ha='right')
+    ax2.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=8)  
 
-plt.title('Read Counts at Each Stage')
-plt.ylabel('Read Counts')
-plt.xlabel('Stage')
-plt.xticks(rotation=45)  
-plt.legend(title='Sample', bbox_to_anchor=(1.05, 1), loc='upper left') 
-plt.grid(True)  
+    ax2.yaxis.grid(True, linestyle='--', alpha=0.7)
+    
+    plt.tight_layout()
+    
+    plt.savefig('combined_plots.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
-plt.tight_layout() 
-plt.savefig('read_counts_stage.png', dpi=300) 
-
-
-
-
-# import pandas as pd
-# import matplotlib.pyplot as plt
-
-# # Manually transcribing the data into a DataFrame for simplicity
-# data = {
-#     'Step': ['Dedup', 'Trimming', 'OverlapMerged', 'OverlapUNmerged', 'Debridged', 'RestrSites', 'FilteredAlignedRNA', 'FilteredAlignedDNA', 'RawContacts', 'CigarFiltered'],
-#     'arabi_wt_SRR13304067': [980692, 972388, 939634, 32754, 633382, 238492, 41145, 143055, 27881, 27880],
-#     'arabi_wt_SRR13304068': [981153, 970798, 936013, 34785, 656867, 326694, 87871, 205032, 61190, 61189]
-# }
-
-# df = pd.DataFrame(data)
-
-# df_percentage = df.copy()
-# for col in df.columns[1:]:
-#     df_percentage[col] = (df[col] / df[col].max()) * 100
-
-
-# plt.figure(figsize=(10, 6))
-# for col in df.columns[1:]:
-#     plt.fill_between(df['Step'], df[col], label=col, step='mid', alpha=0.7)
-# plt.xticks(rotation=45, ha="right")
-# plt.ylabel('Absolute Values')
-# plt.title('Process Steps - Absolute Values')
-# plt.legend()
-# plt.tight_layout()
-# plt.savefig("stages_absolute_values.png")
-
-
-# plt.figure(figsize=(10, 6))
-# for col in df_percentage.columns[1:]:
-#     plt.fill_between(df_percentage['Step'], df_percentage[col], label=col, step='mid', alpha=0.7)
-# plt.xticks(rotation=45, ha="right")
-# plt.ylabel('Percentage')
-# plt.title('Process Steps - Percentage')
-# plt.legend()
-# plt.tight_layout()
-# plt.savefig("stages_percentage.png")
-
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description="Plot bridge summaries from provided files")
-#     parser.add_argument("se_file", help="The filename for single-end bridge summary")
-#     parser.add_argument("pe_file", help="The filename for paired-end bridge summary")
-#     parser.add_argument("save_plot", help="")
-
-#     args = parser.parse_args()
-
-#     main(args.se_file, args.pe_file, args.save_plot)
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <replica_stats.tsv> <merged_stats.tsv>")
+        sys.exit(1)
+    
+    create_combined_plots(sys.argv[1], sys.argv[2])

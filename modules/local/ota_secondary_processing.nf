@@ -20,6 +20,8 @@ process GENERATE_BINS {
     """
 }
 
+// TODO Check options Psi and binsize are included
+
 process SMOOTH_INPUT {
     tag "$meta.id"
 

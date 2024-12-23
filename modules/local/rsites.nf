@@ -44,7 +44,7 @@ process RSITES {
     [ ! -f  ${meta.DNA}.dna.fastq ] && ln -sf ${dna} ${meta.DNA}.dna.fastq
     [ ! -f  ${meta.RNA}.rna.fastq ] && ln -sf ${rna} ${meta.RNA}.rna.fastq
     
-    ${projectDir}/bin/alpha2  ${meta.DNA}.dna.fastq ${meta.RNA}.rna.fastq  "${dna_part} ${rna_part}"
+    ${projectDir}/bin/EndsProcessor  ${meta.DNA}.dna.fastq ${meta.RNA}.rna.fastq  "${dna_part} ${rna_part}"
 
     python ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}.dna.fastq_last_oligos.tsv
     """

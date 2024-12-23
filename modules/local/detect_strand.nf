@@ -2,6 +2,7 @@ process DETECT_STRAND {
     // tag "$params.trim_tool"
     conda "${projectDir}/envs/rnachromprocessing.yaml"
     label 'process_single'
+    errorStrategy 'ignore'
     publishDir (
         path: { "$params.outdir/detect_strand" },
         mode: "copy"
@@ -19,6 +20,7 @@ process DETECT_STRAND {
     script:
     // def sample = ''
     def separate_rna_dna = ''
+    def prefix = "${meta.prefix}"
 
     // String filePath = contacts.get(0) // Adjust this line according to your needs   
     String filename = contacts[0]
@@ -30,37 +32,40 @@ process DETECT_STRAND {
     separate_rna_dna = params.procedure == 'new' ? 'true' : ''
 
     """
+    echo -e "rna_chr\\trna_bgn\\trna_end\\tid\\trna_strand\\trna_cigar\\tdna_chr\\tdna_bgn\\tdna_end\\tdna_strand\\tdna_cigar\\tSRR_ID" > blacklist_${prefix}.tab
+    awk  'BEGIN{FS="\\t"; OFS=FS}{print \$3, \$4, \$5, \$1, \$6, \$7, \$10, \$11, \$12, \$13, \$14, \$1}' ${contacts[0]} >> blacklist_${prefix}.tab
+
+
+
     cat <<-END_JSON > config.json
     {
       "input_dir":".",
       "output_dir":".",
       "gtf_annotation":"${params.annot_GTF}",
       "genes_list":"${params.detect_strand_genes_list}",
-      "prefix":"${meta.prefix}",
-      "exp_groups":{"${params.exp_type}":["${sample}"]}
+      "prefix":"blacklist_${prefix}",
+      "exp_groups":{"${params.exp_type}":["blacklist_${prefix}"]}
     }
     END_JSON
 
     detect-strand -c config.json -v
-    strand=\$(grep "${sample}" ${meta.prefix}_wins.tsv | awk -F"\\t" '{print \$5}')
+    strand=\$(grep "${prefix}" blacklist_${prefix}_wins.tsv | awk -F"\\t" '{print \$5}')
 
     case \$strand in
         "ANTI")
-            sed -i 's/+/temp/g; s/-/+/g; s/temp/-/g' ${contacts[0]}
+            sed -i '0,/-/{s/-/±/}; 0,/+/{s/+/-/}; s/±/+/' ${contacts[0]}
             ;;
         "SAME")
             #Do nothing
             ;;
         *)
             echo "Strand orientation has not been deduced!" 
-            
+            exit 1
             ;;
     esac
     mkdir res
     mv ${contacts[0]} res/${contacts[0]}
-    if [[ "${separate_rna_dna}" == "true" ]]; then
-        mv ${contacts[1]} res/${contacts[1]}
-    fi
+
     """
 
 }
@@ -70,3 +75,8 @@ def extractPrefix2(String filename) {
     def matcher = filename =~ /^(.+?)(\.bed|\.tab)(\.gz)?$/
     return matcher ? matcher[0][1] : null
 }
+
+
+    // if [[ "${separate_rna_dna}" == "true" ]]; then
+    //     mv ${contacts[1]} res/${contacts[1]}
+    // fi

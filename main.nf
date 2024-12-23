@@ -11,17 +11,7 @@
 
 nextflow.enable.dsl = 2
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    GENOME PARAMETER VALUES
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-// TODO nf-core: Remove this line if you don't need a FASTA file
-//   This is an example of how to use getGenomeAttribute() to fetch parameters
-//   from igenomes.config using `--genome`
-params.fasta = WorkflowMain.getGenomeAttribute(params, 'fasta')
-
+params.fasta = params.genome_fasta ? params.genome_fasta : WorkflowMain.getGenomeAttribute(params, 'fasta')
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     VALIDATE & PRINT PARAMETER SUMMARY
@@ -56,8 +46,8 @@ WorkflowMain.initialise(workflow, params, log)
 */
 include { PrepareSoftware   } from './modules/local/prepare_software'
 include { INPUT_CHECK       } from './subworkflows/local/input_check'
-include { ATA } from './workflows/rc'
-include { OTA } from './workflows/ota'
+include { ATA } from './workflows/final_rc'
+include { OTA } from './workflows/final_ota'
 // include { RNASEQ } from './workflows/rnaseq'
 include { GUNZIP as GUNZIP_FASTA } from './modules/nf-core/gunzip/main'
 include { CUSTOM_GETCHROMSIZES } from './modules/nf-core/custom/getchromsizes/main'
@@ -155,3 +145,15 @@ workflow {
     THE END
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
+
+// /*
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//     GENOME PARAMETER VALUES
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// */
+
+// // TODO nf-core: Remove this line if you don't need a FASTA file
+// //   This is an example of how to use getGenomeAttribute() to fetch parameters
+// //   from igenomes.config using `--genome`
+// params.fasta = WorkflowMain.getGenomeAttribute(params, 'fasta')

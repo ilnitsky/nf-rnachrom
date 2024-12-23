@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastQC Reports Navigation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .nav-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #45a049;
+        }
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: none;
+            border-radius: 4px;
+        }
+        .image-container {
+            width: 100%;
+            height: 800px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>All stages stats</h1>
+        <div class="image-container">
+            <img  src="combined_plots.png" alt="PNG Image">
+        </div>
+
+    </div>
+
+
+    <div class="container">
+        <h1>Fastp Reports</h1>
+        
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="loadFastpReport('redchip1/SRR17331251.fastp.html')">SRR17331251</button>
+            <button class="nav-button" onclick="loadFastpReport('redchip2/SRR17331252.fastp.html')">SRR17331252</button>
+            <button class="nav-button" onclick="loadFastpReport('redchip3/SRR17331253.fastp.html')">SRR17331253</button>
+            <button class="nav-button" onclick="loadFastpReport('redchip4/SRR17331254.fastp.html')">SRR17331254</button>
+            <button class="nav-button" onclick="loadFastpReport('redchip5/SRR17331255.fastp.html')">SRR17331255</button>
+        </div>
+        
+        <iframe id="fastpReportFrame" src="redchip5/SRR17331255.fastp.html"></iframe>
+    </div>
+
+    <div class="container">
+        <h1>FastQC Reports</h1>
+        
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="loadFastqcReport('redchip1/SRR17331251_1_fastqc.html')">SRR17331251</button>
+            <button class="nav-button" onclick="loadFastqcReport('redchip2/SRR17331252_1_fastqc.html')">SRR17331252</button>
+            <button class="nav-button" onclick="loadFastqcReport('redchip3/SRR17331253_1_fastqc.html')">SRR17331253</button>
+            <button class="nav-button" onclick="loadFastqcReport('redchip4/SRR17331254_1_fastqc.html')">SRR17331254</button>
+            <button class="nav-button" onclick="loadFastqcReport('redchip5/SRR17331255_1_fastqc.html')">SRR17331255</button>
+        </div>
+        
+        <iframe id="fastqcReportFrame" src="redchip5/SRR17331255_1_fastqc.html"></iframe>
+    </div>
+
+    <div class="container">
+        <h1>Dinucleotide and trinucleotide distribution</h1>
+        
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="loadImage('redchip1/SRR17331251_2.dna.fastq_last_oligos.tsv.Nucl_distr.png')">SRR17331251</button>
+            <button class="nav-button" onclick="loadImage('redchip2/SRR17331252_2.dna.fastq_last_oligos.tsv.Nucl_distr.png')">SRR17331252</button>
+            <button class="nav-button" onclick="loadImage('redchip3/SRR17331253_2.dna.fastq_last_oligos.tsv.Nucl_distr.png')">SRR17331253</button>
+            <button class="nav-button" onclick="loadImage('redchip4/SRR17331254_2.dna.fastq_last_oligos.tsv.Nucl_distr.png')">SRR17331254</button>
+            <button class="nav-button" onclick="loadImage('redchip5/SRR17331255_2.dna.fastq_last_oligos.tsv.Nucl_distr.png')">SRR17331255</button>
+        </div>
+        
+        <div class="image-container">
+            <img id="nuclDistrFrame" src="redchip5/SRR17331255_2.dna.fastq_last_oligos.tsv.Nucl_distr.png" alt="PNG Image">
+        </div>
+    </div>
+
+    
+    <div class="container">
+        <h1>Bridge stats</h1>
+        
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="loadImage('redchip1/SRR17331251.codes.tsv_SE.png')">SRR17331251</button>
+            <button class="nav-button" onclick="loadImage('redchip2/SRR17331252.codes.tsv_SE.png')">SRR17331252</button>
+            <button class="nav-button" onclick="loadImage('redchip3/SRR17331253.codes.tsv_SE.png')">SRR17331253</button>
+            <button class="nav-button" onclick="loadImage('redchip4/SRR17331254.codes.tsv_SE.png')">SRR17331254</button>
+            <button class="nav-button" onclick="loadImage('redchip5/SRR17331255.codes.tsv_SE.png')">SRR17331255</button>
+        </div>
+        
+        <div class="image-container">
+            <img id="bridgeFrame" src="redchip5/SRR17331255.codes.tsv_SE.png" alt="PNG Image">
+        </div>
+    </div>
+
+
+    <script>
+        function loadFastpReport(reportPath) {
+            document.getElementById('fastpReportFrame').src = reportPath;
+        }
+        
+        function loadFastqcReport(reportPath) {
+            document.getElementById('fastqcReportFrame').src = reportPath;
+        }
+
+        function loadImage(imagePath) {
+            document.getElementById('nuclDistrFrame').src = imagePath;
+        }
+
+        function loadImage(imagePath) {
+            document.getElementById('bridgeFrame').src = imagePath;
+        }
+    </script>
+</body>
+</html>

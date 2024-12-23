@@ -1,5 +1,5 @@
 process BITAP_DEBRIDGE {
-  tag "$meta.id $meta.prefix"
+  tag "$meta.id,$meta.prefix"
   //TO DO: add double bridge and no bridge stats
   conda "${projectDir}/envs/debridge.yml"
 
@@ -14,6 +14,7 @@ process BITAP_DEBRIDGE {
   tuple val(meta), path("*.dna.fastq"),         emit: dna
   tuple val(meta), path("*.rna.fastq"),         emit: rna
   tuple val(meta), path("*.tsv"),               emit: positions
+  tuple val(meta), path("*.png"),               emit: bridge_stats
 
   script:
   def bridge_for  = params.forward_bridge_seq
@@ -26,24 +27,27 @@ process BITAP_DEBRIDGE {
 
   if (meta.single_end || params.layout == "single") {
     """
-    ${projectDir}/bin/alpha1 -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len}
+    ${projectDir}/bin/BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
     cat ${meta.prefix}.DNA.fastq > ${meta.prefix}.dna.fastq
     cat ${meta.prefix}.RNA.fastq > ${meta.prefix}.rna.fastq
     """
   } else {
     if (params.exp_type == 'redc' || params.exp_type == 'redchip' ) {
       """
-      ${projectDir}/bin/alpha1 -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len}
-      ${projectDir}/bin/alpha1 -s -e -t -i ${paired_unmerged_f} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len}
+      ${projectDir}/bin/BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
+      ${projectDir}/bin/BridgeSplitter -s -e -t -i ${paired_unmerged_f} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
       cat ${meta.prefix}.DNA.fastq ${meta.prefix}_1.DNA.fastq > ${meta.prefix}.dna.fastq
       cat ${meta.prefix}.RNA.fastq ${meta.prefix}_1.RNA.fastq > ${meta.prefix}.rna.fastq
+      python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
       """
     } else if (params.exp_type == 'char' || params.exp_type == 'grid' || params.exp_type == 'radicl' )  {
       """
-      ${projectDir}/bin/alpha1 -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len}
-      ${projectDir}/bin/alpha1 -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len}
+      ${projectDir}/bin/BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
+      ${projectDir}/bin/BridgeSplitter -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0F,R0,0R
       cat ${meta.prefix}.DNA.fastq ${meta.prefix}_2.DNA.fastq > ${meta.prefix}.dna.fastq
       cat ${meta.prefix}.RNA.fastq ${meta.prefix}_2.RNA.fastq > ${meta.prefix}.rna.fastq
+      python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./ 
+      python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}_2.codes.tsv PE ./ ./ 
       """
     }
   }

@@ -15,7 +15,6 @@ include { BWA_INDEX                     } from '../../modules/nf-core/bwa/index/
 workflow ALIGN {
     take:
     ch_input_align // file: /path/to/samplesheet.csv
-    ch_splicesites
 
     main:
     ch_versions     = Channel.empty()
@@ -91,7 +90,6 @@ workflow ALIGN {
 
         // ch_align_bam.view()
 
-
         // if (params.exp_type == 'imargi') {
         //     STAR_CHIMERIC_READS ( ch_align_bam )
         //     ch_align_bam = STAR_CHIMERIC_READS.out.bam
@@ -106,7 +104,7 @@ workflow ALIGN {
             ch_bowtie2_index = BOWTIE2_BUILD ( ch_genome_fasta.map { [ [:], it ] } ).index.map { it[1] }
             ch_versions     = ch_versions.mix(BOWTIE2_BUILD.out.versions)
         }
-        // ch_bowtie2_index.view()
+        ch_bowtie2_index.view()
         BOWTIE2_ALIGN( 
             ch_input_align,
             ch_bowtie2_index.map { [ [:], it ] }.collect(),
@@ -187,16 +185,16 @@ workflow ALIGN {
 
     // ch_hisat2_bam.view()
     //TODO: fix
-    if (!(params.exp_type in ['rap', 'chirp', 'chart'])) {
-        ch_align_bam
-        | flatMap { meta, bam -> bam.collect { data -> tuple(meta, data) } } 
-        | set { ch_bam }
-    }  else {
-        ch_bam = ch_align_bam
-    }
+    // if (!(params.exp_type in ['rap', 'chirp', 'chart'])) {
+    //     ch_align_bam
+    //     | flatMap { meta, bam -> bam.collect { data -> tuple(meta, data) } } 
+    //     | set { ch_bam }
+    // }  else {
+    //     ch_bam = ch_align_bam
+    // }
     // ch_input_bam_filter.view()
     emit:
-    bam                = ch_bam
+    bam                = ch_align_bam
     logs                = ch_align_log                               
     versions           = ch_versions // channel: [ versions.yml ]
 

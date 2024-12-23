@@ -1,5 +1,5 @@
 process FASTQC {
-    tag "$meta.id $meta.prefix"
+    tag "$meta.id,$meta.prefix"
     label 'process_low'
 
     conda "bioconda::fastqc=0.11.9"

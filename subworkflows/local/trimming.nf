@@ -1,5 +1,6 @@
 include { BBMAP_BBDUK                 } from '../../modules/nf-core/bbmap/bbduk/main'
 include { TRIMMOMATIC                 } from '../../modules/nf-core/trimmomatic/main'
+include { TRIMGALORE                  } from '../../modules/nf-core/trimgalore/main' 
 include { FASTP                       } from '../../modules/nf-core/fastp/main' 
 
 workflow TRIM {
@@ -14,7 +15,6 @@ workflow TRIM {
     ch_adapters_redc = Channel.fromPath( "$projectDir/assets/adapters_redc.fa", checkIfExists: true)
     ch_adapters      = ch_adapters_redc
 
-
     if (params.trim_tool == "trimmomatic") {
         TRIMMOMATIC ( reads )
         ch_trimmed_reads    = TRIMMOMATIC.out.trimmed_reads
@@ -22,6 +22,7 @@ workflow TRIM {
         ch_trimmed_summary  = TRIMMOMATIC.out.summary
         // ch_stats            = ch_stats.mix(TRIMMOMATIC.out.summary)
         ch_versions         = ch_versions.mix(TRIMMOMATIC.out.versions)
+
     } else if (params.trim_tool == "bbduk") {
         BBMAP_BBDUK ( reads, ch_adapters )
         ch_trimmed_reads    = BBMAP_BBDUK.out.reads
@@ -30,12 +31,19 @@ workflow TRIM {
         ch_versions         = ch_versions.mix(BBMAP_BBDUK.out.versions)
 
     } else if (params.trim_tool == "fastp") {
-        FASTP ( reads, ch_adapters_redc.first(), true, false )
+        FASTP ( reads, true, false, false ) // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
         ch_trimmed_reads    = FASTP.out.reads
         ch_trim_log         = FASTP.out.log
         ch_stats            = FASTP.out.html
-        // ch_stats            = ch_stats.mix(BBMAP_BBDUK.out.log)
         ch_versions         = ch_versions.mix(FASTP.out.versions)
+
+    }  else if (params.trim_tool == "trimgalore") {
+        TRIM_GALORE ( reads )
+        ch_trimmed_reads    = TRIM_GALORE.out.reads
+        ch_unpaired_reads   = TRIM_GALORE.out.unpaired_reads
+        ch_trim_log         = TRIM_GALORE.out.log
+        ch_stats            = TRIM_GALORE.out.html
+        ch_versions         = ch_versions.mix(TRIM_GALORE.out.versions)
     } 
 
     emit:

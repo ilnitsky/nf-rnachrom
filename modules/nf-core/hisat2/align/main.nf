@@ -25,9 +25,9 @@ process HISAT2_ALIGN {
 
     script:
     def args = task.ext.args ?: ''
-    def args_rna = task.ext.args_rna ?: ''
-    def args_dna = task.ext.args_dna ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // def samtools_view_args = '-F 4 -F 8 -F 256'
+    def samtools_view_args = '-f 2'  // read is properly paired
     def VERSION = '2.2.1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     def strandedness = ''
@@ -52,8 +52,10 @@ process HISAT2_ALIGN {
                 --summary-file ${prefix}.hisat2.summary.log \\
                 --threads $task.cpus \\
                 $args \\
-                | samtools view -bS -F 4 -F 256 - > ${meta.id}_${prefix}.bam
+                | samtools view -bS - > ${meta.id}_${prefix}.bam
 
+            ln -s ${meta.id}_${prefix}.bam ${meta.id}_${prefix}.COPY.bam 
+            
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":
                 hisat2: $VERSION
@@ -75,7 +77,8 @@ process HISAT2_ALIGN {
                 --no-mixed \\
                 --no-discordant \\
                 $args \\
-                | samtools view -bS -F 4 -F 8 -F 256 - > ${meta.id}_${prefix}.bam
+                | tee >(samtools view -bS -f 64 ${samtools_view_args} - > ${meta.id}_${prefix}.R1.bam) \\
+                | samtools view -bS -f 128 ${samtools_view_args} - > ${meta.id}_${prefix}.R2.bam
 
             if [ -f ${prefix}.unmapped.fastq.1.gz ]; then
                 mv ${prefix}.unmapped.fastq.1.gz ${prefix}.unmapped_1.fastq.gz
@@ -93,8 +96,23 @@ process HISAT2_ALIGN {
         }
     } else if (meta.method == "ATA") {
         //TODO fix dna/rna determination for alignment
-            def rna_prefix = meta.RNA
-            def dna_prefix = meta.DNA
+            args = meta.rna ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
+
+            //  logging
+            if (!task.ext.args_rna && meta.rna) {
+                log.warn "RNA aligner args not found, using empty string"
+            }
+            if (!task.ext.args_dna && !meta.rna) {
+                log.warn "DNA  aligner args not found, using empty string"
+            }
+
+            // def args_rna = task.ext.args_rna ?: ''
+            // def args = meta.rna ? task.ext.args_rna : task.ext.args_dna 
+            // def rna_prefix = meta.RNA
+            // def dna_prefix = meta.DNA
+            prefix = meta.RNA ? meta.RNA : meta.DNA
+            def postfix = meta.RNA ? 'rna' : 'dna' 
+
 
             """
             INDEX=`find -L ./ -name "*.1.ht2" | sed 's/\\.1.ht2\$//'`
@@ -103,20 +121,11 @@ process HISAT2_ALIGN {
                 -x \$INDEX \\
                 -U ${reads[0]} \\
                 $ss \\
-                --summary-file ${rna_prefix}.hisat2.summary.log \\
+                --summary-file ${prefix}.hisat2.summary.log \\
                 --threads $task.cpus \\
-                $args_rna \\
+                $args \\
                 $strandedness \\
-                | samtools view -bSh - > ${meta.id}_${rna_prefix}.rna.bam
-
-            hisat2 \\
-                -x \$INDEX \\
-                -U ${reads[1]} \\
-                --summary-file ${dna_prefix}.hisat2.summary.log \\
-                --threads $task.cpus \\
-                $args_dna \\
-                $strandedness \\
-                | samtools view -bSh - > ${meta.id}_${dna_prefix}.dna.bam
+                | samtools sort -n -O BAM - > sorted_${meta.id}_${prefix}.${postfix}.bam
 
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":
@@ -126,3 +135,41 @@ process HISAT2_ALIGN {
             """
     }
 }
+
+
+
+
+// } else if (meta.method == "ATA") {
+//         //TODO fix dna/rna determination for alignment
+//             def rna_prefix = meta.RNA
+//             def dna_prefix = meta.DNA
+
+//             """
+//             INDEX=`find -L ./ -name "*.1.ht2" | sed 's/\\.1.ht2\$//'`
+
+//             hisat2 \\
+//                 -x \$INDEX \\
+//                 -U ${reads[0]} \\
+//                 $ss \\
+//                 --summary-file ${rna_prefix}.hisat2.summary.log \\
+//                 --threads $task.cpus \\
+//                 $args_rna \\
+//                 $strandedness \\
+//                 | samtools view -bSh - > ${meta.id}_${rna_prefix}.rna.bam
+
+//             hisat2 \\
+//                 -x \$INDEX \\
+//                 -U ${reads[1]} \\
+//                 --summary-file ${dna_prefix}.hisat2.summary.log \\
+//                 --threads $task.cpus \\
+//                 $args_dna \\
+//                 $strandedness \\
+//                 | samtools view -bSh - > ${meta.id}_${dna_prefix}.dna.bam
+
+//             cat <<-END_VERSIONS > versions.yml
+//             "${task.process}":
+//                 hisat2: $VERSION
+//                 samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+//             END_VERSIONS
+//             """
+//     }

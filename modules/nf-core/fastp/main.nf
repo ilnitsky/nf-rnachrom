@@ -1,5 +1,5 @@
 process FASTP {
-    tag "$meta.id $meta.prefix"
+    tag "$meta.id,$meta.prefix"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
@@ -9,12 +9,13 @@ process FASTP {
 
     input:
     tuple val(meta), path(reads)
-    val adapter_fasta
+    // val adapter_fasta
     val save_trimmed_fail
     val save_merged
+    val only_remove_adapters
 
     output:
-    tuple val(meta), path('*.fastp.fastq') , optional:true, emit: reads
+    tuple val(meta), path('*.{adapt,fastp}.fastq') , optional:true, emit: reads
     tuple val(meta), path('*.json')           , emit: json
     tuple val(meta), path('*.html')           , emit: html
     tuple val(meta), path('*.log')            , emit: log
@@ -26,9 +27,15 @@ process FASTP {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
+
+    def args = only_remove_adapters ? (task.ext.args_adapters ?: '') : (task.ext.args ?: '')
+
+    def adapter_list = params.adapters_file ? "--adapter_fasta ${params.adapters_file}" : ""
+    def detect_adapters = params.disable_adapter_autodetect ? "" : "--detect_adapter_for_pe" 
+    def postfix = only_remove_adapters ? 'adapt' : 'fastp'
+    def adapters = only_remove_adapters ? "${adapter_list} ${detect_adapters}" : "-A"
+
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def adapter_list = adapter_fasta ? "--adapter_fasta ${adapter_fasta}" : ""
     def fail_fastq = save_trimmed_fail && meta.single_end ? "--failed_out ${prefix}.fail.fastq.gz" : save_trimmed_fail && !meta.single_end ? "--failed_out ${prefix}.paired.fail.fastq.gz --unpaired1 ${prefix}_1.fail.fastq.gz --unpaired2 ${prefix}_2.fail.fastq.gz" : ''
     // Added soft-links to original fastqs for consistent naming in MultiQC
     // Use single ended for interleaved. Add --interleaved_in in config.
@@ -62,14 +69,14 @@ process FASTP {
 
         fastp \\
             --in1 ${prefix}.fastq \\
-            --out1  ${prefix}.fastp.fastq \\
+            --out1  ${prefix}.${postfix}.fastq \\
             --thread $task.cpus \\
-            --json ${prefix}.fastp.json \\
-            --html ${prefix}.fastp.html \\
-            $adapter_list \\
+            --json ${prefix}.${postfix}.json \\
+            --html ${prefix}.${postfix}.html \\
+            $adapters \\
             $fail_fastq \\
             $args \\
-            2> >(tee ${prefix}.fastp.log >&2)
+            2> >(tee ${prefix}.${postfix}.log >&2)
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -78,21 +85,26 @@ process FASTP {
         """
     } else {
         def merge_fastq = save_merged ? "-m --merged_out ${prefix}.merged.fastq" : ''
+
+        def input1  = (params.bridge_processing || meta.method == "OTA") ? "${prefix}_1.fastq" : "${meta.RNA}.fastq"
+        def input2  = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_2.fastq" : "${meta.DNA}.fastq"
+        def output1 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_1.${postfix}.fastq" : "${meta.RNA}.${postfix}.fastq"
+        def output2 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_2.${postfix}.fastq" : "${meta.DNA}.${postfix}.fastq"
+
         """
-        [ ! -f  ${prefix}_1.fastq ] && ln -sf ${reads[0]} ${prefix}_1.fastq
-        [ ! -f  ${prefix}_2.fastq ] && ln -sf ${reads[1]} ${prefix}_2.fastq
+        [ ! -f  ${input1} ] && ln -sf ${reads[0]} ${input1}
+        [ ! -f  ${input2} ] && ln -sf ${reads[1]} ${input2}
         fastp \\
-            --in1 ${prefix}_1.fastq \\
-            --in2 ${prefix}_2.fastq \\
-            --out1 ${prefix}_1.fastp.fastq \\
-            --out2 ${prefix}_2.fastp.fastq \\
-            --json ${prefix}.fastp.json \\
-            --html ${prefix}.fastp.html \\
-            $adapter_list \\
+            --in1 ${input1} \\
+            --in2 ${input2} \\
+            --out1 ${output1} \\
+            --out2 ${output2} \\
+            --json ${prefix}.${postfix}.json \\
+            --html ${prefix}.${postfix}.html \\
+            $adapters \\
             $fail_fastq \\
             $merge_fastq \\
             --thread $task.cpus \\
-            --detect_adapter_for_pe \\
             $args \\
             2> >(tee ${prefix}.fastp.log >&2)
 

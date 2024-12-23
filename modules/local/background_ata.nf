@@ -29,7 +29,7 @@ process BACKGROUND {
     #============ Statistics parameters
     wSize      =1000000                             # size of widow (nucleotides)
     flankSize  =10000                                       # size of flanks(nucleotides)
-    kernelSigma=3000.                               # kernel width (nucleotides)
+    kernelSigma=3000                               # kernel width (nucleotides)
     kernelType =NORMAL                              # type of the kernel: NORM | LEFT_EXP | RIGHT_EXP
     BufSize=40000000
 
@@ -42,6 +42,20 @@ process BACKGROUND {
     """
 
 }
+
+
+
+// Переписать с bedtools ???
+
+// Слишком мало и слишком много контактирующие РНК, нужно ли их выкидывать
+// --filter_top_n 50 --filter_tail_n 1000 (50 в топе)
+
+//  Скрипт берет файл с фоном, 
+//  берем не интервал, фоновый бин -- ДНК часть представляем как точку.
+//  Хотим убедиться, что число контактов не изменилось, когда выравниваем на фон
+// Пересекаем ДНК-части в виде точек, каждой дНК-части будет присвоено значение сглаженное фона
+
+    // kernelSigma=3000. 
 
 //TODO: Smoother works only 2.22 , versione 2.32 and 2.20 -- core dumped
 // Rscript =1 

@@ -12,7 +12,7 @@ Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
 
 ch_hisat_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
 ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
-ch_statistic = Channel.empty()
+
 
 
 workflow ATA_BRIDGE {
@@ -22,6 +22,8 @@ workflow ATA_BRIDGE {
     main:
     ch_versions = Channel.empty()
     ch_stats    = Channel.empty()
+    ch_statistic = Channel.empty()
+    ch_report    = Channel.empty()
 
     //TO DO: If not single end
 
@@ -112,8 +114,11 @@ workflow ATA_BRIDGE {
         ch_separated_dna       = BITAP_DEBRIDGE.out.dna
         ch_separated_rna       = BITAP_DEBRIDGE.out.rna
         ch_bridge_positions    = BITAP_DEBRIDGE.out.positions
+        ch_bridge_figs         = BITAP_DEBRIDGE.out.bridge_stats
+        ch_report              = ch_report.mix( BITAP_DEBRIDGE.out.bridge_stats.groupTuple(by: 0).map{ meta, png -> [[meta.id, meta.prefix], png] } )
         ch_statistic           = ch_statistic.concat(BITAP_DEBRIDGE.out.dna.map { id, files ->  ["${id.id} (${id.prefix})", "Debridged", files instanceof List ? files[0].countFastq() : files.countFastq() ] } )
         // ch_bridge_not_found      = BITAP_DEBRIDGE.out.bridge_not_found_fastq
+        // ch_separated_dna.view()
     }
 
     RSITES(
@@ -122,12 +127,14 @@ workflow ATA_BRIDGE {
         )
     ch_restrict_processed    = RSITES.out.fastq
     ch_dinucleotides         = RSITES.out.last_nucleotides
+    ch_report                = ch_report.join(RSITES.out.png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     ch_statistic             = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
     
 
     emit:
     separated_fastq   = ch_restrict_processed
     statistic         = ch_statistic
+    report            = ch_report
     // separated_rna   = ch_separated_rna
     // pear_stats        = PEAR.out.stats
     versions          = ch_versions

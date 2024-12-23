@@ -55,3 +55,4 @@ process MACS2_CALLPEAK {
     END_VERSIONS
     """
 }
+        // --format $format \\
