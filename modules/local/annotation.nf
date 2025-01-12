@@ -65,11 +65,12 @@ process ANNOTATION {
     
     mkdir -p genes voted_${contacts_prefix}
 
-    awk '(\$5=="+")' ${genes_prefix}.bedrc | awk 'BEGIN { OFS = "\\t"}; {print \$1, \$2, \$3, \$4, 0, \$5, \$6, \$7}' > genes/${genes_prefix}.genes_pos_strand.bed
+    awk '(\$5=="+") { OFS = "\\t"; print \$1, \$2, \$3, \$4, 0, \$5, \$6, \$7}' ${genes_prefix}.bedrc | sort -k1,1 -k2,2n > genes/${genes_prefix}.genes_pos_strand.bed
     bedtools merge -i genes/${genes_prefix}.genes_pos_strand.bed -d ${dist} | awk -F '\\t' 'BEGIN { OFS = "\\t"}; {print \$0, NR}' > genes/${genes_prefix}.clusters_dist_${dist}_pos_strand.bed
     bedmap --echo --echo-map-id --delim '\\t' genes/${genes_prefix}.genes_pos_strand.bed genes/${genes_prefix}.clusters_dist_${dist}_pos_strand.bed > genes/${genes_prefix}.genes_pos_strand.clusters_dist_${dist}.bed
 
-    awk '(\$5=="-")' ${genes_prefix}.bedrc | awk 'BEGIN { OFS = "\\t"}; {print \$1, \$2, \$3, \$4, 0, \$5, \$6, \$7}' > genes/${genes_prefix}.genes_neg_strand.bed
+
+    awk '(\$5=="-") { OFS = "\\t"; print \$1, \$2, \$3, \$4, 0, \$5, \$6, \$7}' ${genes_prefix}.bedrc | sort -k1,1 -k2,2n > genes/${genes_prefix}.genes_neg_strand.bed
     bedtools merge -i genes/${genes_prefix}.genes_neg_strand.bed -d ${dist} | awk -F "\\t" 'BEGIN { OFS = "\\t"}; {print \$0, NR}' > genes/${genes_prefix}.clusters_dist_${dist}_neg_strand.bed
     bedmap --echo --echo-map-id --delim '\\t' genes/${genes_prefix}.genes_neg_strand.bed genes/${genes_prefix}.clusters_dist_${dist}_neg_strand.bed > genes/${genes_prefix}.genes_neg_strand.clusters_dist_${dist}.bed
 
@@ -98,6 +99,10 @@ process ANNOTATION {
 }
 
 
+    // awk '(\$5=="+")' ${genes_prefix}.bedrc | awk 'BEGIN { OFS = "\\t"}; {print \$1, \$2, \$3, \$4, 0, \$5, \$6, \$7}' > genes/${genes_prefix}.genes_pos_strand.bed
+    
+    
+    
     // CLUSTERS_POS_STRAND=genes/${genes_prefix}.clusters_dist_${dist}_pos_strand.bed
     // CLUSTERS_NEG_STRAND=genes/${genes_prefix}.clusters_dist_${dist}_neg_strand.bed
 

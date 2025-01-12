@@ -237,7 +237,7 @@ workflow OTA {
     ch_statistic            = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
 
     BLACKLIST ( ch_filtered_contacts )
-    ch_blacklisted_contacts =  BLACKLIST.out.blacklist
+    ch_blacklisted_contacts =  BLACKLIST.out.macs
     ch_statistic            = ch_statistic.concat(BLACKLIST.out.blacklist.map { id, files -> ["${id.id} (${id.prefix})", "BlacklistedUniqueRawContacts", files.countLines()] })
 
 
@@ -261,10 +261,15 @@ workflow OTA {
             }
     | set { ch_bed_files }
     
-    ch_inputs = ch_bed_files.input.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
-    ch_treatments = ch_bed_files.treatment.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
+    ch_inputs = ch_bed_files.input.groupTuple(by:1).map{id, meta, bed -> [meta.id, meta, bed]}
+    ch_treatments = ch_bed_files.treatment.groupTuple(by:1).map{id, meta, bed -> [meta.id, meta, bed]}
     ch_combine_input_treatment =  ch_treatments.join(ch_inputs, by:0).map{it, meta1, treatment, meta2, input -> [meta1, treatment, input]}
     
+    ch_bed_files.input.view { "ch_bed_files.input $it" }
+    ch_bed_files.treatment.view { "ch_bed_files.treatment $it" }
+    ch_inputs.view { "ch_inputs $it" }
+    ch_treatments.view { "ch_treatments $it" }
+    ch_combine_input_treatment.view { "ch_combine_input_treatment $it" }
 
     //TODO: chromsizes channel
     Channel
@@ -276,7 +281,7 @@ workflow OTA {
 
     genomeSize.subscribe { println "Genome size: $it" }
 
-    ch_combine_input_treatment.view()
+    ch_inputs.view()
 
     MACS2_CALLPEAK(
         ch_combine_input_treatment,
@@ -299,8 +304,8 @@ workflow OTA {
     )
     ch_input_smoothed   = SMOOTH_INPUT.out.smoothed
     ch_smooth_log       = SMOOTH_INPUT.out.log
-    ch_treatments.map{id, meta, bed -> [meta, bed]}.view{"Treatment_bed: $it"}
-    ch_input_smoothed.map{meta, input -> [[meta.id.replace("_INPUT", ""), meta.single_end], input]}.view{"Input_sm: $it"}
+    // ch_treatments.map{id, meta, bed -> [meta, bed]}.view{"Treatment_bed: $it"}
+    // ch_input_smoothed.map{meta, input -> [[meta.id.replace("_INPUT", ""), meta.single_end], input]}.view{"Input_sm: $it"}
 
     // ch_macs2_peaks.view{"MACS_peaks: $it"}
     // ch_genome_bins.view{"genome_bins: $it"}

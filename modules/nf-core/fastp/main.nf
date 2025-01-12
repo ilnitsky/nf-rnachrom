@@ -88,8 +88,8 @@ process FASTP {
 
         def input1  = (params.bridge_processing || meta.method == "OTA") ? "${prefix}_1.fastq" : "${meta.RNA}.fastq"
         def input2  = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_2.fastq" : "${meta.DNA}.fastq"
-        def output1 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_1.${postfix}.fastq" : "${meta.RNA}.${postfix}.fastq"
-        def output2 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_2.${postfix}.fastq" : "${meta.DNA}.${postfix}.fastq"
+        def output1 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_1.${postfix}.fastq" : "1_${meta.RNA}.${postfix}.fastq"
+        def output2 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_2.${postfix}.fastq" : "2_${meta.DNA}.${postfix}.fastq"
 
         """
         [ ! -f  ${input1} ] && ln -sf ${reads[0]} ${input1}

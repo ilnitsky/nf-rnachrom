@@ -34,7 +34,6 @@ def parse_bed_row_genes(row):
 
 def parse_bed_row(row):
     chr_, start, end, _id, _, strand, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster = row.strip().split("\t")
-    print(row.strip().split("\t"))
     return chr_, int(start), int(end), _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster
     # 'chr21', 8393474, 8393475, 'SRR17331267.23', '8393464', '8393484', 'UU', '19M',         '0', '60',   'chr5', '158623806', '158623828', '23M', '0', '60', 'NAN', 'NAN', 'NH1', 'NH4', '', '57541'
 
@@ -300,6 +299,7 @@ def process_clusters_2(
 def main(output_dir, clusters_pos_strand, clusters_neg_strand):
     contacts_pos_strand_file = Path(output_dir) / "contacts.pos_strand.clusters.bed"
     contacts_neg_strand_file = Path(output_dir) / "contacts.neg_strand.clusters.bed"
+    print(clusters_pos_strand, clusters_neg_strand)
     cluster_genes_pos = read_cluster_genes(clusters_pos_strand)
     cluster_genes_neg = read_cluster_genes(clusters_neg_strand)
     voting_file_pos = Path(output_dir) / "contacts.pos_strand.voting.bed"

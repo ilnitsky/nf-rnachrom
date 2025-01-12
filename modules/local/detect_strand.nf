@@ -32,10 +32,12 @@ process DETECT_STRAND {
     separate_rna_dna = params.procedure == 'new' ? 'true' : ''
 
     """
-    echo -e "rna_chr\\trna_bgn\\trna_end\\tid\\trna_strand\\trna_cigar\\tdna_chr\\tdna_bgn\\tdna_end\\tdna_strand\\tdna_cigar\\tSRR_ID" > blacklist_${prefix}.tab
-    awk  'BEGIN{FS="\\t"; OFS=FS}{print \$3, \$4, \$5, \$1, \$6, \$7, \$10, \$11, \$12, \$13, \$14, \$1}' ${contacts[0]} >> blacklist_${prefix}.tab
 
+    echo -e "rna_chr\\trna_bgn\\trna_end\\tid\\trna_strand\\trna_cigar\\tdna_chr\\tdna_bgn\\tdna_end\\tdna_strand\\tdna_cigar\\tSRR_ID" > ${prefix}.tab
+    awk  'BEGIN{FS="\\t"; OFS=FS}{print \$3, \$4, \$5, \$1, \$6, \$7, \$10, \$11, \$12, \$13, \$14, \$1}' ${contacts[0]} >> ${prefix}.tab
 
+    mkdir res
+    mv ${contacts[0]} res/${contacts[0]}
 
     cat <<-END_JSON > config.json
     {
@@ -43,28 +45,28 @@ process DETECT_STRAND {
       "output_dir":".",
       "gtf_annotation":"${params.annot_GTF}",
       "genes_list":"${params.detect_strand_genes_list}",
-      "prefix":"blacklist_${prefix}",
-      "exp_groups":{"${params.exp_type}":["blacklist_${prefix}"]}
+      "prefix":"${prefix}",
+      "exp_groups":{"${params.exp_type}":["${prefix}"]}
     }
     END_JSON
 
     detect-strand -c config.json -v
-    strand=\$(grep "${prefix}" blacklist_${prefix}_wins.tsv | awk -F"\\t" '{print \$5}')
+    strand=\$(grep "${prefix}" ${prefix}_wins.tsv | awk -F"\\t" '{print \$5}')
 
     case \$strand in
         "ANTI")
-            sed -i '0,/-/{s/-/±/}; 0,/+/{s/+/-/}; s/±/+/' ${contacts[0]}
+            sed -i 'y/+-/-+/' res/${contacts[0]}
             ;;
         "SAME")
             #Do nothing
             ;;
         *)
             echo "Strand orientation has not been deduced!" 
-            exit 1
+            exit 0
             ;;
     esac
-    mkdir res
-    mv ${contacts[0]} res/${contacts[0]}
+    
+    
 
     """
 
@@ -80,3 +82,6 @@ def extractPrefix2(String filename) {
     // if [[ "${separate_rna_dna}" == "true" ]]; then
     //     mv ${contacts[1]} res/${contacts[1]}
     // fi
+
+    
+    // [ ! -f ${prefix}.tabrc ] && ln -s ${contacts[0]} ${prefix}.tabrc

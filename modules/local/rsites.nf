@@ -20,7 +20,7 @@ process RSITES {
     tuple val(meta), path(rna)
 
     output:
-    tuple val(meta), path('*rna.fastq_RS'), path('*dna.fastq_RS'), emit: fastq
+    tuple val(meta), path('*.rna.rsites.fastq'), path('*.dna.rsites.fastq'), emit: fastq
     tuple val(meta), path('*.tsv'), emit: last_nucleotides
     tuple val(meta), path('*.png'), emit: png
 
@@ -46,11 +46,16 @@ process RSITES {
     
     ${projectDir}/bin/EndsProcessor  ${meta.DNA}.dna.fastq ${meta.RNA}.rna.fastq  "${dna_part} ${rna_part}"
 
-    python ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}.dna.fastq_last_oligos.tsv
+    ln -s ${meta.DNA}_RNA_RS.fastq ${meta.RNA}.rna.rsites.fastq    
+    ln -s ${meta.DNA}_DNA_RS.fastq ${meta.DNA}.dna.rsites.fastq
+
+    python ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}_last_oligos.tsv
     """
 // python plot_rsites.py ${meta.prefix}  
 }
 
+
+    // python ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}.dna.fastq_last_oligos.tsv
 //pigz -d ${meta.DNA}.dna.fastq.gz > ${meta.DNA}.dna.fastq
 //pigz -d ${meta.RNA}.rna.fastq.gz > ${meta.RNA}.rna.fastq
 

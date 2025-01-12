@@ -11,7 +11,10 @@ process FILTER_CONTACTS {
     // tuple val(meta) 
 
     output:
-    tuple val(meta), path('filtered_S*.tab.rc'), emit: filtered_contacts
+    tuple val(meta), path('filtered_*.tab.rc'), emit: filtered_contacts
+    tuple val(meta), path('out*.tab.rc'), emit: filtered_out
+    tuple val(meta), path('id_reads_*.tab.rc'), emit: ucarna_id
+    tuple val(meta), path('*png'), emit: png
     // tuple val(meta), path('*_wins.tsv'),  emit: strand_vote_result
 
 
@@ -22,9 +25,14 @@ process FILTER_CONTACTS {
         (meta.single_end ? "OTA_SE" : "OTA_PE") : 
         (meta.method == "ATA" ? "ATA, not iMARGI" : null)
 
+    def ucarna_assembly = params.ucarna_assembly ? "no" : "yes" 
+    // def max_insert_size = params.pe_insert_size
+
     """
     python3 ${projectDir}/bin/EditDistance_CIGAR_filter.py \\
-        "NM + N_softClipp_bp" 2 2 0 0 200 "yes" "not explorer" "${mode}" "${unique_tab}" "./" "./"
+        "NM + N_softClipp_bp" 2 2 0 0 300 "${ucarna_assembly}" "not explorer" "${mode}" "${unique_tab}" "./" "./"
+
+    mv filtered_out_"${unique_tab}" out_"${unique_tab}"
     """
 
 }

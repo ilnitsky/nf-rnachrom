@@ -56,7 +56,9 @@ include { BAM_SORT_STATS_SAMTOOLS } from '../subworkflows/nf-core/bam_sort_stats
 */
 
 include { FASTP as FASTP_ADAPTERS                } from '../modules/nf-core/fastp/main' 
-include { FASTQC                                 } from '../modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_FIRST                 } from '../modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_AFTER                 } from '../modules/nf-core/fastqc/main'
+// include { FASTQC                                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                                } from '../modules/nf-core/multiqc/main'
 include { GUNZIP as GUNZIP_FASTA                 } from '../modules/nf-core/gunzip/main'
 include { CUSTOM_GETCHROMSIZES                   } from '../modules/nf-core/custom/getchromsizes/main'
@@ -123,124 +125,158 @@ workflow ATA {
     // ch_adapters_file  = params.adapters_file ?  Channel.fromPath(params.adapters_file) : Channel.empty()
     //ToDO Check for adapters file presence
 
-    // Removing Adapter sequences
-    FASTP_ADAPTERS ( ch_input_check_reads, true, false, true )   // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
-    ch_for_dedup         = FASTP_ADAPTERS.out.reads
-    ch_adapter_log       = FASTP_ADAPTERS.out.log
-    ch_stats             = FASTP_ADAPTERS.out.html
-    ch_versions          = ch_versions.mix(FASTP_ADAPTERS.out.versions)
-    ch_report            = ch_report.mix(FASTP_ADAPTERS.out.html.map{ meta, html -> [[meta.id, meta.prefix], html]})
+    if (!params.ready_raw_contacts_dir) {
 
-    FASTP_ADAPTERS.out.reads.view{"fastp: $it"}
-    // Предполагаем, что на SMARTSEQ_FILTER всегда идут парные риды?
-    if ( params.smartseq_filter && params.bridge_processing ) {
-        SMARTSEQ_FILTER ( ch_for_dedup )
-        ch_for_dedup     = SMARTSEQ_FILTER.out.fastq
-        ch_statistic     = ch_statistic.concat(SMARTSEQ_FILTER.out.fastq.map { id, files -> ["${id.id} (${id.prefix})", "SmartSeqFilter", files instanceof List ? files[0].countFastq() : files.countFastq()] })
-    }
+        // Removing Adapter sequences
+        FASTP_ADAPTERS ( ch_input_check_reads, true, false, true )   // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
+        ch_for_dedup         = FASTP_ADAPTERS.out.reads
+        ch_adapter_log       = FASTP_ADAPTERS.out.log
+        ch_stats             = FASTP_ADAPTERS.out.html
+        ch_versions          = ch_versions.mix(FASTP_ADAPTERS.out.versions)
+        ch_report            = ch_report.mix(FASTP_ADAPTERS.out.html.map{ meta, html -> [[meta.id, meta.prefix], html]})
+        ch_statistic     = ch_statistic.concat(FASTP_ADAPTERS.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Adapters", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+
+        if (!params.ch_input_check_reads) {
+            FASTQC_FIRST ( ch_input_check_reads )
+            ch_versions = ch_versions.mix(FASTQC_FIRST.out.versions.first())
+            ch_report   = ch_report.join(FASTQC_FIRST.out.html.map{ meta, html -> [[meta.id, meta.prefix], html] }, by: 0)
+        }
+
+        // Предполагаем, что на SMARTSEQ_FILTER всегда идут парные риды?
+        if ( params.smartseq_filter && params.bridge_processing ) {
+            SMARTSEQ_FILTER ( ch_for_dedup )
+            ch_for_dedup     = SMARTSEQ_FILTER.out.fastq
+            ch_statistic     = ch_statistic.concat(SMARTSEQ_FILTER.out.fastq.map { id, files -> ["${id.id} (${id.prefix})", "SmartSeqFilter", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+        }
+        
+        // DEDUPLICATION -------------------------------------------------------------------------------------  
+        if (!params.skip_dedup) {
+            DEDUP( ch_for_dedup ) 
+            ch_for_trimming = DEDUP.out.reads
+            ch_statistic = ch_statistic.concat(DEDUP.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Dedup", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+            ch_versions = ch_versions.mix(DEDUP.out.versions)
+        } else {
+            // If skipping dedup, pass ch_for_dedup directly to trimming or subsequent steps
+            ch_for_trimming = ch_for_dedup
+        }
+
+
+        // RESTR. SITES PROCESSING ---------------------------------------------------------------------------    
+        if ( !params.bridge_processing && ( params.exp_type in ['imargi', 'radicl', 'grid', 'char', 'redc', 'redchip'] ) ) {
+            ch_dna = ch_for_trimming.map { meta, files -> def dnaFiles = files.findAll { file -> file.toString().contains(meta.DNA) }
+                return dnaFiles ? [meta, dnaFiles] : [meta, []]  }
+
+            ch_rna = ch_for_trimming.map { meta, files -> def rnaFiles = files.findAll { file -> file.toString().contains(meta.RNA) }
+                return rnaFiles ? [meta, rnaFiles] : [meta, []] }
+            
+
     
-    // DEDUPLICATION -------------------------------------------------------------------------------------  
-    if (!params.skip_dedup) {
-        DEDUP( ch_for_dedup ) 
-        ch_for_trimming = DEDUP.out.reads
-        ch_statistic = ch_statistic.concat(DEDUP.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Dedup", files instanceof List ? files[0].countFastq() : files.countFastq()] })
-        ch_versions = ch_versions.mix(DEDUP.out.versions)
+            RSITES ( ch_dna, ch_rna )
+            ch_for_trimming    = RSITES.out.fastq.map{meta, rna, dna -> [meta, [rna, dna]]}
+            ch_rsites_figs     = RSITES.out.png
+            ch_report          = ch_report.combine(RSITES.out.png, by:0)
+            ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
+        }
+
+
+        // TRIMMING ------------------------------------------------------------------------------------------
+        /*
+            *  Trimming can be done either on compressed fastq file, or on uncompressed.
+            *  Available tools: FastP, Trimmomatic, BBduc, TrimGalore 
+            */ 
+        if (!params.skip_trim) {
+            TRIM ( ch_for_trimming )
+            ch_input_align = TRIM.out.reads
+            ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+            ch_versions = ch_versions.mix(TRIM.out.versions)
+            // ch_trim_log            = ch_logs.concat(TRIM.out.logs)
+        } else {
+            // If skipping trim, pass the input directly to alignment or subsequent steps
+            ch_input_align = ch_for_trimming
+        }
+
+
+
+        if (!params.skip_fastqc) {
+            FASTQC_AFTER ( ch_input_align )
+            ch_versions = ch_versions.mix(FASTQC_AFTER.out.versions.first())
+            ch_report   = ch_report.join(FASTQC_AFTER.out.html.map{ meta, html -> [[meta.id, meta.prefix], html] }, by: 0)
+        }
+
+        // BRIDGE PROCESSING ---------------------------------------------------------------------------------
+        /*
+            *  Paired-end reads are assembled with paired-end read mergers (PEAR, BBMerge).
+            *  Based on the description sequence parameter provided in the config (.groovy) 
+            *  file single-end or paired-end reads are separated into pairs of RNA and DNA
+            *  parts.
+            */
+        if ( params.bridge_processing ) {
+            ATA_BRIDGE ( ch_input_align )
+            ch_input_align     = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [meta, [rna, dna]]}                 //[[id:redchip, single_end:false, prefix:SRR17331252, method:ATA, RNA:SRR17331252.assembled.fastq_RNA, DNA:SRR17331252.assembled.fastq_DNA], [SRR17331252.assembled.DNA.fastq, SRR17331252.assembled.RNA.fastq]]
+            ch_input_rna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "RNA":meta.RNA], [rna]]}                 
+            ch_input_dna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "DNA":meta.DNA], [dna]]}
+            ch_versions        = ch_versions.mix(ATA_BRIDGE.out.versions)
+            ch_statistic       = ch_statistic.concat(ATA_BRIDGE.out.statistic)
+            ch_report          = ch_report.join(ATA_BRIDGE.out.report, by:0)
+            // ch_pear_stats      = ATA_BRIDGE.out.pear_stats
+        } else if ( !params.bridge_processing ) {
+            ch_input_rna_align = ch_input_align.map { meta, files -> def rnaFiles = files.findAll { file -> file.toString().contains(meta.RNA) }
+                return rnaFiles ? [meta, rnaFiles] : [meta, []] }.map { meta, rna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "RNA":meta.RNA], rna ] }
+
+            ch_input_dna_align = ch_input_align.map { meta, files -> def dnaFiles = files.findAll { file -> file.toString().contains(meta.DNA) }
+                return dnaFiles ? [meta, dnaFiles] : [meta, []] }.map { meta, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "DNA":meta.DNA], dna ] }
+        }
+
+
+
+        // ALIGNMENT -----------------------------------------------------------------------------------------
+        /*
+            *  Aligning separated RNA and DNA parts with alignment tool of choice:
+            *  HISAT2, STAR, bowtie2
+            */
+        RNA_ALIGN ( ch_input_rna_align )
+        ch_rna_bam = RNA_ALIGN.out.bam
+        ch_rna_align_log = RNA_ALIGN.out.logs                               
+        ch_versions     =  ch_versions.mix(RNA_ALIGN.out.versions)
+
+        DNA_ALIGN ( ch_input_dna_align )
+        ch_dna_bam = DNA_ALIGN.out.bam
+        ch_dna_align_log = DNA_ALIGN.out.logs                               
+        ch_versions     =  ch_versions.mix(DNA_ALIGN.out.versions)
+
+
+        ch_input_rna_align.view{ "ch_input_rna_align $it" }
+        ch_input_dna_align.view{ "ch_input_dna_align $it" }
+
+        ch_rna_to_contacts = ch_rna_bam.map{ meta, rna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], rna] }
+        ch_dna_to_contacts = ch_dna_bam.map{ meta, dna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], dna] }
+
+
+        ch_bam_join = ch_rna_to_contacts.join( ch_dna_to_contacts )
+        // ch_bam_join.view()
+
+        // ch_rna_to_contacts.view{ "ch_rna_to_contacts $it" }
+        // ch_dna_to_contacts.view{ "ch_dna_to_contacts $it" }
+
+        BAM_TO_CONTACTS ( ch_bam_join )
+        unique_raw_contacts = BAM_TO_CONTACTS.out.unique_raw_contacts
+        other_raw_contacts  = BAM_TO_CONTACTS.out.other_raw_contacts
+        ch_statistic        = ch_statistic.concat(BAM_TO_CONTACTS.out.unique_raw_contacts.map { id, files -> ["${id.id} (${id.prefix})", "UniqueRawContacts", files.countLines()] })
+
     } else {
-        // If skipping dedup, pass ch_for_dedup directly to trimming or subsequent steps
-        ch_for_trimming = ch_for_dedup
+        Channel
+            .fromPath("${params.ready_raw_contacts_dir}/*", type: 'dir')
+            .map { dir ->
+                def subDir = dir.name
+                def files = dir.listFiles().findAll { it.name.endsWith('.tab.rc') }
+                return [[id: subDir, method: "ATA"], files]
+            }
+            .transpose()
+            .map { meta, files ->  [ ["id":meta.id, "prefix":files.name.tokenize('.')[0], "method":meta.method], files]  }
+            .set { unique_raw_contacts }
     }
 
-    // RESTR. SITES PROCESSING ---------------------------------------------------------------------------    
-    if ( !params.bridge_processing && ( params.exp_type in ['imargi', 'radicl', 'grid', 'char', 'redc', 'redchip'] ) ) {
-        ch_dna = ch_for_trimming.map { meta, files -> def dnaFiles = files.findAll { file -> file.toString().contains(meta.DNA) }
-            return dnaFiles ? [meta, dnaFiles] : [meta, []]  }
-
-        ch_rna = ch_for_trimming.map { meta, files -> def rnaFiles = files.findAll { file -> file.toString().contains(meta.RNA) }
-            return rnaFiles ? [meta, rnaFiles] : [meta, []] }
-
-        // ch_input_check_reads.view{"inp: $it"}
-        ch_dna.view{"DNA: $it"}
-        ch_rna.view{"RNA: %it"}
-
-        RSITES ( ch_dna, ch_rna )
-        ch_for_trimming    = RSITES.out.fastq.map{meta, rna, dna -> [meta, [rna, dna]]}
-        ch_rsites_figs     = RSITES.out.png
-        ch_report          = ch_report.combine(RSITES.out.png, by:0)
-        ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
-    }
-
-
-
-    // TRIMMING ------------------------------------------------------------------------------------------
-       /*
-        *  Trimming can be done either on compressed fastq file, or on uncompressed.
-        *  Available tools: FastP, Trimmomatic, BBduc, TrimGalore 
-        */ 
-    if (!params.skip_trim) {
-        TRIM ( ch_for_trimming )
-        ch_input_align = TRIM.out.reads
-        ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
-        ch_versions = ch_versions.mix(TRIM.out.versions)
-        // ch_trim_log            = ch_logs.concat(TRIM.out.logs)
-    } else {
-        // If skipping trim, pass the input directly to alignment or subsequent steps
-        ch_input_align = ch_for_trimming
-    }
-
-    if (!params.skip_fastqc) {
-        FASTQC ( ch_input_align )
-        ch_versions = ch_versions.mix(FASTQC.out.versions.first())
-        ch_report   = ch_report.join(FASTQC.out.html.map{ meta, html -> [[meta.id, meta.prefix], html] }, by: 0)
-    }
-
-    // BRIDGE PROCESSING ---------------------------------------------------------------------------------
-       /*
-        *  Paired-end reads are assembled with paired-end read mergers (PEAR, BBMerge).
-        *  Based on the description sequence parameter provided in the config (.groovy) 
-        *  file single-end or paired-end reads are separated into pairs of RNA and DNA
-        *  parts.
-        */
-    if ( params.bridge_processing ) {
-        ATA_BRIDGE ( ch_input_align )
-        ch_input_align     = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [meta, [rna, dna]]}                 //[[id:redchip, single_end:false, prefix:SRR17331252, method:ATA, RNA:SRR17331252.assembled.fastq_RNA, DNA:SRR17331252.assembled.fastq_DNA], [SRR17331252.assembled.DNA.fastq, SRR17331252.assembled.RNA.fastq]]
-        ch_input_rna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "RNA":meta.RNA], [rna]]}                 
-        ch_input_dna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "DNA":meta.DNA], [dna]]}
-        ch_versions        = ch_versions.mix(ATA_BRIDGE.out.versions)
-        ch_statistic       = ch_statistic.concat(ATA_BRIDGE.out.statistic)
-        ch_report          = ch_report.join(ATA_BRIDGE.out.report, by:0)
-        // ch_pear_stats      = ATA_BRIDGE.out.pear_stats
-    } else if ( !(params.bridge_processing) ) {
-        ch_input_rna_align = ch_input_align.map{ meta, fastq -> [meta, fastq[0]] }
-        ch_input_dna_align = ch_input_align.map{ meta, fastq -> [meta, fastq[1]] }
-    }
-
-
-    // ALIGNMENT -----------------------------------------------------------------------------------------
-       /*
-        *  Aligning separated RNA and DNA parts with alignment tool of choice:
-        *  HISAT2, STAR, bowtie2
-        */
-    RNA_ALIGN ( ch_input_rna_align )
-    ch_rna_bam = RNA_ALIGN.out.bam
-    ch_rna_align_log = RNA_ALIGN.out.logs                               
-    ch_versions     =  ch_versions.mix(RNA_ALIGN.out.versions)
-
-    DNA_ALIGN ( ch_input_dna_align )
-    ch_dna_bam = DNA_ALIGN.out.bam
-    ch_dna_align_log = DNA_ALIGN.out.logs                               
-    ch_versions     =  ch_versions.mix(DNA_ALIGN.out.versions)
-
-    ch_rna_to_contacts = ch_rna_bam.map{ meta, rna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], rna] }
-    ch_dna_to_contacts = ch_dna_bam.map{ meta, dna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], dna] }
-
-    ch_bam_join = ch_rna_to_contacts.join( ch_dna_to_contacts )
-    // ch_bam_join.view()
-
-    BAM_TO_CONTACTS ( ch_bam_join )
-    unique_raw_contacts = BAM_TO_CONTACTS.out.unique_raw_contacts
-    other_raw_contacts  = BAM_TO_CONTACTS.out.other_raw_contacts
-    ch_statistic        = ch_statistic.concat(BAM_TO_CONTACTS.out.unique_raw_contacts.map { id, files -> ["${id.id} (${id.prefix})", "UniqueRawContacts", files.countLines()] })
-
+    // files.name.tokenize('.')[0]
 
     FILTER_CONTACTS ( unique_raw_contacts )
     ch_filtered_contacts = FILTER_CONTACTS.out.filtered_contacts
@@ -260,7 +296,7 @@ workflow ATA {
         new File("$params.outdir/Result_stats/Before_Merging_Replicas.stats.txt").text = table + "\n"  // Output the table to a file
     }
 
-
+    ch_detect.view { "ch_detect $it" }
     
     DETECT_STRAND ( ch_detect  )                          // tuple val(meta), path(contacts)
     ch_strand_vote_result = DETECT_STRAND.out.strand_vote_result

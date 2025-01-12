@@ -34,7 +34,9 @@ process FASTQ_DUPAWAY {
     def fastq_dupaway_output = ''
     
     fastq_dupaway_input = meta.single_end ? "-i ${reads[0]}" : "-i ${reads[0]} -u ${reads[1]}"
-    fastq_dupaway_output = meta.single_end ? "-o dedup/${prefix}.dedup.fastq" : "-o dedup/${prefix}_1.dedup.fastq -p dedup/${prefix}_2.dedup.fastq"
+
+    fastq_dupaway_output = ( params.bridge_processing == false && meta.method == "ATA" ) ? "-o dedup/1_${meta.RNA}.rna.dedup.fastq -p dedup/2_${meta.DNA}.dna.dedup.fastq" :
+        (meta.single_end ? "-o dedup/${prefix}.dedup.fastq" : "-o dedup/${prefix}_1.dedup.fastq -p dedup/${prefix}_2.dedup.fastq")
 
     
     """

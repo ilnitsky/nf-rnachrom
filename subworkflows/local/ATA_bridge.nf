@@ -46,6 +46,8 @@ workflow ATA_BRIDGE {
 //     }
 // }
 
+
+    //TODO -- based on inputs branch into single end and paired end
     if (params.layout == "single") {
         ch_single_merged          = reads
         ch_paired_unmerged_f      = reads.map { meta, reads -> [meta, "$projectDir/bin/alpha1"] }
