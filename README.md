@@ -23,62 +23,6 @@ The pipeline supports:
 - Statistical analysis and normalization of interaction data
 - Integration with matching RNA-seq data for enhanced analysis (termed "chromatin potential")
 
-## Pipeline Workflow
-
-The pipeline implements a multi-stage workflow that handles different types of RNA-chromatin interaction data:
-
-1. **Data Preprocessing**
-   - Quality control with FastQC
-   - Adapter trimming with FastP
-   - Optional deduplication for PCR duplicates
-
-2. **Protocol-Specific Processing**
-   - **One-to-all methods** (ChART, RAP, CHIRP): Direct trimming and alignment
-   - **All-to-all methods**:
-     - **Separate RNA/DNA  reads**: Sorting and processing RNA and DNA parts separately
-     - **Chimera reads with linker**: Bridge sequence identification and processing
-     - **iMARGI**: BWA alignment and specialized processing
-
-3. **Read Processing and Alignment**
-   - Short read trimming and filtering
-   - PEAR merging for paired-end reads
-   - Bridge splitting with custom tools
-   - Alignment using appropriate tools (STAR, BWA, Bowtie2, HISAT2)
-
-4. **Contact Extraction and Processing**
-   - BAM to contacts conversion
-   - Edit distance filtering and CIGAR filtering
-   - Integration of RNA-DNA parts into contact tables
-   - Contact normalization and deduplication
-
-5. **Annotation and Analysis**
-   - RNA-DNA contact annotation with genomic features
-   - RNA part annotation with transcriptome data
-   - Strand detection for RNA components
-   - Optional chromatin potential calculation with RNA-seq data
-
-6. **Downstream Analysis**
-   - Peak calling with MACS2 or BARDIC
-   - Statistical analysis and visualization
-   - Final contact table generation with header information
-   - Comprehensive reporting and data visualization
-
-The workflow adaptively handles different experimental protocols and data formats, providing a complete solution from raw sequencing data to biologically interpretable results.
-
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
-
-<!-- ## Default Steps
-
-The pipeline includes the following major steps:
-
-1. Read QC and preprocessing ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), [`FastP`](https://github.com/OpenGene/fastp))
-2. Bridge detection and read splitting (protocol-specific)
-3. Alignment of RNA and DNA components ([`STAR`](https://github.com/alexdobin/STAR), [`BWA`](https://github.com/lh3/bwa), [`Bowtie2`](http://bowtie-bio.sourceforge.net/bowtie2/), [`HISAT2`](http://daehwankimlab.github.io/hisat2/))
-4. Contact extraction and filtering
-5. Annotation and genomic feature assignment
-6. Statistical analysis and visualization
-7. Comprehensive report generation ([`MultiQC`](http://multiqc.info/)) -->
 
 ## Usage
 
@@ -195,6 +139,63 @@ The `test_full` profile automatically configures all necessary parameters includ
 
 > **Note:** The full test requires approximately 8GB of RAM and 4 CPU cores. At least 10 GB of free disk space is required: the download size is around 5000MB, the apptainer image size is 4000MB. The test should complete in about 30-45 minutes on a standard workstation.
 
+
+## Pipeline Workflow
+
+The pipeline implements a multi-stage workflow that handles different types of RNA-chromatin interaction data:
+
+1. **Data Preprocessing**
+   - Quality control with FastQC
+   - Adapter trimming with FastP
+   - Optional deduplication for PCR duplicates
+
+2. **Protocol-Specific Processing**
+   - **One-to-all methods** (ChART, RAP, CHIRP): Direct trimming and alignment
+   - **All-to-all methods**:
+     - **Separate RNA/DNA  reads**: Sorting and processing RNA and DNA parts separately
+     - **Chimera reads with linker**: Bridge sequence identification and processing
+     - **iMARGI**: BWA alignment and specialized processing
+
+3. **Read Processing and Alignment**
+   - Short read trimming and filtering
+   - PEAR merging for paired-end reads
+   - Bridge splitting with custom tools
+   - Alignment using appropriate tools (STAR, BWA, Bowtie2, HISAT2)
+
+4. **Contact Extraction and Processing**
+   - BAM to contacts conversion
+   - Edit distance filtering and CIGAR filtering
+   - Integration of RNA-DNA parts into contact tables
+   - Contact normalization and deduplication
+
+5. **Annotation and Analysis**
+   - RNA-DNA contact annotation with genomic features
+   - RNA part annotation with transcriptome data
+   - Strand detection for RNA components
+   - Optional chromatin potential calculation with RNA-seq data
+
+6. **Downstream Analysis**
+   - Peak calling with MACS2 or BARDIC
+   - Statistical analysis and visualization
+   - Final contact table generation with header information
+   - Comprehensive reporting and data visualization
+
+The workflow adaptively handles different experimental protocols and data formats, providing a complete solution from raw sequencing data to biologically interpretable results.
+
+<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
+     workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
+
+<!-- ## Default Steps
+
+The pipeline includes the following major steps:
+
+1. Read QC and preprocessing ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), [`FastP`](https://github.com/OpenGene/fastp))
+2. Bridge detection and read splitting (protocol-specific)
+3. Alignment of RNA and DNA components ([`STAR`](https://github.com/alexdobin/STAR), [`BWA`](https://github.com/lh3/bwa), [`Bowtie2`](http://bowtie-bio.sourceforge.net/bowtie2/), [`HISAT2`](http://daehwankimlab.github.io/hisat2/))
+4. Contact extraction and filtering
+5. Annotation and genomic feature assignment
+6. Statistical analysis and visualization
+7. Comprehensive report generation ([`MultiQC`](http://multiqc.info/)) -->
 
 ## Nextflow Modules implemented in this pipeline
 
