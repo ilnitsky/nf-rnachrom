@@ -68,7 +68,7 @@ The workflow adaptively handles different experimental protocols and data format
 <!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
      workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
 
-## Default Steps
+<!-- ## Default Steps
 
 The pipeline includes the following major steps:
 
@@ -78,7 +78,7 @@ The pipeline includes the following major steps:
 4. Contact extraction and filtering
 5. Annotation and genomic feature assignment
 6. Statistical analysis and visualization
-7. Comprehensive report generation ([`MultiQC`](http://multiqc.info/))
+7. Comprehensive report generation ([`MultiQC`](http://multiqc.info/)) -->
 
 ## Usage
 
@@ -141,10 +141,24 @@ Use the `control` column to specify which sample serves as the input control.
 
 ### Running the pipeline
 
+
+Check if you have Apptainer, Conda, or Docker installed:
+- Apptainer (formerly Singularity): [Installation Guide](https://apptainer.org/docs/admin/main/installation.html)
+- Conda: [Installation Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+- Docker: [Installation Guide](https://docs.docker.com/get-docker/)
+
+
+
+Clone the repository with Nextflow project:
+```bash
+git clone https://github.com/ilnitsky/nf-rnachrom.git
+```
+
+
 Now, you can run the pipeline using:
 
 ```bash
-nextflow run nf-core/rnachrom \
+nextflow run ./nf-rnachrom \
    -profile <docker/apptainer/conda/...> \
    --input samplesheet.csv \
    --exp_type <redc/imargi/radicl/chart/rap/chirp/...> \
@@ -243,20 +257,27 @@ The pipeline produces the following outputs:
 
 ## Test Run with External Data
 
+Download test dataset:
+
+```bash
+wget http://bioinf.fbb.msu.ru/ken/nextflow/test_data_nf-rnachrom.tar.gz && \
+tar -xzvf test_data_nf-rnachrom.tar.gz -C test_data_nf-rnachrom 
+```
+
 To test the pipeline functionality using pre-configured test data, you can run:
 
 ```bash
-nextflow run nf-core/rnachrom \
+nextflow run ./nf-rnachrom \
   -profile test_full,apptainer \
   --outdir test_results
 ```
 
 This test run will download example GRID-seq data from bioinf.fbb.msu.ru/ken and 
-process the data through all pipeline stages
+process the data through all pipeline stages. It will prepare GRCh38 index for genome.
 
 The `test_full` profile automatically configures all necessary parameters including reference genomes, annotation files, and processing options optimized for this test dataset.
 
-> **Note:** The full test requires approximately 8GB of RAM and 4 CPU cores. The download size is around 500MB, and the test should complete in about 30-45 minutes on a standard workstation.
+> **Note:** The full test requires approximately 8GB of RAM and 4 CPU cores. At least 10 GB of free disk space is required: the download size is around 5000MB, the apptainer image size is 4000MB. The test should complete in about 30-45 minutes on a standard workstation.
 
 ## Credits
 
