@@ -171,6 +171,31 @@ provided by the `-c` Nextflow option can be used to provide any configuration _*
 see [docs](https://nf-co.re/usage/configuration#custom-configuration-files).
 :::
 
+## Test Run with External Data
+
+Download test dataset:
+
+```bash
+wget http://bioinf.fbb.msu.ru/ken/nextflow/test_data_nf-rnachrom.tar.gz && \
+tar -xzvf test_data_nf-rnachrom.tar.gz -C test_data_nf-rnachrom 
+```
+
+To test the pipeline functionality using pre-configured test data, you can run:
+
+```bash
+nextflow run ./nf-rnachrom \
+  -profile test_full,apptainer \
+  --outdir test_results
+```
+
+This test run will download example GRID-seq data from bioinf.fbb.msu.ru/ken and 
+process the data through all pipeline stages. It will prepare GRCh38 index for genome.
+
+The `test_full` profile automatically configures all necessary parameters including reference genomes, annotation files, and processing options optimized for this test dataset.
+
+> **Note:** The full test requires approximately 8GB of RAM and 4 CPU cores. At least 10 GB of free disk space is required: the download size is around 5000MB, the apptainer image size is 4000MB. The test should complete in about 30-45 minutes on a standard workstation.
+
+
 ## Nextflow Modules implemented in this pipeline
 
 
@@ -255,29 +280,6 @@ The pipeline produces the following outputs:
 
 
 
-## Test Run with External Data
-
-Download test dataset:
-
-```bash
-wget http://bioinf.fbb.msu.ru/ken/nextflow/test_data_nf-rnachrom.tar.gz && \
-tar -xzvf test_data_nf-rnachrom.tar.gz -C test_data_nf-rnachrom 
-```
-
-To test the pipeline functionality using pre-configured test data, you can run:
-
-```bash
-nextflow run ./nf-rnachrom \
-  -profile test_full,apptainer \
-  --outdir test_results
-```
-
-This test run will download example GRID-seq data from bioinf.fbb.msu.ru/ken and 
-process the data through all pipeline stages. It will prepare GRCh38 index for genome.
-
-The `test_full` profile automatically configures all necessary parameters including reference genomes, annotation files, and processing options optimized for this test dataset.
-
-> **Note:** The full test requires approximately 8GB of RAM and 4 CPU cores. At least 10 GB of free disk space is required: the download size is around 5000MB, the apptainer image size is 4000MB. The test should complete in about 30-45 minutes on a standard workstation.
 
 ## Credits
 
