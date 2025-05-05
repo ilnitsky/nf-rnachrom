@@ -139,6 +139,7 @@ The `test_full` profile automatically configures all necessary parameters includ
 
 > **Note:** The full test requires approximately 8GB of RAM and 4 CPU cores. At least 10 GB of free disk space is required: the download size is around 5000MB, the apptainer image size is 4000MB. The test should complete in about 30-45 minutes on a standard workstation.
 
+> **Warning:** Nextflow automatically manages the file system mounts whenever a container is launched depending on the process input files. However, when a process input is a symbolic link, the linked file must be stored in the same folder where the symlink is located, or a sub-folder of it. Otherwise the process execution will fail because the launched container won’t be able to access the linked file.
 
 ## Pipeline Workflow
 
