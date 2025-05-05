@@ -1,4 +1,81 @@
 
+process FINAL_ANNOTATION {
+    // conda "${projectDir}/envs/secondary_processing.yml"
+    conda "${projectDir}/envs/full_env.yml"
+     
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+    tag "$contacts.baseName"
+    // errorStrategy 'ignore'
+
+    publishDir (
+        path: { "$params.outdir/annotation" },
+        mode: "copy"
+    ) 
+    input:
+    tuple val(meta), path(contacts)
+
+    output:
+    tuple val(meta), path("*UU.voted.tab.rc"),     emit: uu_voted
+    tuple val(meta), path("*UM.voted.tab.rc"),     emit: um_voted
+
+    script:
+
+    def annot_bedrc  = file(params.annot_BED)
+    def genes_prefix = annot_bedrc.baseName
+    def contacts_prefix = "${meta}"
+    def dist = '0'
+
+    """
+    ln -s ${annot_bedrc} ${genes_prefix}.bedrc
+    sort -k1,1 -k2,2n ${annot_bedrc} > ${genes_prefix}.sorted.bedrc
+
+    mkdir -p genes voted_${contacts_prefix}
+    bash ${projectDir}/bin/annotation/voting.sh \\
+             -q . \\
+             -g ${genes_prefix}.sorted.bedrc  \\
+             -d ${dist}  \\
+             -e .  \\
+             -c ${contacts}  \\
+             -o voted_${contacts_prefix}  \\
+             -s ${projectDir}/bin/annotation/
+
+    ln -s voted_${contacts_prefix}/contacts.voting.UU.bed ${contacts_prefix}.UU.voted.tab.rc
+    ln -s voted_${contacts_prefix}/contacts.voting.UM.bed ${contacts_prefix}.UM.voted.tab.rc
+    ln -s voted_${contacts_prefix}/singletons.UU.bed ${contacts_prefix}.UU.singletons.tab
+    ln -s voted_${contacts_prefix}/singletons.UM.bed ${contacts_prefix}.UM.singletons.tab
+    ln -s voted_${contacts_prefix}/contacts.voting.batki ${contacts_prefix}.voting.batki
+    """
+    
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 process ANNOTATION_VOTING {
     conda "${projectDir}/envs/secondary_processing.yml"
     tag "$contacts.baseName"
@@ -22,8 +99,10 @@ process ANNOTATION_VOTING {
     procedure = params.procedure == 'new' ? '--rna_parts' : ''
 
     """
+    awk '{print "chr"\$0}' ${contacts} > chr_${contacts}
+    awk '{print "chr"\$0}' ${params.annot_BED} > chr_${params.annot_BED}
     python3 ${projectDir}/bin/rnachrom_pipeline_faster/annotation_voting.py \\
-    ${contacts} ${params.annot_BED} ${procedure} --no_stat --cpus $task.cpus --outdir .
+    chr_${contacts} chr_${params.annot_BED} ${procedure} --no_stat --cpus $task.cpus --outdir .
 
     mkdir voted singletons selected_annot complement_annot
     mv *${id}.4-voted.tab  voted/
@@ -101,7 +180,8 @@ process ANNOTATION {
 
     // awk '(\$5=="+")' ${genes_prefix}.bedrc | awk 'BEGIN { OFS = "\\t"}; {print \$1, \$2, \$3, \$4, 0, \$5, \$6, \$7}' > genes/${genes_prefix}.genes_pos_strand.bed
     
-    
+    //     awk '{print "chr"\$0}' ${contacts} > chr_${contacts}
+    // awk '{print "chr"\$0}' ${genes_prefix}.bedrc  > chr_${genes_prefix}.bedrc
     
     // CLUSTERS_POS_STRAND=genes/${genes_prefix}.clusters_dist_${dist}_pos_strand.bed
     // CLUSTERS_NEG_STRAND=genes/${genes_prefix}.clusters_dist_${dist}_neg_strand.bed

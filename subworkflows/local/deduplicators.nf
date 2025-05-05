@@ -1,5 +1,6 @@
-include { FASTUNIQ                    } from '../../modules/local/fastuniq'
-include { FASTQ_DUPAWAY               } from '../../modules/local/fastq_dupaway'
+include { FASTUNIQ                    } from '../../modules/local/dedup/fastuniq'
+include { FASTQ_DUPAWAY               } from '../../modules/local/dedup/fastq_dupaway'
+include { SEQKIT_RMDUP                } from '../../modules/local/dedup/seqkit_rmdup'
 include { BBMAP_CLUMPIFY              } from '../../modules/nf-core/bbmap/clumpify/main'
 
 workflow DEDUP {
@@ -24,7 +25,14 @@ workflow DEDUP {
         ch_deduplicated     = BBMAP_CLUMPIFY.out.reads
         ch_deduplicated_log = BBMAP_CLUMPIFY.out.log
         ch_versions         = ch_versions.mix(BBMAP_CLUMPIFY.out.versions)
+    } else if (params.dedup_tool == "seqkit_rmdup") {
+        SEQKIT_RMDUP ( reads )
+        ch_deduplicated = SEQKIT_RMDUP.out.reads
+        ch_versions     = ch_versions.mix(SEQKIT_RMDUP.out.versions)
     }
+
+    // ch_deduplicated.view{"ch_deduplicated: $it"}
+
     emit:
     reads    =    ch_deduplicated                                  
     versions =    ch_versions // channel: [ versions.yml ]

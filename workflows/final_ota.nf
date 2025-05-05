@@ -5,7 +5,7 @@
 */
 
 include { paramsSummaryLog; paramsSummaryMap } from 'plugin/nf-validation'
-include { colored_outputs; processChannelStatistics; processMergedStatisticsChannel } from '../modules/local/functions'
+include { colored_outputs; processChannelStatistics; processMergedStatisticsChannel } from '../modules/local/execution/functions'
 
 
 def logo = NfcoreTemplate.logo(workflow, params.monochrome_logs)
@@ -39,13 +39,11 @@ ch_config               =  Channel.fromPath( "$projectDir/assets/new_config.json
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PrepareSoftware         } from '../modules/local/prepare_software'
+include { PrepareSoftware         } from '../modules/local/execution/prepare_software'
 include { INPUT_CHECK             } from '../subworkflows/local/input_check'
 include { DEDUP                   } from '../subworkflows/local/deduplicators'
 include { TRIM                    } from '../subworkflows/local/trimming'
 include { ALIGN                   } from '../subworkflows/local/new_align'
-// include { OTA                     } from '../subworkflows/local/OTA'
-// include { ATA                     } from '../subworkflows/local/ATA'
 include { ATA_BRIDGE              } from '../subworkflows/local/ATA_bridge'
 include { BAM_SORT_STATS_SAMTOOLS } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'  
 
@@ -63,8 +61,37 @@ include { FASTQC as FASTQC_AFTER                 } from '../modules/nf-core/fast
 include { MULTIQC                                } from '../modules/nf-core/multiqc/main'
 include { GUNZIP as GUNZIP_FASTA                 } from '../modules/nf-core/gunzip/main'
 include { CUSTOM_GETCHROMSIZES                   } from '../modules/nf-core/custom/getchromsizes/main'
-include { HISAT2_EXTRACTSPLICESITES              } from '../modules/nf-core/hisat2/extractsplicesites/main'
-include { HISAT2_BUILD                           } from '../modules/nf-core/hisat2/build'
+include { BAM_TO_CONTACTS                        } from '../modules/local/bam_to_contacts'
+include { FILTER_CONTACTS                        } from '../modules/local/filter_contacts'
+include { BLACKLIST                              } from '../modules/local/blacklist'
+include { DETECT_STRAND                          } from '../modules/local/detect_strand'
+include { MERGE_REPLICAS                         } from '../modules/local/merge_replicas'
+include { FINAL_ANNOTATION                       } from '../modules/local/annotation'
+include { BARDIC                                 } from '../modules/local/bardic'
+include { MACS2_CALLPEAK                         } from '../modules/nf-core/macs2/callpeak/main'  
+include { GENERATE_BINS                          } from '../modules/local/ota_secondary_processing/generate_bins'
+include { SMOOTH_INPUT                           } from '../modules/local/ota_secondary_processing/smooth_input'
+include { NORMALIZE_TREATMENT                    } from '../modules/local/ota_secondary_processing/normalize_treatment'
+include { ANNOTATE_DNA                           } from '../modules/local/ota_secondary_processing/annotate_dna'
+
+include { PLOT_STATS                             } from '../modules/local/plot_stats'
+include { CUSTOM_DUMPSOFTWAREVERSIONS            } from '../modules/nf-core/custom/dumpsoftwareversions/main'
+
+
+
+// include { CIGAR_FILTER                           } from '../modules/local/cigar_filter.nf'
+// include { BEDTOOLS_BAMTOBED                      } from '../modules/nf-core/bedtools/bamtobed/main'
+// include { HISAT2_EXTRACTSPLICESITES              } from '../modules/nf-core/hisat2/extractsplicesites/main'
+// include { HISAT2_BUILD                           } from '../modules/nf-core/hisat2/build'
+// include { SAMTOOLS_VIEW as BAM_FILTER            } from '../modules/nf-core/samtools/view/main'
+// include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_NEW } from '../modules/local/join_raw_contacts.nf'
+// include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_OLD } from '../modules/local/join_raw_contacts.nf'
+// include { BACKGROUND                             } from '../modules/local/background_ata'
+// include { NORMALIZE_RAW; NORMALIZE_N2; SCALING   } from '../modules/local/rnachromprocessing'
+// include { VALIDATE_ANNOT                         } from '../modules/local/rnachromprocessing'
+// include { CALC_STATS                             } from '../modules/local/calc_stats'
+// include { ADD_SRR                                } from '../modules/local/add_srr.nf'
+// include { SPLIT_BY_CHRS                          } from '../modules/local/split_by_chrs'
 // include { SMARTSEQ_FILTER                        } from '../modules/local/smartseq_filter'
 // include { RSITES                                 } from '../modules/local/rsites'
 // include { NUCL_DISTR_RSITES as NUCL_DISTR        } from '../modules/local/nucleotide_distribution_rsites'
@@ -72,34 +99,6 @@ include { HISAT2_BUILD                           } from '../modules/nf-core/hisa
 // include { CONFIG                                 } from '../modules/local/rnachromprocessing'
 // include { XRNA_CONFIG                            } from '../modules/local/xrna_assembly'
 // include { HISAT2_ALIGN                           } from '../modules/nf-core/hisat2/align/main'
-include { SAMTOOLS_VIEW as BAM_FILTER            } from '../modules/nf-core/samtools/view/main'
-
-
-include { BAM_TO_CONTACTS                        } from '../modules/local/bam_to_contacts'
-include { FILTER_CONTACTS                        } from '../modules/local/filter_contacts'
-
-include { BLACKLIST                              } from '../modules/local/blacklist'
-
-
-include { BEDTOOLS_BAMTOBED                      } from '../modules/nf-core/bedtools/bamtobed/main'
-include { DETECT_STRAND                          } from '../modules/local/detect_strand'
-include { CIGAR_FILTER                           } from '../modules/local/cigar_filter.nf'
-// include { ADD_SRR                                } from '../modules/local/add_srr.nf'
-include { MERGE_REPLICAS                         } from '../modules/local/merge_replicas'
-include { SPLIT_BY_CHRS                          } from '../modules/local/split_by_chrs'
-include { ANNOTATION_VOTING                      } from '../modules/local/annotation'
-// include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_NEW } from '../modules/local/join_raw_contacts.nf'
-// include { JOIN_RAW_CONTACTS as JOIN_CONTACTS_OLD } from '../modules/local/join_raw_contacts.nf'
-// include { BACKGROUND                             } from '../modules/local/background_ata'
-// include { NORMALIZE_RAW; NORMALIZE_N2; SCALING   } from '../modules/local/rnachromprocessing'
-// include { VALIDATE_ANNOT                         } from '../modules/local/rnachromprocessing'
-include { BARDIC                                 } from '../modules/local/bardic'
-include { MACS2_CALLPEAK                         } from '../modules/nf-core/macs2/callpeak/main'  
-include { GENERATE_BINS; SMOOTH_INPUT            } from '../modules/local/ota_secondary_processing'
-include { NORMALIZE_TREATMENT; ANNOTATE_DNA      } from '../modules/local/ota_secondary_processing'
-// include { CALC_STATS                             } from '../modules/local/calc_stats'
-include { PLOT_STATS                             } from '../modules/local/plot_stats'
-include { CUSTOM_DUMPSOFTWAREVERSIONS            } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 ANSI_RESET = "\u001B[0m";
 ANSI_BLACK = "\u001B[30m";
@@ -146,6 +145,12 @@ workflow OTA {
     ch_chrom_sizes
     ch_statistic
     ch_versions
+    ch_hisat2_index
+    ch_star_index
+    ch_bowtie2_index
+    ch_bwa_index
+    ch_splicesites
+    ch_genome_fasta
 
     main:
 
@@ -155,9 +160,6 @@ workflow OTA {
     ch_statistic_merged = Channel.empty()
     ch_logs = Channel.empty()
      
-    ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
-    ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
-    ch_adapters_file  = params.adapters_file ?  Channel.fromPath(params.adapters_file) : Channel.empty()
     ch_gtf = Channel.value(params.annot_GTF)
 
     if (!params.ch_input_check_reads) {
@@ -219,7 +221,16 @@ workflow OTA {
     // ch_for_trimming.view()
 
 
-    ALIGN ( ch_input_align )
+    ALIGN ( 
+        ch_input_align,
+        ch_hisat2_index,
+        ch_star_index,
+        ch_bowtie2_index,
+        ch_bwa_index,
+        ch_splicesites,
+        ch_genome_fasta,
+        ch_gtf
+    )
     ch_bam                  = ALIGN.out.bam
     ch_align_log            = ALIGN.out.logs                               
     ch_versions             = ch_versions.mix(ALIGN.out.versions)

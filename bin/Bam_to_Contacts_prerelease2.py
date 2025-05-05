@@ -66,6 +66,7 @@ def process_reads(r1_iter, r2_iter, other_tags, mode='STAR'):
                     else:
                         data['alignments'] = format_alignment(read)
                         data['other_tags'] = extract_other_tags(read, other_tags)
+                # print(data['secondary_alignments'], "\n\n")
                 read = next(iter_func, None)
 
             if data is r1_data:
@@ -78,19 +79,18 @@ def process_reads(r1_iter, r2_iter, other_tags, mode='STAR'):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process BAM files and output alignment information.')
     parser.add_argument('-r1', '--rna_bam', required=True, help='Input RNA BAM file (R1)')
-    parser.add_argument('-r2', '--dna_bam', required=True, help='Input DNA BAM file (R2)')
-    parser.add_argument('-m', '--mode', choices=['BWA', 'HISAT'], required=True, 
+    parser.add_argument('-r2', '--dna_bam', help='Input DNA BAM file (R2)')
+    parser.add_argument('-m', '--mode', choices=['BWA', 'STAR', 'HISAT'], required=True, 
                         help='Alignment mode: BWA or HISAT')
-    parser.add_argument('-e', '--exp_type', choices=['OTA_PE', 'OTA_SE', 'ATA'], required=True,
-                        help='Experiment type: OTA_PE, OTA_SE, or ATA')
+    parser.add_argument('-e', '--exp_type', choices=['OTA_PE', 'OTA_SE', 'ATA', 'RNA_SEQ_PE', 'RNA_SEQ_SE'], required=True,
+                        help='Experiment type: OTA_PE, OTA_SE, ATA, RNA_SEQ_PE, or RNA_SEQ_SE')
     parser.add_argument('-t', '--other_tags', nargs='+', default=["NH"],
-                        help='List of additional SAM tags to extract (default: NH GG WS KU)')
+                        help='List of additional SAM tags to extract (default: NH)')
     parser.add_argument('-p', '--prefix', required=True,
                         help='Output file prefix')
     return parser.parse_args()
 
 def write_header(file, exp_type):
-
     if exp_type == 'ATA':
         header = ["read_id", "ATA_pairtype", 
                 "rna_chr", "rna_start", "rna_end", "rna_strand", "rna_cigar", "rna_NM", "rna_mapq",
@@ -109,19 +109,44 @@ def write_header(file, exp_type):
                 "dna2_chr", "dna2_start", "dna2_end", "dna2_strand", "dna2_cigar", "dna2_NM", "dna2_mapq",
                 "dna1_secondary_alignments", "dna2_secondary_alignments",
                 "dna1_other_tags", "dna2_other_tags"]
+    elif exp_type == 'RNA_SEQ_PE':          
+        header = ["read_id", "RNAseq_PE_pairtype", 
+                "rna1_chr", "rna1_start", "rna1_end", "rna1_strand", "rna1_cigar", "rna1_NM", "rna1_mapq",
+                "rna2_chr", "rna2_start", "rna2_end", "rna2_strand", "rna2_cigar", "rna2_NM", "rna2_mapq",
+                "rna1_secondary_alignments", "rna2_secondary_alignments",
+                "rna1_other_tags", "rna2_other_tags"]
+    elif exp_type == 'RNA_SEQ_SE':          
+        header = ["read_id", "RNAseq_SE_pairtype", 
+                "rna1_chr", "rna1_start", "rna1_end", "rna1_strand", "rna1_cigar", "rna1_NM", "rna1_mapq",
+                "rna2_chr", "rna2_start", "rna2_end", "rna2_strand", "rna2_cigar", "rna2_NM", "rna2_mapq",
+                "rna1_secondary_alignments", "rna2_secondary_alignments",
+                "rna1_other_tags", "rna2_other_tags"]
               
     file.write('\t'.join(header) + '\n')
 
 def main():
     args = parse_arguments()
-
+    
     try:
         unique_file = f"{args.prefix}_Unique_RNA.tab.rc"
         other_file = f"{args.prefix}_Other.tab.rc"
 
+        # For RNA-seq SE, use dummy values for r2
+        if args.exp_type == 'RNA_SEQ_SE':
+            args.dna_bam = args.rna_bam  
+            processing_exp_type = 'RNA_SEQ_SE'
+        elif args.exp_type == 'RNA_SEQ_PE':
+            if not args.dna_bam:
+                args.dna_bam = args.rna_bam  # Use the same file for PE RNA-seq
+            processing_exp_type = 'RNA_SEQ_PE'
+        else:
+            processing_exp_type = args.exp_type
+            if not args.dna_bam:
+                raise ValueError("DNA BAM file (-r2) is required for RNA-DNA experiments")
+
         with open(unique_file, 'w') as f_unique, open(other_file, 'w') as f_other:
-            write_header(f_unique, args.exp_type)
-            write_header(f_other, args.exp_type)
+            write_header(f_unique, processing_exp_type)
+            write_header(f_other, processing_exp_type)
 
             for query_name, r1_data, r2_data in process_reads(
                 process_bam(args.rna_bam), 
@@ -132,7 +157,7 @@ def main():
                 r1_status = get_mapping_status(r1_data['alignments'], r1_data['secondary_alignments'])
                 r2_status = get_mapping_status(r2_data['alignments'], r2_data['secondary_alignments'])
                 pairtype = f"{r1_status}{r2_status}"
-
+                print(r1_data, r2_data, pairtype)
                 r1_alignments = r1_data['alignments'] if r1_data['alignments'] else ['*'] * 7
                 r2_alignments = r2_data['alignments'] if r2_data['alignments'] else ['*'] * 7
 

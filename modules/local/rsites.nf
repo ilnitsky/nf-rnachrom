@@ -1,6 +1,12 @@
 process RSITES {
     tag "$meta.id"
-    conda "${projectDir}/envs/rnachromprocessing.yaml"
+    conda "${projectDir}/envs/full_env.yml"
+    // conda "${projectDir}/envs/rnachromprocessing.yaml"
+     
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
     label 'process_single'
     publishDir (
         path: { "$params.outdir/rsites" },
@@ -44,12 +50,12 @@ process RSITES {
     [ ! -f  ${meta.DNA}.dna.fastq ] && ln -sf ${dna} ${meta.DNA}.dna.fastq
     [ ! -f  ${meta.RNA}.rna.fastq ] && ln -sf ${rna} ${meta.RNA}.rna.fastq
     
-    ${projectDir}/bin/EndsProcessor  ${meta.DNA}.dna.fastq ${meta.RNA}.rna.fastq  "${dna_part} ${rna_part}"
+    EndsProcessor  ${meta.DNA}.dna.fastq ${meta.RNA}.rna.fastq  "${dna_part} ${rna_part}"
 
     ln -s ${meta.DNA}_RNA_RS.fastq ${meta.RNA}.rna.rsites.fastq    
     ln -s ${meta.DNA}_DNA_RS.fastq ${meta.DNA}.dna.rsites.fastq
 
-    python ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}_last_oligos.tsv
+    python3 ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}_last_oligos.tsv
     """
 // python plot_rsites.py ${meta.prefix}  
 }

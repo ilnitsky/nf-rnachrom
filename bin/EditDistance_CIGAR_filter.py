@@ -23,13 +23,15 @@ def headerParser(experiment_type): #, mode
         r1_cigar_type, r1_N_softClipp_bp, r1_softClipp_type = "dna1_cigar_type", "dna1_N_softClipp_bp", "dna1_softClipp_type"
         r2_cigar_type, r2_N_softClipp_bp, r2_softClipp_type = "dna2_cigar_type", "dna2_N_softClipp_bp", "dna2_softClipp_type"
     
-    else: #'RNAseq_SE', 'RNAseq_PE'
+    elif experiment_type in ['RNAseq_SE', 'RNAseq_PE']:
         pairtype = experiment_type + '_pairtype' 
         r1_chr, r1_start, r1_end, r1_strand, r1_cigar, r1_secondary_alignments, r1_other_tags, r1_NM, r1_mapQ = 'rna1_chr', 'rna1_start', 'rna1_end', 'rna1_strand', 'rna1_cigar', 'rna1_secondary_alignments', 'rna1_other_tags', 'rna1_NM', 'rna1_mapq' 
         r2_chr, r2_start, r2_end, r2_strand, r2_cigar, r2_secondary_alignments, r2_other_tags, r2_NM, r2_mapQ = 'rna2_chr', 'rna2_start', 'rna2_end', 'rna2_strand', 'rna2_cigar', 'rna2_secondary_alignments', 'rna2_other_tags', 'rna2_NM', 'rna2_mapq'
 
         r1_cigar_type, r1_N_softClipp_bp, r1_softClipp_type = "rna1_cigar_type", "rna1_N_softClipp_bp", "rna1_softClipp_type"
         r2_cigar_type, r2_N_softClipp_bp, r2_softClipp_type = "rna2_cigar_type", "rna2_N_softClipp_bp", "rna2_softClipp_type"
+    else:
+        raise ValueError(f"Invalid experiment type: {experiment_type}")
     #if mode == "explorer":
     return SRR_ID, pairtype, r1_chr, r1_start, r1_end, r1_strand, r1_cigar, r1_secondary_alignments, r1_other_tags, r1_NM, r2_chr, r2_start, r2_end, r2_strand, r2_cigar, r2_secondary_alignments, r2_other_tags, r2_NM, r1_mapQ, r2_mapQ, r1_cigar_type, r1_N_softClipp_bp, r1_softClipp_type, r2_cigar_type, r2_N_softClipp_bp, r2_softClipp_type #r1_final_edit_dist, , r2_final_edit_dist
     #else:

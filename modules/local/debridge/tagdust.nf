@@ -1,8 +1,11 @@
-process TAGDUST_SPLIT_PE {
+process TAGDUST_DEBRIDGE {
     tag "$meta.id"
     label 'process_high'
-    
-    container = 'ghcr.io/oist/plessy_splitspliceleaderpe'
+    conda "${projectDir}/envs/full_env.yml"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+    // container = 'ghcr.io/oist/plessy_splitspliceleaderpe'
 
     input:
     tuple val(meta), path(reads)

@@ -1,8 +1,10 @@
 process BITAP_DEBRIDGE {
   tag "$meta.id,$meta.prefix"
   //TO DO: add double bridge and no bridge stats
-  conda "${projectDir}/envs/debridge.yml"
-
+  conda "${projectDir}/envs/full_env.yml"
+  container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
   publishDir ( path: { "$params.outdir/debridged/bitap" }, mode: "copy" )
   
   input:
@@ -25,9 +27,11 @@ process BITAP_DEBRIDGE {
   meta.RNA        = "${meta.prefix}_1"
   meta.DNA        = "${meta.prefix}_2"
 
+  // def bin_path = params.bin_from_project ? "${projectDir}/bin" : "."
+
   if (meta.single_end || params.layout == "single") {
     """
-    ${projectDir}/bin/BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F,R
+    BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F,R
     cat ${meta.prefix}.DNA.fastq > ${meta.prefix}.dna.fastq
     cat ${meta.prefix}.RNA.fastq > ${meta.prefix}.rna.fastq
     python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
@@ -35,16 +39,16 @@ process BITAP_DEBRIDGE {
   } else {
     if (params.exp_type == 'redc' || params.exp_type == 'redchip' ) {
       """
-      ${projectDir}/bin/BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
-      ${projectDir}/bin/BridgeSplitter -s -e -t -i ${paired_unmerged_f} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
-      cat ${meta.prefix}.DNA.fastq ${meta.prefix}_1.DNA.fastq > ${meta.prefix}.dna.fastq
-      cat ${meta.prefix}.RNA.fastq ${meta.prefix}_1.RNA.fastq > ${meta.prefix}.rna.fastq
+      BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
+      BridgeSplitter -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0R
+      cat ${meta.prefix}.DNA.fastq ${meta.prefix}_2.DNA.fastq > ${meta.prefix}.dna.fastq
+      cat ${meta.prefix}.RNA.fastq ${meta.prefix}_2.RNA.fastq > ${meta.prefix}.rna.fastq
       python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
       """
     } else if (params.exp_type == 'char' || params.exp_type == 'grid' || params.exp_type == 'radicl' )  {
       """
-      ${projectDir}/bin/BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F,R
-      ${projectDir}/bin/BridgeSplitter -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0F,R0,0R
+      BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F,R
+      BridgeSplitter -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0F,R0,0R
       cat ${meta.prefix}.DNA.fastq ${meta.prefix}_2.DNA.fastq > ${meta.prefix}.dna.fastq
       cat ${meta.prefix}.RNA.fastq ${meta.prefix}_2.RNA.fastq > ${meta.prefix}.rna.fastq
       python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./ 
@@ -55,60 +59,38 @@ process BITAP_DEBRIDGE {
 }
 
 
+  // if (meta.single_end || params.layout == "single") {
+  //   """
+  //   ${projectDir}/bin/BridgeSplitter2 -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F,R
+  //   cat ${meta.prefix}.DNA.fastq > ${meta.prefix}.dna.fastq
+  //   cat ${meta.prefix}.RNA.fastq > ${meta.prefix}.rna.fastq
+  //   python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
+  //   """
+  // } else {
+  //   if (params.exp_type == 'redc' || params.exp_type == 'redchip' ) {
+  //     """
+  //     ${projectDir}/bin/BridgeSplitter2 -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
+  //     ${projectDir}/bin/BridgeSplitter2 -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0R
+  //     cat ${meta.prefix}.DNA.fastq ${meta.prefix}_2.DNA.fastq > ${meta.prefix}.dna.fastq
+  //     cat ${meta.prefix}.RNA.fastq ${meta.prefix}_2.RNA.fastq > ${meta.prefix}.rna.fastq
+  //     python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
+  //     """
+  //   } else if (params.exp_type == 'char' || params.exp_type == 'grid' || params.exp_type == 'radicl' )  {
+  //     """
+  //     ${projectDir}/bin/BridgeSplitter2 -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F,R
+  //     ${projectDir}/bin/BridgeSplitter2 -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0F,R0,0R
+  //     cat ${meta.prefix}.DNA.fastq ${meta.prefix}_2.DNA.fastq > ${meta.prefix}.dna.fastq
+  //     cat ${meta.prefix}.RNA.fastq ${meta.prefix}_2.RNA.fastq > ${meta.prefix}.rna.fastq
+  //     python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./ 
+  //     python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}_2.codes.tsv PE ./ ./ 
+  //     """
 
+      // ${projectDir}/bin/BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
+      // ${projectDir}/bin/BridgeSplitter -s -e -t -i ${paired_unmerged_f} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F
+      // cat ${meta.prefix}.DNA.fastq ${meta.prefix}_1.DNA.fastq > ${meta.prefix}.dna.fastq
+      // cat ${meta.prefix}.RNA.fastq ${meta.prefix}_1.RNA.fastq > ${meta.prefix}.rna.fastq
+      // python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
 
-process JULIA_DEBRIDGE_CHARTOOLS {
-  //TO DO: make usable conda env for julia path
-  //TO DO: add double bridge and no bridge stats
-  conda "${projectDir}/envs/debridge.yml"
-
-  publishDir ( path: { "$params.outdir/debridged/chartools" }, mode: "copy" )
-  
-  input:
-  tuple val(meta), path(single_merged)
-  tuple val(meta), path(paired_unmerged_f)
-  tuple val(meta), path(paired_unmerged_r)
-  
-
-  output:
-  tuple val(meta), path("*.dna.fastq"),   emit: dna
-  tuple val(meta), path("*.rna.fastq"),   emit: rna  
-  tuple val(meta), path("tmp/*positions*"),  emit: positions
-  tuple val(meta), path("tmp/*summary*"),  emit: summary
-  tuple val(meta), path("*.bridge_codes.tsv"),  emit: bridge_codes
-  tuple val(meta), path("*.png"),  emit: summary_plot
-
-  script:
-  def bridge_for  = params.forward_bridge_seq
-  def bridge_rev  = params.reverse_bridge_seq
-  def min_seq_len = params.min_rna_dna_parts_length
-  def mism        = params.max_mismatches
-
-
-  meta.RNA        = "${meta.prefix}_1"
-  meta.DNA        = "${meta.prefix}_2"
-
-  """
-  julia -e 'using Pkg; Pkg.status()'
-
-  mkdir tmp
-
-  ${projectDir}/bin/src/debridge.jl  ${bridge_rev} ${bridge_for} \\
-    tmp/${meta.prefix}_single_merged_ ${single_merged} -s -d 1 -p 1 -e ${mism} -r -v > ${meta.prefix}.SE.bridge_codes.tsv
-
-  ${projectDir}/bin/src/debridge.jl ${bridge_for} ${bridge_rev} \\
-    tmp/${meta.prefix}_unmerged_ ${paired_unmerged_f} ${paired_unmerged_r} -d 1 -p 1 -e ${mism} -r -v > ${meta.prefix}.PE.bridge_codes.tsv
-
-  cat tmp/${meta.prefix}_single_merged_F.dna.fastq tmp/${meta.prefix}_single_merged_R.dna.fastq \\
-      tmp/${meta.prefix}_unmerged_F0.dna.1.fastq  tmp/${meta.prefix}_unmerged_0R.dna.fastq   > ${meta.prefix}.dna.fastq
-
-  cat tmp/${meta.prefix}_single_merged_F.rna.fastq tmp/${meta.prefix}_single_merged_R.rna.fastq \\
-      tmp/${meta.prefix}_unmerged_F0.rna.1.fastq tmp/${meta.prefix}_unmerged_0R.rna.2.fastq  > ${meta.prefix}.rna.fastq
-
-  python ${projectDir}/bin/debridge_stats.py tmp/${meta.prefix}_single_merged_summary.SE.txt tmp/${meta.prefix}_unmerged_summary.PE.txt ${meta.prefix}_bridge_summary_plot.png
-
-"""
-}
 
 
 

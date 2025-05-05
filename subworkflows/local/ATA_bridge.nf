@@ -1,8 +1,9 @@
 
 include { PEAR                        } from '../../modules/nf-core/pear/main'
 include { BBMAP_BBMERGE               } from '../../modules/local/bbmap/bbmerge/main'
-include { BITAP_DEBRIDGE              } from '../../modules/local/debridge'
-include { JULIA_DEBRIDGE_CHARTOOLS    } from '../../modules/local/debridge'
+include { BITAP_DEBRIDGE              } from '../../modules/local/debridge/bitap_debridge'
+include { JULIA_DEBRIDGE_CHARTOOLS    } from '../../modules/local/debridge/chartools'
+include { TAGDUST_DEBRIDGE            } from '../../modules/local/debridge/tagdust'
 include { HISAT2_ALIGN                } from '../../modules/nf-core/hisat2/align/main'
 include { SAMTOOLS_VIEW as BAM_FILTER } from '../../modules/nf-core/samtools/view/main'
 include { BEDTOOLS_BAMTOBED           } from '../../modules/nf-core/bedtools/bamtobed/main'

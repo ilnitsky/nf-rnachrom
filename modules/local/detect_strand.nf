@@ -1,8 +1,14 @@
 process DETECT_STRAND {
     // tag "$params.trim_tool"
-    conda "${projectDir}/envs/rnachromprocessing.yaml"
+    conda "${projectDir}/envs/full_env.yml"
+    // conda "${projectDir}/envs/rnachromprocessing.yaml"
+     
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
     label 'process_single'
-    errorStrategy 'ignore'
+    // errorStrategy 'ignore'
     publishDir (
         path: { "$params.outdir/detect_strand" },
         mode: "copy"
@@ -12,7 +18,7 @@ process DETECT_STRAND {
     tuple val(meta), path(contacts)
 
     output:
-    tuple val(meta), path('res/*.{bed,tab}'), emit: files_fixed_strand
+    tuple val(meta), path('res/*.{bed,tab,tab.rc}'), emit: files_fixed_strand
     tuple val(meta), path('*_wins.tsv'),  emit: strand_vote_result
     tuple val(meta), path('*.png'),  emit: strand_vote_png
 
@@ -32,18 +38,17 @@ process DETECT_STRAND {
     separate_rna_dna = params.procedure == 'new' ? 'true' : ''
 
     """
-
-    echo -e "rna_chr\\trna_bgn\\trna_end\\tid\\trna_strand\\trna_cigar\\tdna_chr\\tdna_bgn\\tdna_end\\tdna_strand\\tdna_cigar\\tSRR_ID" > ${prefix}.tab
-    awk  'BEGIN{FS="\\t"; OFS=FS}{print \$3, \$4, \$5, \$1, \$6, \$7, \$10, \$11, \$12, \$13, \$14, \$1}' ${contacts[0]} >> ${prefix}.tab
-
     mkdir res
     mv ${contacts[0]} res/${contacts[0]}
+
+    ln -s res/${contacts[0]} ${prefix}.tab
+    
 
     cat <<-END_JSON > config.json
     {
       "input_dir":".",
       "output_dir":".",
-      "gtf_annotation":"${params.annot_GTF}",
+      "gene_annotation":"${params.annot_GTF}",
       "genes_list":"${params.detect_strand_genes_list}",
       "prefix":"${prefix}",
       "exp_groups":{"${params.exp_type}":["${prefix}"]}
@@ -71,10 +76,14 @@ process DETECT_STRAND {
     """
 
 }
+    // mkdir res
+    // mv ${contacts[0]} res/${contacts[0]}
+    // echo -e "rna_chr\\trna_start\\trna_end\\trna_strand\\trna_cigar\\tdna_chr\\tdna_start\\tdna_end\\tdna_strand\\tdna_cigar\\tSRR_ID\\tid" > ${prefix}.tab
+    // awk  'NR>1{FS="\\t"; OFS=FS}{print \$3, \$4, \$5, \$6, \$7, \$10, \$11, \$12, \$13, \$14, \$1, \$1}' ${contacts[0]} >> ${prefix}.tab
 
 
 def extractPrefix2(String filename) {
-    def matcher = filename =~ /^(.+?)(\.bed|\.tab)(\.gz)?$/
+    def matcher = filename =~ /^(.+?)(\.bed|\.tab|\.tab\.rc|\.rc)(\.gz)?$/
     return matcher ? matcher[0][1] : null
 }
 

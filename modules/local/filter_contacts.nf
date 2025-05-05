@@ -1,8 +1,14 @@
 process FILTER_CONTACTS {
-    conda "${projectDir}/envs/secondary_processing.yml"
+    conda "${projectDir}/envs/full_env.yml"
+    // conda "${projectDir}/envs/secondary_processing.yml"
+     
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
     label 'process_single'
     publishDir (
-        path: { "$params.outdir/Filter_contacts" },
+        path: { "$params.outdir/Filter_contacts/${meta.prefix}" },
         mode: "copy"
     ) 
         
@@ -14,6 +20,7 @@ process FILTER_CONTACTS {
     tuple val(meta), path('filtered_*.tab.rc'), emit: filtered_contacts
     tuple val(meta), path('out*.tab.rc'), emit: filtered_out
     tuple val(meta), path('id_reads_*.tab.rc'), emit: ucarna_id
+    tuple val(meta), path('cigar_stat_*.tab.rc'), emit: cigar_stats
     tuple val(meta), path('*png'), emit: png
     // tuple val(meta), path('*_wins.tsv'),  emit: strand_vote_result
 
@@ -23,7 +30,8 @@ process FILTER_CONTACTS {
 
     def mode = meta.method == "OTA" ? 
         (meta.single_end ? "OTA_SE" : "OTA_PE") : 
-        (meta.method == "ATA" ? "ATA, not iMARGI" : null)
+        (meta.method == "ATA" ? "ATA, not iMARGI" :
+        (meta.method == "RNA-seq" ? (meta.single_end ? "RNAseq_SE" : "RNAseq_PE") : null))
 
     def ucarna_assembly = params.ucarna_assembly ? "no" : "yes" 
     // def max_insert_size = params.pe_insert_size

@@ -2,6 +2,14 @@ process SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_single'
 
+    conda "${projectDir}/envs/full_env.yml"
+    // conda "${projectDir}/envs/secondary_processing.yml"
+  
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+   
     // conda "conda-forge::python=3.8.3"
     // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
     //     'https://depot.galaxyproject.org/singularity/python:3.8.3' :

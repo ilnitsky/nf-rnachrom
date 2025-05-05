@@ -15,11 +15,25 @@ workflow INPUT_CHECK {
     SAMPLESHEET_CHECK ( samplesheet )
         .csv
         .splitCsv ( header:true, sep:',' )
+        .branch {
+            rnaseq: it.sample.startsWith('rnaseq_')
+            ata: !it.sample.startsWith('rnaseq_')
+        }
+        .set { reads_by_type }
+
+    // Process ATA samples
+    reads_by_type.ata
         .map { params.bridge_processing || ['chart', 'rap', 'chirp'].contains(params.exp_type) ? create_fastq_channel(it) : create_fastq_channel_rna_dna(it) }
         .set { reads }
 
+    // Process RNA-seq samples
+    reads_by_type.rnaseq
+        .map { create_rnaseq_channel(it) }
+        .set { rnaseq_reads }
+
     emit:
     reads                                     // channel: [ val(meta), [ reads ] ]
+    rnaseq_reads                              // channel: [ val(meta), [ reads ] ]
     versions = SAMPLESHEET_CHECK.out.versions // channel: [ versions.yml ]
     csv = SAMPLESHEET_CHECK.out.csv           // channel: [ samplesheet.csv ]
 }
@@ -41,11 +55,19 @@ def extractPrefix2(String filename) {
 def create_fastq_channel(LinkedHashMap row) {
     // create meta map
     filename = new File(row.fastq_1).getName()
-
     def meta = [:]
     meta.id         = row.sample
     meta.single_end = row.single_end.toBoolean()
     meta.prefix     = extractPrefix(filename)
+    meta.method     = "OTA"                      // One-to-all type of methods
+    
+    // Parse description field if it exists
+    if (row.containsKey("description") && row.description) {
+        parseDescription(row.description, meta)
+    } else {
+        // Maintain backward compatibility
+        meta.rnaseq = row.rnaseq ?: ""          // Store RNA-seq group or empty string
+    }
 
     //Parse input/treatment metadata in OTA libraries
     if (row.containsKey("control")) {
@@ -58,9 +80,9 @@ def create_fastq_channel(LinkedHashMap row) {
         meta.method = "OTA"
     }
 
-    if (meta.id == "rnaseq") {
-        meta.method = "RNA-seq"
-    }
+    // if (meta.id == "rnaseq") {
+    //     meta.method = "RNA-seq"
+    // }
 
     // add path(s) of the fastq file(s) to the meta map
     def fastq_meta = []
@@ -89,11 +111,18 @@ def create_fastq_channel_rna_dna(LinkedHashMap row) {
     meta.DNA        = extractPrefix2(dna_filename)
     meta.single_end = false
     meta.method     = "ATA"                      // All-to-all type of methods
-
-
-    if (meta.id == "rnaseq") {
-        meta.method = "RNA-seq"
+    
+    // Parse description field if it exists
+    if (row.containsKey("description") && row.description) {
+        parseDescription(row.description, meta)
+    } else {
+        // Maintain backward compatibility
+        meta.rnaseq = row.rnaseq ?: "None"      // Store RNA-seq group or empty string
     }
+
+    // if (meta.id == "rnaseq") {
+    //     meta.method = "RNA-seq"
+    // }
     
     // add path(s) of the fastq file(s) to the meta map
     def fastq_meta = []
@@ -115,6 +144,12 @@ def create_rnaseq_channel(LinkedHashMap row) {
     meta.single_end = row.single_end.toBoolean()
     meta.prefix     = extractPrefix(new File(row.fastq_1).getName())
     meta.method     = "RNA-seq"
+    meta.group      = row.sample.replace("rnaseq_", "")  // Extract the group name without the prefix
+    
+    // Parse description field if it exists
+    if (row.containsKey("description") && row.description) {
+        parseDescription(row.description, meta)
+    }
 
     // add path(s) of the fastq file(s) to the meta map
     def fastq_meta = []
@@ -130,4 +165,19 @@ def create_rnaseq_channel(LinkedHashMap row) {
         fastq_meta = [ meta, [ file(row.fastq_1), file(row.fastq_2) ] ]
     }
     return fastq_meta
+}
+
+// Helper function to parse the description field
+def parseDescription(String description, Map meta) {
+    if (!description) return
+    
+    description.split(';').each { item ->
+        def keyValue = item.trim().split(':', 2)
+        if (keyValue.size() == 2) {
+            def key = keyValue[0].trim()
+            // Remove quotes if present
+            def value = keyValue[1].trim().replaceAll('^"|"$|^\'|\'$', '')
+            meta[key] = value
+        }
+    }
 }

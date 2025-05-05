@@ -67,7 +67,7 @@ include { ATA_BRIDGE     } from '../subworkflows/local/ATA_bridge'
 include { FASTQC                                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                                } from '../modules/nf-core/multiqc/main'
 include { GUNZIP as GUNZIP_FASTA                 } from '../modules/nf-core/gunzip/main'
-include { CUSTOM_GETCHROMSIZES                   } from '../modules/nf-core/custom/getchromsizes/main'
+include { CUSTOM_GETCHROMSIZES                   } from '../modules/nf-core/custom/getchromsizes/main' 
 include { HISAT2_EXTRACTSPLICESITES              } from '../modules/nf-core/hisat2/extractsplicesites/main'
 include { HISAT2_BUILD                           } from '../modules/nf-core/hisat2/build'
 include { RSITES                                 } from '../modules/local/rsites'
@@ -103,6 +103,8 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS            } from '../modules/nf-core/cust
 */
 
 // Info required for completion email and summary
+
+
 def multiqc_report = []
 
 workflow RC {
@@ -116,6 +118,7 @@ workflow RC {
             
     ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
     ch_splicesites   = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
+
 
 
     //
@@ -144,6 +147,9 @@ workflow RC {
     } else {
         ch_genome_fasta = Channel.value(params.genome_fasta)
     }
+
+    
+    
 
     // REMOVE UNCANONICAL CHROMOSOMES
     // seqkit grep -vrp "^chrUn" file.fa > cleaned.fa

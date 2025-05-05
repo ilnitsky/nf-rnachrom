@@ -1,6 +1,11 @@
 process SAM_TO_FASTQ {
-    conda "bioconda::pysam bioconda::samtools=1.19.2 conda-forge::biopython"
-    label 'process_single'
+    conda (params.use_nfcore_env ? "bioconda::pysam bioconda::samtools=1.19.2 conda-forge::biopython" : "${projectDir}/envs/full_env.yml")
+    
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+     label 'process_single'
     publishDir (
         path: { "$params.outdir/sam_to_fastq" },
         mode: "copy"

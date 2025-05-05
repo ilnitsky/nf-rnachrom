@@ -44,13 +44,21 @@ WorkflowMain.initialise(workflow, params, log)
     NAMED WORKFLOW FOR PIPELINE
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { PrepareSoftware   } from './modules/local/prepare_software'
+include { PrepareSoftware   } from './modules/local/execution/prepare_software'
 include { INPUT_CHECK       } from './subworkflows/local/input_check'
 include { ATA } from './workflows/final_rc'
 include { OTA } from './workflows/final_ota'
-// include { RNASEQ } from './workflows/rnaseq'
+include { RNASEQ } from './workflows/rnaseq'
 include { GUNZIP as GUNZIP_FASTA } from './modules/nf-core/gunzip/main'
 include { CUSTOM_GETCHROMSIZES } from './modules/nf-core/custom/getchromsizes/main'
+
+// Aligner modules
+include { HISAT2_EXTRACTSPLICESITES     } from './modules/nf-core/hisat2/extractsplicesites/main'
+include { HISAT2_BUILD                  } from './modules/nf-core/hisat2/build'
+include { STAR_GENOMEGENERATE           } from './modules/nf-core/star/genomegenerate'
+include { BOWTIE2_BUILD                 } from './modules/nf-core/bowtie2/build/main'
+include { BWA_INDEX                     } from './modules/nf-core/bwa/index/main'
+
 //
 // WORKFLOW: Run main nf-core/rnachrom analysis pipeline
 //
@@ -70,21 +78,24 @@ workflow RNACHROM {
      
      ${colors['reset']}""")
 
+    def has_rnaseq = file(params.input)
+        .splitCsv(header:true, sep:',')
+        .any { row -> row.sample?.startsWith('rnaseq_') }
+    println("RNA-seq samples detected: ${has_rnaseq}")
 
-    PrepareSoftware() | collect(flat: false) | flatMap | view 
-    // RC (PrepareSoftware.out)
-
-
+    // Execute PrepareSoftware and collect results to ensure it completes before proceeding
+    def prepare_result = PrepareSoftware().collect()
+    
     // CHECK INPUT FILES AND CONFIG   ----------------------------------------------------------------------
     // Read in samplesheet, validate and stage input files
 
     INPUT_CHECK (
         file(params.input),
-        PrepareSoftware.out
+        prepare_result.flatten()
     )
     ch_samplesheet       = INPUT_CHECK.out.csv
     ch_input_check_reads = INPUT_CHECK.out.reads
-    // ch_rnaseq_reads      = INPUT_CHECK.out.rnaseq_reads.ifEmpty { Channel.empty() }
+    ch_rnaseq_reads      = INPUT_CHECK.out.rnaseq_reads.ifEmpty { Channel.empty() }
     ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
     ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
 
@@ -105,25 +116,138 @@ workflow RNACHROM {
     ch_chrom_sizes = CUSTOM_GETCHROMSIZES.out.sizes.map { it[1] }
     ch_versions    = ch_versions.mix(CUSTOM_GETCHROMSIZES.out.versions)
 
+    // PREPARE ALIGNERS AND INDEXES ------------------------------------------------------------------------
+    
+    // Initialize channels for aligner indexes
+    ch_hisat2_index = Channel.empty()
+    ch_star_index = Channel.empty() 
+    ch_bowtie2_index = Channel.empty()
+    ch_bwa_index = Channel.empty()
+    ch_splicesites = Channel.empty()
+    
+    // Determine which aligners need to be prepared based on params
+    def dna_align_tool = params.dna_align_tool ?: params.align_tool
+    def rna_align_tool = params.rna_align_tool ?: params.align_tool
+    
+    // Create a list of required aligners
+    def required_aligners = [dna_align_tool, rna_align_tool].unique()
+    
+    // HISAT2 preparation
+    if (required_aligners.contains('hisat2') || required_aligners.contains('bwa_mem_hisat')) {
+        if (params.splice_sites == null) {
+            ch_splicesites = HISAT2_EXTRACTSPLICESITES(ch_gtf.map { [ [:], it ] }).txt.map { it[1] }
+            ch_versions = ch_versions.mix(HISAT2_EXTRACTSPLICESITES.out.versions)
+        } else {
+            ch_splicesites = Channel.fromPath(params.splice_sites, checkIfExists: true)
+        }
+        
+        if (params.hisat2_index != null) {
+            ch_hisat2_index = Channel.fromPath(params.hisat2_index, checkIfExists: true)
+        } else {
+            ch_hisat2_index = HISAT2_BUILD(
+                ch_genome_fasta.map { [ [:], it ] }, 
+                ch_gtf.map { [ [:], it ] }, 
+                ch_splicesites.map { [ [:], it ] }
+            ).index.map { it[1] }
+            ch_versions = ch_versions.mix(HISAT2_BUILD.out.versions)
+        }
+    }
+    
+    // STAR preparation
+    if (required_aligners.contains('star')) {
+        if (params.star_index != null) {
+            ch_star_index = Channel.fromPath(params.star_index, checkIfExists: true)
+        } else {
+            ch_star_index = STAR_GENOMEGENERATE(
+                ch_genome_fasta.map { [ [:], it ] }, 
+                ch_gtf.map { [ [:], it ] }
+            ).index.map { it[1] }
+            ch_versions = ch_versions.mix(STAR_GENOMEGENERATE.out.versions)
+        }
+    }
+    
+    // Bowtie2 preparation
+    if (required_aligners.contains('bowtie2')) {
+        if (params.bowtie2_index != null) {
+            ch_bowtie2_index = Channel.fromPath(params.bowtie2_index, checkIfExists: true)
+        } else {
+            ch_bowtie2_index = BOWTIE2_BUILD(
+                ch_genome_fasta.map { [ [:], it ] }
+            ).index.map { it[1] }
+            ch_versions = ch_versions.mix(BOWTIE2_BUILD.out.versions)
+        }
+    }
+    
+    // BWA preparation
+    if (required_aligners.contains('bwa_mem') || required_aligners.contains('bwa_mem_hisat')) {
+        if (params.bwa_index != null) {
+            ch_bwa_index = Channel.fromPath(params.bwa_index, checkIfExists: true)
+        } else {
+            ch_bwa_index = BWA_INDEX(
+                ch_genome_fasta.map { [ [:], it ] }
+            ).index.map { it[1] }
+            ch_versions = ch_versions.mix(BWA_INDEX.out.versions)
+        }
+    }
+
     // MAIN PROCESSING STAGES     --------------------------------------------------------------------------
     
     ch_reads_q = Channel.empty()
-    // ch_rnaseq_reads.view()
     ch_reads = ch_input_check_reads.mix(ch_reads_q)
+    
+    // ch_reads.view{"Reads: ${it}"}
 
-    // ch_reads.view()
+    // Process RNA-seq reads based on detection in input file
+    ch_rnaseq_results = Channel.value([])  // Default empty value
+
+    // ch_rnaseq_reads.view{"RNA-seq reads: ${it}"}
 
     if (params.exp_type in ['rap', 'chirp', 'chart']) {                                             // ONE-TO-ALL
-        OTA ( ch_reads, ch_chrom_sizes, ch_statistic, ch_versions )
+        OTA ( 
+            ch_reads, 
+            ch_chrom_sizes, 
+            ch_statistic, 
+            ch_versions,
+            ch_hisat2_index,
+            ch_star_index,
+            ch_bowtie2_index,
+            ch_bwa_index,
+            ch_splicesites,
+            ch_genome_fasta
+        )
 
     } else if (params.exp_type in ['grid', 'char', 'radicl', 'imargi', 'redc', 'redchip'])  {       // ALL-TO-ALL
-        ATA ( ch_reads, ch_chrom_sizes, ch_statistic, ch_versions  )
-
+        
+        // Run RNA-seq workflow if RNA-seq samples were detected in the input
+        if (has_rnaseq) {
+            RNASEQ(
+                ch_rnaseq_reads, 
+                ch_chrom_sizes, 
+                ch_statistic,
+                ch_hisat2_index,
+                ch_star_index,
+                ch_bowtie2_index,
+                ch_bwa_index,
+                ch_splicesites
+            )
+            ch_rnaseq_results = RNASEQ.out.annotated_rnaseq
+            ch_versions = ch_versions.mix(RNASEQ.out.versions)
+        }
+  
+        ATA ( 
+            ch_reads, 
+            ch_chrom_sizes, 
+            ch_statistic, 
+            ch_versions, 
+            ch_rnaseq_results,
+            ch_hisat2_index,
+            ch_star_index,
+            ch_bowtie2_index,
+            ch_bwa_index,
+            ch_splicesites,
+            ch_genome_fasta
+        )
     }
-
-        // if (!ch_rnaseq_reads.isEmpty()) {
-        //     RNASEQ ( ch_rnaseq_reads )
-        // }    
 }
 
 /*

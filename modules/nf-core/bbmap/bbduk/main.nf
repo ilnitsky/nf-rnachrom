@@ -3,9 +3,13 @@ process BBMAP_BBDUK {
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/bbmap:39.01--h5c4e2a8_0':
-        'biocontainers/bbmap:39.01--h5c4e2a8_0' }"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/bbmap:39.01--h5c4e2a8_0':
+    //     'biocontainers/bbmap:39.01--h5c4e2a8_0' }"
 
     input:
     tuple val(meta), path(reads)

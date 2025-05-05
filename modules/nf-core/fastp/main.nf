@@ -2,10 +2,15 @@ process FASTP {
     tag "$meta.id,$meta.prefix"
     label 'process_medium'
 
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/fastp:0.23.4--h5f740d0_0' :
-        'biocontainers/fastp:0.23.4--h5f740d0_0' }"
+    conda (params.use_nfcore_env ? "${moduleDir}/environment.yml" : "${projectDir}/envs/full_env.yml")
+    // conda "${moduleDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/fastp:0.23.4--h5f740d0_0' :
+    //     'biocontainers/fastp:0.23.4--h5f740d0_0' }"
 
     input:
     tuple val(meta), path(reads)
@@ -30,7 +35,7 @@ process FASTP {
 
     def args = only_remove_adapters ? (task.ext.args_adapters ?: '') : (task.ext.args ?: '')
 
-    def adapter_list = params.adapters_file ? "--adapter_fasta ${params.adapters_file}" : ""
+    def adapter_list = params.adapters_file ? "--adapter_fasta ${params.adapters_file}" : "--adapter_fasta ${projectDir}/assets/adapters_redc.fa"
     def detect_adapters = params.disable_adapter_autodetect ? "" : "--detect_adapter_for_pe" 
     def postfix = only_remove_adapters ? 'adapt' : 'fastp'
     def adapters = only_remove_adapters ? "${adapter_list} ${detect_adapters}" : "-A"
@@ -86,10 +91,10 @@ process FASTP {
     } else {
         def merge_fastq = save_merged ? "-m --merged_out ${prefix}.merged.fastq" : ''
 
-        def input1  = (params.bridge_processing || meta.method == "OTA") ? "${prefix}_1.fastq" : "${meta.RNA}.fastq"
-        def input2  = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_2.fastq" : "${meta.DNA}.fastq"
-        def output1 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_1.${postfix}.fastq" : "1_${meta.RNA}.${postfix}.fastq"
-        def output2 = (params.bridge_processing || meta.method == "OTA")  ? "${prefix}_2.${postfix}.fastq" : "2_${meta.DNA}.${postfix}.fastq"
+        def input1  = (params.bridge_processing || meta.method == "OTA" || meta.method == "RNA-seq") ? "${prefix}_1.fastq" : "${meta.RNA}.fastq"
+        def input2  = (params.bridge_processing || meta.method == "OTA" || meta.method == "RNA-seq") ? "${prefix}_2.fastq" : "${meta.DNA}.fastq"
+        def output1 = (params.bridge_processing || meta.method == "OTA" || meta.method == "RNA-seq") ? "${prefix}_1.${postfix}.fastq" : "1_${meta.RNA}.${postfix}.fastq"
+        def output2 = (params.bridge_processing || meta.method == "OTA" || meta.method == "RNA-seq") ? "${prefix}_2.${postfix}.fastq" : "2_${meta.DNA}.${postfix}.fastq"
 
         """
         [ ! -f  ${input1} ] && ln -sf ${reads[0]} ${input1}

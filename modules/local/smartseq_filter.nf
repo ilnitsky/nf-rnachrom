@@ -1,8 +1,13 @@
 
 process SMARTSEQ_FILTER {
-    conda "${projectDir}/envs/secondary_processing.yml"
+    conda "${projectDir}/envs/full_env.yml"
     tag "$meta.prefix"
-
+  
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+   
     publishDir (
         path: { "$params.outdir/smartseq_filter" },
         mode: "copy"

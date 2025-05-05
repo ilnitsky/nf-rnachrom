@@ -5,11 +5,27 @@
 */
 
 include { paramsSummaryLog; paramsSummaryMap } from 'plugin/nf-validation'
-include { colored_outputs; processChannelStatistics; processMergedStatisticsChannel } from '../modules/local/functions'
+include { colored_outputs; processChannelStatistics; processMergedStatisticsChannel } from '../modules/local/execution/functions'
 
 def logo = NfcoreTemplate.logo(workflow, params.monochrome_logs)
 def citation = '\n' + WorkflowMain.citation(workflow) + '\n'
 def summary_params = paramsSummaryMap(workflow)
+// Define additional parameters with defaults
+
+params.statistic = 'mean'
+
+// Define default alignment tools if not specified
+params.align_tool = params.align_tool ?: 'hisat2'
+params.dna_align_tool = params.dna_align_tool ?: params.align_tool
+params.rna_align_tool = params.rna_align_tool ?: params.align_tool
+
+
+
+log.info "DNA alignment tool: $params.dna_align_tool"
+log.info "RNA alignment tool: $params.rna_align_tool"
+
+// Create channels for statistics
+// ch_statistic = Channel.value(params.statistic)
 
 colored_outputs()
 Map colors = NfcoreTemplate.logColours(params.monochrome_logs)
@@ -40,7 +56,7 @@ ch_config               =  Channel.fromPath( "$projectDir/assets/new_config.json
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PrepareSoftware         } from '../modules/local/prepare_software'
+include { PrepareSoftware         } from '../modules/local/execution/prepare_software'
 include { INPUT_CHECK             } from '../subworkflows/local/input_check'
 include { DEDUP                   } from '../subworkflows/local/deduplicators'
 include { TRIM                    } from '../subworkflows/local/trimming'
@@ -58,37 +74,35 @@ include { BAM_SORT_STATS_SAMTOOLS } from '../subworkflows/nf-core/bam_sort_stats
 include { FASTP as FASTP_ADAPTERS                } from '../modules/nf-core/fastp/main' 
 include { FASTQC as FASTQC_FIRST                 } from '../modules/nf-core/fastqc/main'
 include { FASTQC as FASTQC_AFTER                 } from '../modules/nf-core/fastqc/main'
-// include { FASTQC                                 } from '../modules/nf-core/fastqc/main'
 include { MULTIQC                                } from '../modules/nf-core/multiqc/main'
 include { GUNZIP as GUNZIP_FASTA                 } from '../modules/nf-core/gunzip/main'
-include { CUSTOM_GETCHROMSIZES                   } from '../modules/nf-core/custom/getchromsizes/main'
+include { CUSTOM_GETCHROMSIZES                   } from '../modules/nf-core/custom/getchromsizes/main' addParams(conda: params.use_nfcore_env ? "bioconda::samtools=1.16.1" : "${projectDir}/envs/secondary_processing.yml")
 include { SMARTSEQ_FILTER                        } from '../modules/local/smartseq_filter'
 include { RSITES                                 } from '../modules/local/rsites'
-include { NUCL_DISTR_RSITES as NUCL_DISTR        } from '../modules/local/nucleotide_distribution_rsites'
-include { NUCL_DISTR_RSITES as NUCL_DISTR_BRIDGE } from '../modules/local/nucleotide_distribution_rsites'
-// include { XRNA_CONFIG                            } from '../modules/local/xrna_assembly'
-
 include { BAM_TO_CONTACTS                        } from '../modules/local/bam_to_contacts'
 include { FILTER_CONTACTS                        } from '../modules/local/filter_contacts'
-
 include { BLACKLIST                              } from '../modules/local/blacklist'
-
 include { DETECT_STRAND                          } from '../modules/local/detect_strand'
-include { CIGAR_FILTER                           } from '../modules/local/cigar_filter.nf'
 include { MERGE_REPLICAS                         } from '../modules/local/merge_replicas'
 include { SPLIT_BY_CHRS                          } from '../modules/local/split_by_chrs'
-include { ANNOTATION_VOTING                      } from '../modules/local/annotation'
-include { ANNOTATION                             } from '../modules/local/annotation'
-include { NORMALISATION                          } from '../modules/local/rnachromprocessing'
-
-include { BACKGROUND                             } from '../modules/local/background_ata'
-include { NORMALIZE_RAW; NORMALIZE_N2; SCALING   } from '../modules/local/rnachromprocessing'
-include { VALIDATE_ANNOT                         } from '../modules/local/rnachromprocessing'
+// include { ANNOTATION_VOTING                      } from '../modules/local/annotation'
+include { FINAL_ANNOTATION as  ANNOTATION        } from '../modules/local/annotation'
+include { NORMALISATION                          } from '../modules/local/normalisation'
 include { BARDIC                                 } from '../modules/local/bardic'
 include { PLOT_STATS                             } from '../modules/local/plot_stats'
+include { COLLECT_FILES                          } from '../modules/local/execution/collect_files'
 include { HTML_REPORT                            } from '../modules/local/html_report'
 include { CUSTOM_DUMPSOFTWAREVERSIONS            } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
+include { CHROMATIN_POTENTIAL } from '../modules/local/chromatin_potential'
+// include { NUCL_DISTR_RSITES as NUCL_DISTR        } from '../modules/local/nucleotide_distribution_rsites'
+// include { NUCL_DISTR_RSITES as NUCL_DISTR_BRIDGE } from '../modules/local/nucleotide_distribution_rsites'
+// include { XRNA_CONFIG                            } from '../modules/local/xrna_assembly'
+
+// include { CIGAR_FILTER                           } from '../modules/local/cigar_filter.nf'
+// include { BACKGROUND                             } from '../modules/local/background_ata'
+// include { NORMALIZE_RAW; NORMALIZE_N2; SCALING   } from '../modules/local/rnachromprocessing'
+// include { VALIDATE_ANNOT                         } from '../modules/local/rnachromprocessing'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,6 +124,13 @@ workflow ATA {
     ch_chrom_sizes
     ch_statistic
     ch_versions
+    ch_rnaseq_results
+    ch_hisat2_index
+    ch_star_index
+    ch_bowtie2_index
+    ch_bwa_index
+    ch_splicesites
+    ch_genome_fasta
     
     main:
 
@@ -120,10 +141,16 @@ workflow ATA {
     ch_logs = Channel.empty()
 
     ch_gtf = Channel.value(params.annot_GTF)        
-    ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
-    ch_splicesites    = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
+    // ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
+    // ch_splicesites    = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
     // ch_adapters_file  = params.adapters_file ?  Channel.fromPath(params.adapters_file) : Channel.empty()
     //ToDO Check for adapters file presence
+
+
+    // Define optional processing steps
+    params.run_blacklist = params.run_blacklist ?: false
+
+
 
     if (!params.ready_raw_contacts_dir) {
 
@@ -134,6 +161,8 @@ workflow ATA {
         ch_stats             = FASTP_ADAPTERS.out.html
         ch_versions          = ch_versions.mix(FASTP_ADAPTERS.out.versions)
         ch_report            = ch_report.mix(FASTP_ADAPTERS.out.html.map{ meta, html -> [[meta.id, meta.prefix], html]})
+        
+        // ch_statistic     = ch_statistic.concat(FASTP_ADAPTERS.out.reads.map { id, files -> [[id.id, id.prefix], ["Adapters", files instanceof List ? files[0].countFastq() : files.countFastq()] ] }) 
         ch_statistic     = ch_statistic.concat(FASTP_ADAPTERS.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Adapters", files instanceof List ? files[0].countFastq() : files.countFastq()] })
 
         if (!params.ch_input_check_reads) {
@@ -146,13 +175,16 @@ workflow ATA {
         if ( params.smartseq_filter && params.bridge_processing ) {
             SMARTSEQ_FILTER ( ch_for_dedup )
             ch_for_dedup     = SMARTSEQ_FILTER.out.fastq
+            // ch_statistic     = ch_statistic.concat(SMARTSEQ_FILTER.out.fastq.map { id, files -> [[id.id, id.prefix], ["SmartSeqFilter", files instanceof List ? files[0].countFastq() : files.countFastq()] ] })
             ch_statistic     = ch_statistic.concat(SMARTSEQ_FILTER.out.fastq.map { id, files -> ["${id.id} (${id.prefix})", "SmartSeqFilter", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+        
         }
         
         // DEDUPLICATION -------------------------------------------------------------------------------------  
         if (!params.skip_dedup) {
             DEDUP( ch_for_dedup ) 
             ch_for_trimming = DEDUP.out.reads
+            // ch_statistic = ch_statistic.concat(DEDUP.out.reads.map { id, files -> [[id.id, id.prefix], ["Dedup", files instanceof List ? files[0].countFastq() : files.countFastq()] ] })
             ch_statistic = ch_statistic.concat(DEDUP.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Dedup", files instanceof List ? files[0].countFastq() : files.countFastq()] })
             ch_versions = ch_versions.mix(DEDUP.out.versions)
         } else {
@@ -175,6 +207,7 @@ workflow ATA {
             ch_for_trimming    = RSITES.out.fastq.map{meta, rna, dna -> [meta, [rna, dna]]}
             ch_rsites_figs     = RSITES.out.png
             ch_report          = ch_report.combine(RSITES.out.png, by:0)
+            // ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> [[id.id, id.prefix], ["RestrSites", dna.countFastq()] ] } )
             ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
         }
 
@@ -187,9 +220,11 @@ workflow ATA {
         if (!params.skip_trim) {
             TRIM ( ch_for_trimming )
             ch_input_align = TRIM.out.reads
+            // ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> [[id.id, id.prefix], ["Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] ] })
             ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
             ch_versions = ch_versions.mix(TRIM.out.versions)
-            // ch_trim_log            = ch_logs.concat(TRIM.out.logs)
+            ch_report   = ch_report.join(TRIM.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)
+  
         } else {
             // If skipping trim, pass the input directly to alignment or subsequent steps
             ch_input_align = ch_for_trimming
@@ -229,24 +264,43 @@ workflow ATA {
 
 
 
+        // ch_report.view()
         // ALIGNMENT -----------------------------------------------------------------------------------------
         /*
             *  Aligning separated RNA and DNA parts with alignment tool of choice:
             *  HISAT2, STAR, bowtie2
             */
-        RNA_ALIGN ( ch_input_rna_align )
+        RNA_ALIGN ( 
+            ch_input_rna_align,
+            ch_hisat2_index,
+            ch_star_index,
+            ch_bowtie2_index,
+            ch_bwa_index,
+            ch_splicesites,
+            ch_genome_fasta,
+            ch_gtf
+        )
         ch_rna_bam = RNA_ALIGN.out.bam
-        ch_rna_align_log = RNA_ALIGN.out.logs                               
+        ch_report   = ch_report.join(RNA_ALIGN.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)                             
         ch_versions     =  ch_versions.mix(RNA_ALIGN.out.versions)
 
-        DNA_ALIGN ( ch_input_dna_align )
+        DNA_ALIGN ( 
+            ch_input_dna_align,
+            ch_hisat2_index,
+            ch_star_index,
+            ch_bowtie2_index,
+            ch_bwa_index,
+            ch_splicesites,
+            ch_genome_fasta,
+            ch_gtf
+        )
         ch_dna_bam = DNA_ALIGN.out.bam
-        ch_dna_align_log = DNA_ALIGN.out.logs                               
+        ch_report   = ch_report.join(DNA_ALIGN.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)                               
         ch_versions     =  ch_versions.mix(DNA_ALIGN.out.versions)
 
 
-        ch_input_rna_align.view{ "ch_input_rna_align $it" }
-        ch_input_dna_align.view{ "ch_input_dna_align $it" }
+        // ch_input_rna_align.view{ "ch_input_rna_align $it" }
+        // ch_input_dna_align.view{ "ch_input_dna_align $it" }
 
         ch_rna_to_contacts = ch_rna_bam.map{ meta, rna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], rna] }
         ch_dna_to_contacts = ch_dna_bam.map{ meta, dna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], dna] }
@@ -261,6 +315,7 @@ workflow ATA {
         BAM_TO_CONTACTS ( ch_bam_join )
         unique_raw_contacts = BAM_TO_CONTACTS.out.unique_raw_contacts
         other_raw_contacts  = BAM_TO_CONTACTS.out.other_raw_contacts
+        // ch_statistic        = ch_statistic.concat(BAM_TO_CONTACTS.out.unique_raw_contacts.map { id, files -> [[id.id, id.prefix], ["UniqueRawContacts", files.countLines()] ] })
         ch_statistic        = ch_statistic.concat(BAM_TO_CONTACTS.out.unique_raw_contacts.map { id, files -> ["${id.id} (${id.prefix})", "UniqueRawContacts", files.countLines()] })
 
     } else {
@@ -280,15 +335,27 @@ workflow ATA {
 
     FILTER_CONTACTS ( unique_raw_contacts )
     ch_filtered_contacts = FILTER_CONTACTS.out.filtered_contacts
+    ch_ucarna_id         = FILTER_CONTACTS.out.ucarna_id
+    ch_report          = ch_report.join(FILTER_CONTACTS.out.png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
+    // ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> [[id.id, id.prefix], ["FilteredUniqueRawContacts", files.countLines()] ] })
     ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
 
-    BLACKLIST ( ch_filtered_contacts )
-    ch_blacklisted_contacts =  BLACKLIST.out.blacklist
-    ch_statistic        = ch_statistic.concat(BLACKLIST.out.blacklist.map { id, files -> ["${id.id} (${id.prefix})", "BlacklistedUniqueRawContacts", files.countLines()] })
+    if (params.run_blacklist) {
+        BLACKLIST ( ch_filtered_contacts )
+        ch_blacklisted_contacts = BLACKLIST.out.blacklist
+        ch_statistic = ch_statistic.concat(BLACKLIST.out.blacklist.map { id, files -> [[id.id, id.prefix], ["BlacklistedUniqueRawContacts", files.countLines()] ] })
+        // ch_statistic = ch_statistic.concat(BLACKLIST.out.blacklist.map { id, files -> ["${id.id} (${id.prefix})", "BlacklistedUniqueRawContacts", files.countLines()] })
+        
+        ch_detect = ch_blacklisted_contacts
+    } else {
+        // log.info "Skipping blacklist step as requested"
+        ch_detect = ch_filtered_contacts
+    }
 
-    ch_detect = ch_blacklisted_contacts
+    ch_statistic.view()
+    
 
-    // // AGGREGATE  STATS BEFORE MERGE
+
     processChannelStatistics(ch_statistic).set { sample_statistic_table }
 
     ch_m = sample_statistic_table.subscribe { table ->
@@ -296,12 +363,12 @@ workflow ATA {
         new File("$params.outdir/Result_stats/Before_Merging_Replicas.stats.txt").text = table + "\n"  // Output the table to a file
     }
 
-    ch_detect.view { "ch_detect $it" }
-    
+
     DETECT_STRAND ( ch_detect  )                          // tuple val(meta), path(contacts)
     ch_strand_vote_result = DETECT_STRAND.out.strand_vote_result
     ch_files_fixed_strand = DETECT_STRAND.out.files_fixed_strand
-    
+    ch_strand_vote_png    = DETECT_STRAND.out.strand_vote_png
+    ch_report          = ch_report.join(DETECT_STRAND.out.strand_vote_png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     
     // MERGING REPLICATES-----------------------------------------------------------------------------
        /*
@@ -321,42 +388,17 @@ workflow ATA {
     }
 
     ANNOTATION ( ch_input_annotation )
-    ch_voted               = ANNOTATION.out.voted
+    ch_uu_voted            = ANNOTATION.out.uu_voted
+    ch_um_voted            = ANNOTATION.out.um_voted
 
-    NORMALISATION ( ch_voted, ch_chrom_sizes.first() )
+    NORMALISATION ( ch_uu_voted, ch_chrom_sizes.first() )
     ch_norm                = NORMALISATION.out.normalized
 
-    // ANNOTATION_VOTING( ch_input_annotation )
-    // ch_voted               = ANNOTATION_VOTING.out.voted
-    // ch_singletons          = ANNOTATION_VOTING.out.singletons
-    // ch_complement_annot    = ANNOTATION_VOTING.out.complement_annot
-    // ch_selected_annot      = ANNOTATION_VOTING.out.selected_annot
-    // // ch_stat                = ANNOTATION_VOTING.out.stat
 
-    // if (params.split_by_chromosomes) {
-    //     ch_voted
-    //     | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.voted.tab", file.text] }
-    //     | map { it -> [it.baseName.split('.voted')[0], it] }
-    //     | set { ch_voted }
-    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
-    //     ch_singletons
-    //     | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.singleton.tab", file.text] }
-    //     | map { it -> [it.baseName.split('.singleton')[0], it] }
-    //     | set { ch_singletons }
-    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
-    // } else {
-    //     ch_voted
-    //     | map { it -> [it[0], it[1]] }
-    //     | set { ch_voted }
-    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
+    Channel.fromPath(params.annot_BED).ifEmpty { exit 1, "Input file not found: ${params.annot_BED}" }
+    | set { bed6_annot_files_ch }
 
-    //     ch_singletons
-    //     | map { it -> [it[0], it[1]] }
-    //     | set { ch_singletons }
-    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
-    // }
-    
-    // ch_input_bgr = ch_voted        
+    // BARDIC( ch_uu_voted, params.annot_BED, ch_chrom_sizes )
 
 
     // AGGREGATE RAW MERGED CONTACTS STATS
@@ -382,32 +424,55 @@ workflow ATA {
     // sample_statistic_table  = Channel.empty()
     // sample_statistic_merged = Channel.empty()
 
-    // // ch_report.view()
-    // // HTML_REPORT ( ch_report )
-    // // ch_sample_reports = HTML_REPORT.out.folders
-    // // ch_sample_reports.view()
+
+    // COLLECT_FILES(ch_report)
+    // HTML_REPORT(COLLECT_FILES.out.folders.collect())
 
 
-    // BACKGROUND( 
-    //     ch_input_bgr,
-    //     ch_chrom_sizes.first()
-    // )
-    // // | map { bgr -> tuple(file(bgr).name.split('.5-background_sm.bgr')[0], file(bgr))}
-    // | set { bgr_ch }
+    // ch_report.view()
+    // ch_sample_reports = HTML_REPORT.out.folders
 
-    // ch_voted
-    // | combine( bgr_ch, by: 0 )
-    // | set { norm_raw_ch }
 
-    // NORMALIZE_RAW ( norm_raw_ch )
+    def has_rnaseq = file(params.input)
+        .splitCsv(header:true, sep:',')
+        .any { row -> row.sample?.startsWith('rnaseq_') }
 
-    // NORMALIZE_RAW.out.raw_stat
-    // | collectFile(storeDir: "$params.outdir/Normalize_raw", keepHeader: true) { group, file -> [ "${group}.5-N2_raw_merged.stat.tab", file.text] }
-    // | map{stat -> tuple(file(stat).name.split('.5-N2_raw_merged.stat')[0], file(stat))}
-    // | combine( NORMALIZE_RAW.out.raw_norm, by: 0 )
-    // |  set { ch_norm_n2 }
 
-    // NORMALIZE_N2 ( ch_norm_n2 )
+
+    if (has_rnaseq) {
+        ch_rnaseq_map = ch_rnaseq_results.map { group_id, file -> 
+            return [group_id, file] 
+        }.collectAsMap()
+        
+        // For each annotated contact file, find the corresponding RNA-seq data
+        ch_uu_voted.map { sample_id, contacts ->
+            def rnaseq_file = null
+            // Try to find RNA-seq data for this sample
+            if (ch_rnaseq_map.containsKey(sample_id)) {
+                rnaseq_file = ch_rnaseq_map[sample_id]
+            }
+            return [[ id: sample_id ], contacts, rnaseq_file]
+        }
+        .set { ch_for_normalization }
+        
+        // Apply chromatin potential normalization
+        CHROMATIN_POTENTIAL (
+            ch_for_normalization.map { meta, contacts, rnaseq -> [meta, contacts] },
+            ch_for_normalization.map { meta, contacts, rnaseq -> rnaseq },
+            ch_chrom_sizes
+        )
+        
+        ch_normalized_contacts = CHROMATIN_POTENTIAL.out.normalized_contacts
+        ch_normalization_stats = CHROMATIN_POTENTIAL.out.stats
+        ch_versions = ch_versions.mix(CHROMATIN_POTENTIAL.out.versions)
+        
+        // Use normalized contacts for downstream analysis
+        ch_input_annotation = ch_normalized_contacts.map { meta, file -> [meta.id, file] }
+    } else {
+        // If no RNA-seq data, use the regular annotated contacts
+        ch_input_annotation = ch_uu_voted
+    }
+
 }
 
 /*
@@ -450,311 +515,53 @@ workflow.onComplete {
 */
 
 
-
-
-
-
-    // ch_statistic
-    // .groupTuple(by: 0)
-    // .map { sample, channels, counts ->
-    //     def mappedCounts = [:]                      // Create an empty map to hold  channel:count mappings
-    //     channels.eachWithIndex { channel, i ->
-    //         mappedCounts[channel] = counts[i]       // Map each channel to its corresponding count
+    // def run_chromatin_potential = false
+    // ch_rnaseq_results.count().subscribe { count ->
+    //     if (count == 0) {
+    //         log.info "No RNA-seq data found in input. Skipping Chromatin Potential."
+    //     } else {
+    //         run_chromatin_potential = true
     //     }
-    //     return [sample, mappedCounts]               
-    // }
-    // .toList()                                      
-    // .map { allSamples ->
-    //     def maxWidths = allSamples.collect { it[0].toString().length() }.max()
-    //     def channelWidths = allSamples*.get(1).collectMany { it.keySet() }.unique().collectEntries { [(it): it.toString().length()] }
-    //     allSamples.each { sample, counts ->  counts.each { k, v -> channelWidths[k] = Math.max(channelWidths[k], v.toString().length()) } }
-    //     def header = "sample".padRight(maxWidths) + "\t" + channelWidths.collect { k, v -> k.padRight(v) }.join("\t")
-    //     def rows = allSamples.collect { sample, counts ->
-    //         def row = sample.toString().padRight(maxWidths) + "\t" + channelWidths.collect { k, v -> counts.get(k, "0").toString().padRight(v) }.join("\t")
-    //         return row
-    //     }
-    //     return ([header] + rows).join("\n")
-    // }
-    // .set { sample_statistic_table }
-
-
-
-
-    // ch_statistic_merged
-    // .groupTuple(by: 0)
-    // .map { sample, channels, counts ->
-    //     def mappedCounts = [:]                      
-    //     channels.eachWithIndex { channel, i ->
-    //         mappedCounts[channel] = counts[i]       
-    //     }
-    //     def stats = mappedCounts.collect { k, v -> "$k: $v" }.join(", ")
-    //     return "$sample: $stats"
-    // }
-    // .set { sample_statistic_merged }
-
-
-
-
-    // //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-    // // ☰ ONE-TO-ALL EXPERIMENTS : RAP, CHIRP, CHART                                 ☰   
-    // //――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-    // if (params.exp_type in ['rap', 'chirp', 'chart']) {
-
-      
-    //     // Combine input and treatment (without merging replicas)
-    //     ch_bed_files
-    //     | branch { meta, bed ->
-    //             treatment: meta.control != ''
-    //                 return [meta.control, ['id':meta.control, 'single_end':meta.single_end], bed]
-    //             input: meta.control == ''
-    //                 return [meta.id.replace("_INPUT", ""), ['id':meta.id, 'single_end':meta.single_end], bed]
-    //             }
-    //     | set { ch_bed_files }
-
-    //     ch_inputs = ch_bed_files.input.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
-    //     ch_treatments = ch_bed_files.treatment.groupTuple(by:1).map{id, meta, bed -> [id[0], meta, bed]}
-    //     ch_combine_input_treatment =  ch_treatments.join(ch_inputs, by:0).map{it, meta1, treatment, meta2, input -> [meta1, treatment, input]}
-        
-    //     //TODO: chromsizes channel
-    //     Channel
-    //     .fromPath(params.chromsizes)
-    //     .splitCsv ( header:false, sep:'\t' )
-    //     .map { it[1].toLong() }
-    //     .reduce { a,b -> a + b }
-    //     .set { genomeSize }
-
-    //     genomeSize.subscribe { println "Genome size: $it" }
-
-    //     MACS2_CALLPEAK(
-    //         ch_combine_input_treatment,
-    //         genomeSize
-    //     )
-    //     ch_macs2_peaks      = MACS2_CALLPEAK.out.peak                       // channel: [ val(meta), [ bam ] ]
-    //     ch_macs2_bed        = MACS2_CALLPEAK.out.bed
-    //     ch_macs2_log        = MACS2_CALLPEAK.out.xls
-    //     ch_versions         = ch_versions.mix(MACS2_CALLPEAK.out.versions)
-        
-    //     // ch_input_bed_files     = ch_bed_files.filter { meta, files -> meta.control == '' }.map{ meta, file -> [meta.id, file] }.groupTuple(by: 0)
-    //     // ch_treatment_bed_files = ch_bed_files.filter { meta, files -> meta.control != '' }.map{ meta, file -> [meta.control, file] }.groupTuple(by: 0)
-
-    //     GENERATE_BINS()
-    //     ch_genome_bins      = GENERATE_BINS.out
-
-    //     SMOOTH_INPUT(
-    //         ch_inputs.map{id, meta, bed -> [meta, bed]},
-    //         ch_genome_bins.first()
-    //     )
-    //     ch_input_smoothed   = SMOOTH_INPUT.out.smoothed
-    //     ch_smooth_log       = SMOOTH_INPUT.out.log
-
-    //     ch_treatments.map{id, meta, bed -> [meta, bed]}.view{"Treatment_bed: $it"}
-    //     ch_input_smoothed.map{meta, input -> [[meta.id.replace("_INPUT", ""), meta.single_end], input]}.view{"Input_sm: $it"}
-    //     ch_macs2_peaks.view{"MACS_peaks: $it"}
-    //     ch_genome_bins.view{"genome_bins: $it"}
-
-    //     NORMALIZE_TREATMENT(
-    //         ch_treatments.map{id, meta, bed -> [meta, bed]},
-    //         ch_input_smoothed,
-    //         ch_macs2_peaks,
-    //         ch_genome_bins.first()
-    //     )
-    //     ch_normalized_treatment = NORMALIZE_TREATMENT.out.bed
-    //     ch_normalized_stats     = NORMALIZE_TREATMENT.out.stats
-
-    //     //TODO: check if everything ok with annotate
-    //     ANNOTATE_DNA(ch_normalized_treatment)
-
-    //     // UPSTREAM_DOWNSTREAM()
-
-
-
-
-
-
-
-
-        // ch_rna = ch_for_trimming.map{meta, files -> [meta, [rna]]}
-        // ch_dna = ch_for_trimming.map{meta, files -> [meta, [dna]]}
-
-
-        //     def stats = mappedCounts.collect { k, v -> "$k: $v" }.join(", ")
-        //     return "$sample: $stats"
-        // }
-        // .set { sample_statistic }
-
-        // sample_statistic.subscribe { id ->  println "${colors['bgblue']} $id ${colors['reset']}"  }
-        // sample_statistic.collectFile(storeDir: "$params.outdir/stats", name: 'Before_Merging_Replicas.stats.txt') { it + "\n" }
-
-
-// ch_config_detect_strand =  Channel.fromPath( "$projectDir/assets/detect_strand.json", checkIfExists: true)
-// ch_config_xrna          =  Channel.fromPath( "$projectDir/assets/xrna.json", checkIfExists: true)
-// ch_config               =  Channel.fromPath( "$projectDir/assets/new_config.json", checkIfExists: true)
-// adapters                =  Channel.fromPath( "$projectDir/bin/adapters/TruSeq3-PE.fa", checkIfExists: true)
-
-    // ch_input_merge = params.procedure == 'new' ? ch_input_merge_new : ch_files_fixed_strand.map { meta, files -> [meta.id, files ] }.groupTuple(by: 0)
-    // ch_input_merge = ch_cigar_filtered.map { meta, files -> [meta.id, files ] }.groupTuple(by: 0)
-
-
-    // ch_input_annotation = params.procedure == 'new' ? ch_merged_rna_new : ch_merged_rna_dna
-
-    // if (params.procedure == 'new'){
-
-    //     ch_merged_dna.join(ch_voted)
-    //     | map {id, len_dna, dna, len_rna, rna -> [id, rna, dna] }
-    //     | set { ch_join_raw_contacts }
-
-    //     JOIN_CONTACTS_NEW(
-    //         ch_join_raw_contacts  //  tuple val(meta), path(rna_bed), path(dna_bed)
-    //     )
-    //     ch_raw_contacts        = JOIN_CONTACTS_NEW.out.raw_contacts             // --> [redchip, /gpfs/.../redchip.tab]
-    //     ch_raw_contacts_stat   = JOIN_CONTACTS_NEW.out.stat
-    //     ch_input_bgr           = ch_raw_contacts
     // }
 
+
+        // ANNOTATION_VOTING( ch_input_annotation )
+    // ch_voted               = ANNOTATION_VOTING.out.voted
+    // ch_singletons          = ANNOTATION_VOTING.out.singletons
+    // ch_complement_annot    = ANNOTATION_VOTING.out.complement_annot
+    // ch_selected_annot      = ANNOTATION_VOTING.out.selected_annot
+    // // ch_stat                = ANNOTATION_VOTING.out.stat
+
+    // if (params.split_by_chromosomes) {
+    //     ch_voted
+    //     | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.voted.tab", file.text] }
+    //     | map { it -> [it.baseName.split('.voted')[0], it] }
+    //     | set { ch_voted }
+    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
+    //     ch_singletons
+    //     | collectFile(storeDir: "$params.outdir/annotation", keepHeader: true, sort: true) { id, file -> [ "${id}.singleton.tab", file.text] }
+    //     | map { it -> [it.baseName.split('.singleton')[0], it] }
+    //     | set { ch_singletons }
+    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
+    // } else {
+    //     ch_voted
+    //     | map { it -> [it[0], it[1]] }
+    //     | set { ch_voted }
+    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_voted.map { id, tab -> [id, "Voted", tab.countLines()] } )
+
+    //     ch_singletons
+    //     | map { it -> [it[0], it[1]] }
+    //     | set { ch_singletons }
+    //     ch_statistic_merged    = ch_statistic_merged.concat(ch_singletons.map { id, tab -> [id, "Singletons", tab.countLines()] } )
+    // }
     
-
-        
-    // def msg = """\
-    //     NanoTail module's execution summary
-    //     ---------------------------
-    //     Completed at: ${workflow.complete}
-    //     Duration    : ${workflow.duration}
-    //     Success     : ${workflow.success}
-    //     workDir     : ${workflow.workDir}
-    //     exit status : ${workflow.exitStatus}
-    //     Error report: ${workflow.errorReport ?: '-'}
-    //     """
-    //     .stripIndent()
-
-    // sendMail(to: params.email, subject: "Master of Pore execution", body: msg)
-
-    // CALC_STATS ( 
-    //     ch_trimmed_summary,
-    //     ch_pear_stats,
-    //     // ch_bridge_coords_as,
-    //     // ch_bridge_coords_unF,
-    //     // ch_bridge_coords_unR,
-    //     ch_hisat2_summary,
-    //     ch_bam_filter_stat,
-    //     ch_raw_contacts_stat
-    //  )
-             //TODO Blacklist
-
-
-    // INPUT_CHECK.out.reads.map{it -> it[1]}.collect().view()
-    // INPUT_CHECK.out.reads.view()
-    // INPUT_CHECK.out.view()
-
-        // ch_cigar_filtered
-        // | collectFile(storeDir: "$params.outdir/merge_replicas/rna", keepHeader: true, sort: true) { meta, files ->
-        //     def filename = "${meta.id}.merged_RNA.tab"
-        //     return [ filename, files[0].text ]
-        // }
-        
-
-        // ch_cigar_filtered
-        // | collectFile(storeDir: "$params.outdir/merge_replicas/dna", keepHeader: true, sort: true) { meta, files ->
-        //     def filename = "${meta.id}.merged_DNA.tab"
-        //     return [ filename, files[1].text ]
-        // }
-
-        // SPLIT_BY_CHRS.out
-        // | flatMap { meta, bam -> bam.collect { data -> tuple(meta, data) } } 
-        // | set { ch_split_merged }
-
-        // ANNOTATE_RNA( ch_split_merged )
-
-        // ANNOTATE_RNA.out
-        // | transpose
-        // | map { group, annotated -> [annotated.name.split('_')[0], group, annotated.name.split('merged*...')[1], annotated]}
-        // | branch { 
-        //     voted:      it[2] == 'voted.tab'
-        //     singletons: it[2] == 'singletons.tab'
-        //     selected:   it[2] == 'selected_annot.tab'
-        //     complement: it[2] == 'complement_annot.tab'
-        //     }
-        // | set { cfiles_ch }
-
-        // cfiles_ch.voted
-        // | map { chr, group, extension, file -> [group, file] }
-        // | collectFile(storeDir: "$params.outdir/voted", keepHeader: true, sort: true) { group, file -> [ "${group}.voted.tab", file.text] }
-        // | map { voted -> tuple(file(voted).name.split('.voted.tab')[0], file(voted))}
-        // // | set { voted_ch }
-        // // | view
-
-        // JOIN_RAW_CONTACTS(
-        //     ch_join_bed_raw  //  tuple val(meta), path(rna_bed), path(dna_bed)
-        // )
-        // ch_raw_contacts        = JOIN_RAW_CONTACTS.out.raw_contacts
-        // ch_raw_contacts_stat   = JOIN_RAW_CONTACTS.out.stat
-
-
-        // ch_bed_files                                    
-        // | groupTuple (sort: true)                          
-        // | map { meta,bed -> tuple( meta, bed.sort{it.name})}
-        // | map { meta,bed -> [meta, bed[0], bed[1]] }
-        // | set {ch_join_bed_raw}
-    
-        // ch_bed_files                                    //   [meta, rna.bam]    ->    [meta, [rna.bam, dna.bam]] 
-        // | groupTuple (sort: true)                       //   [meta, dna.bam]   
-        // | map { meta,bed -> tuple( meta, bed.sort{it.name})}
-        // | map { meta,bed -> [meta, bed[0]] }
-        // | set { ch_rna_beds }
-
-        
-        // ch_bed_files
-        // | groupTuple (sort: true)                         
-        // | map { meta,bed -> tuple( meta, bed.sort{it.name})}
-        // | set { ch_rna_dna_bed }
-
-    // HISAT2_ALIGN( 
-    //     ch_input_align,
-    //     ch_hisat2_index.map { [ [:], it ] }.collect(),
-    //     ch_splicesites.map { [ [:], it ] }.collect()
-    // )
-    // ch_hisat2_bam      = HISAT2_ALIGN.out.bam
-    // ch_hisat2_summary  = HISAT2_ALIGN.out.summary
-    // ch_versions        = ch_versions.mix(HISAT2_ALIGN.out.versions)
-
-    // ch_hisat2_bam
-    // | flatMap { meta, bam -> bam.collect { data -> tuple(meta, data) } } 
-    // | set { ch_input_bam_filter }
+    // ch_input_bgr = ch_voted  
 
     
-    //  [meta, [rna.bam, dna.bam]]   ->    [meta, rna.bam]
-    //                                     [meta, dna.bam]
+    // // AGGREGATE  STATS BEFORE MERGE
+    // processChannelStatistics(ch_statistic).set { sample_statistic_table }
 
-    // JOIN_RAW_CONTACTS.out.raw_contacts.map { id, files -> [id, "ch_raw_contacts", files.countLines()] }.view()
-    
-    // CONFIG( 
-    //     ch_samplesheet, 
-    //     ch_config 
-    //     )
-    // XRNA_CONFIG( 
-    //     ch_samplesheet, 
-    //     ch_config_detect_strand, 
-    //     ch_config_xrna 
-    //     )
-    // ch_xrna_json = XRNA_CONFIG.out.strand_json
-
-
-        // ch_bed_files
-        //     | combine(ch_bed_files)
-        //     | filter { meta1, bed1, meta2, bed2 ->
-        //         meta1.control && meta2.id.contains(meta1.control)
-        //     }
-        //     | map { meta1, bed1, meta2, bed2 ->
-        //         [ meta1, bed1, bed2 ]
-        //     }
-        //     | groupTuple(by: 2)
-        //     | set { ch_combine_input_treatment }
-        
-            // if (params.procedure == 'old'){
-    //     JOIN_CONTACTS_OLD(
-    //         ch_bed_files  //  tuple val(meta), path(rna_bed), path(dna_bed)
-    //     )
-    //     ch_raw_contacts        = JOIN_CONTACTS_OLD.out.raw_contacts
-    //     ch_raw_contacts_stat   = JOIN_CONTACTS_OLD.out.stat
-
-    //     // OLD_WORKFLOW( ch_raw_contacts )
+    // ch_m = sample_statistic_table.subscribe { table ->
+    //     // println "${colors['bgblue']} $table \n ${colors['reset']}"
+    //     new File("$params.outdir/Result_stats/Before_Merging_Replicas.stats.txt").text = table + "\n"  // Output the table to a file
     // }

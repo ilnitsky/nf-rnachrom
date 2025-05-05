@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,description
+K562_CTCF_RedChIP,/gpfs/ilnitsky/data/redchip/sub/SRR17331256_1.fastq,/gpfs/ilnitsky/data/redchip/sub/SRR17331256_2.fastq,rnaseq:"rnaseq_K562_CTCF_RedChIP";tissue:"K562"
+K562_CTCF_RedChIP,/gpfs/ilnitsky/data/redchip/sub/SRR17331257_1.fastq,/gpfs/ilnitsky/data/redchip/sub/SRR17331257_2.fastq,rnaseq:"rnaseq_K562_CTCF_RedChIP";tissue:"K562"
+K562_CTCF_RedChIP,/gpfs/ilnitsky/data/redchip/sub/SRR17331258_1.fastq,/gpfs/ilnitsky/data/redchip/sub/SRR17331258_2.fastq,rnaseq:"rnaseq_K562_CTCF_RedChIP";tissue:"K562"
+rnaseq_K562_CTCF_RedChIP,/gpfs/ilnitsky/data/redchip/sub/SRR17331267_1.fastq,/gpfs/ilnitsky/data/redchip/sub/SRR17331267_2.fastq,tissue:"K562" 

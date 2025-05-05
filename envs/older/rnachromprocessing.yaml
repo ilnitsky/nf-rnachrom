@@ -54,4 +54,4 @@ dependencies:
   - stringtie
   - hisat2==2.2.1
   - pip:
-    - git+https://github.com/AndrewSigorskih/RNAChrom_ALLvsALL_data_processing
+    - git+https://github.com/AndrewSigorskih/RNAChromProcessing

@@ -2,10 +2,15 @@ process FASTQC {
     tag "$meta.id,$meta.prefix"
     label 'process_low'
 
-    conda "bioconda::fastqc=0.11.9"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/fastqc:0.11.9--0' :
-        'biocontainers/fastqc:0.11.9--0' }"
+    conda (params.use_nfcore_env ? "bioconda::fastqc=0.11.9" : "${projectDir}/envs/full_env.yml")
+    // conda "bioconda::fastqc=0.11.9"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/fastqc:0.11.9--0' :
+    //     'biocontainers/fastqc:0.11.9--0' }"
 
     input:
     tuple val(meta), path(reads)

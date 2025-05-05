@@ -1,0 +1,108 @@
+name: full_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # System dependencies with flexible versions
+  - _libgcc_mutex
+  - bzip2
+  - c-ares
+  - ca-certificates
+  - cairo
+  - expat
+  - libcups
+  - libcurl
+  - libdeflate
+  - libedit
+  - libev
+  - libffi
+  - libgcc-ng
+  - openjdk
+  - openssl
+  - perl
+  - tk
+  - tzdata
+  - xz
+  - zlib
+  - zstd
+
+  # Python and core packages
+  - python=3.9
+  - pip=23.3
+  - numpy=1.26.4
+  - matplotlib=3.9.2
+  - matplotlib-inline
+  - pandas=2.2.1
+  - seaborn=0.13.2
+  - pillow=10.2.0
+  - pydantic=1.10.13
+  - pyfastx=1.1.0
+  - pysam
+  - biopython
+  - PyYAML=6.0.1
+  - typing_extensions=4.10.0
+
+  # Julia
+  - julia=1.6.5
+
+  # Build tools
+  - make
+  - gcc
+  - gxx
+  - boost=1.84.0
+
+  # Bioinformatics tools
+  - fastuniq=1.1
+  - seqkit=2.7.0
+  - bioframe=0.6.1
+  - bedtools=2.31.1
+  - bedops=2.4.41
+  - samtools=1.19.2
+  - hisat2=2.2.1
+  - htslib=1.19.1
+  - bbmap=39.01
+  - trimmomatic=0.39
+  - seqtk=1.4
+  - stringtie=2.2.1
+  - bwa=0.7.17
+  - bbmap=39.01
+  - pigz=2.6
+  - bowtie2=2.5.2
+  - multiqc=1.14
+  - fastp=0.23.4
+  - fastqc=0.11.9
+  - macs3
+  - pear=0.9.6
+  - star=2.7.10a
+  - gawk=5.1.0
+  - trim-galore=0.6.7
+  - cutadapt=3.4
+  - sed=4.7
+
+  # Additional Python packages
+  - natsort
+  - ncls=0.0.68
+  - pyranges=0.0.129
+  - scipy=1.12.0
+  - setuptools=68.2.2
+  - statsmodels=0.14.1
+  - tqdm=4.66.1
+
+
+  - pip:
+    - git+https://github.com/AndrewSigorskih/RNAChromProcessing
+    - git+https://github.com/dmitrymyl/BaRDIC.git
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,8 +1,13 @@
 process SPLIT_BY_CHRS {
   //TODO: Split by 2 chroms or 4 chroms
   //Check if correctly splits  header    
-    conda "${projectDir}/envs/secondary_processing.yml"
-    input:
+    conda "${projectDir}/envs/full_env.yml"
+      
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+   input:
     tuple val(id), path(merged)
   
     output:

@@ -153,10 +153,10 @@ workflow ALIGN {
         )
         ch_bwa_bam         = BWA_MEM.out.bam
         ch_versions        = ch_versions.mix(BWA_MEM.out.versions)
-        ch_bwa_bam.view()
+        // ch_bwa_bam.view()
         SAM_TO_FASTQ ( ch_bwa_bam )
         ch_input_align = SAM_TO_FASTQ.out.fastq
-        ch_input_align.view()
+        // ch_input_align.view()
         if (params.splice_sites == null) {
             ch_splicesites = HISAT2_EXTRACTSPLICESITES ( ch_gtf.map { [ [:], it ] } ).txt.map { it[1] }
             ch_versions    = ch_versions.mix(HISAT2_EXTRACTSPLICESITES.out.versions)

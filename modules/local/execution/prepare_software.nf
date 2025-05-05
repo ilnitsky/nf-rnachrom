@@ -11,7 +11,14 @@ def print_cyan = {  str -> ANSI_CYAN + str + ANSI_RESET }
 //TODO Singularity support
 process PrepareSoftware {
     
-    conda "${projectDir}/envs/rnachromprocessing.yaml"
+    conda "${projectDir}/envs/full_env.yml"
+    // conda "${projectDir}/envs/rnachromprocessing.yaml"
+  
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+   
     output:
     path("*.txt" )
     
@@ -25,49 +32,49 @@ process PrepareSoftware {
     touch binaries_ready.txt
     touch binaries_ready2.txt
 
-    install_bitap() {
-        git clone https://github.com/ikm4rkov/RawReadsProcessor.git ${projectDir}/bin/bitap_temp
-        unzip ${projectDir}/bin/bitap_temp/main.zip -d ${projectDir}/bin/bitap_temp/
-        g++ -o ${projectDir}/bin/bitap ${projectDir}/bin/bitap_temp/bitap.cpp
-        mv ${projectDir}/bin/bitap_temp/bitap ${projectDir}/bin/
-    }
+    # install_bitap() {
+    #     git clone https://github.com/ikm4rkov/RawReadsProcessor.git ${projectDir}/bin/bitap_temp
+    #     unzip ${projectDir}/bin/bitap_temp/main.zip -d ${projectDir}/bin/bitap_temp/
+    #     g++ -o ${projectDir}/bin/bitap ${projectDir}/bin/bitap_temp/bitap.cpp
+    #     mv ${projectDir}/bin/bitap_temp/bitap ${projectDir}/bin/
+    #  }
 
-    install_stereogene() {
-        git clone https://github.com/favorov/stereogene.git 
-        cd stereogene/src; make
-        find . -type f -executable -print0 | xargs -0 -I {} mv {} ${projectDir}/bin/
-        cd ../..
-    }
+    # install_stereogene() {
+    #     git clone https://github.com/favorov/stereogene.git 
+    #     cd stereogene/src; make
+    #     find . -type f -executable -print0 | xargs -0 -I {} mv {} ${projectDir}/bin/
+    #     cd ../..
+    # }
 
-    install_fastq_dupaway() {
-        git clone https://github.com/AndrewSigorskih/fastq-dupaway.git 
-        export BOOST_ROOT=\$CONDA_PREFIX/include
-        cd fastq-dupaway; make
-        find . -type f -executable -print0 | xargs -0 -I {} mv {} ${projectDir}/bin/
-    }
-
-
+    # install_fastq_dupaway() {
+    #     git clone https://github.com/AndrewSigorskih/fastq-dupaway.git 
+    #     export BOOST_ROOT=\$CONDA_PREFIX/include
+    #     cd fastq-dupaway; make
+    #     find . -type f -executable -print0 | xargs -0 -I {} mv {} ${projectDir}/bin/
+    # }
 
 
-    if [ ! -f "${projectDir}/bin/bitap" ]; then
-        install_bitap
-    else
-        echo "Bitap is already installed."
-    fi
-
-    if [ ! -f "${projectDir}/bin/Smoother" ]; then
-        install_stereogene
-    else
-        echo "Stereogene is already installed."
-    fi
 
 
-    if [ ! -f "${projectDir}/bin/fastq-dupaway" ]; then
-        install_fastq_dupaway
-    else
-        echo "fastq-dupaway is already installed."
-    fi
+    # if [ ! -f "${projectDir}/bin/bitap" ]; then
+    #     install_bitap
+    # else
+    #     echo "Bitap is already installed."
+    # fi
 
+    # if [ ! -f "${projectDir}/bin/Smoother" ]; then
+    #     install_stereogene
+    # else
+    #     echo "Stereogene is already installed."
+    # fi
+
+
+    # if [ ! -f "${projectDir}/bin/fastq-dupaway" ]; then
+    #     install_fastq_dupaway
+    # else
+    #     echo "fastq-dupaway is already installed."
+    #fi
+    sleep 1
 
     """
     // stereogene installation

@@ -4,10 +4,15 @@ process MACS2_CALLPEAK {
     tag "$meta.id"
     label 'process_medium'
 
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/macs2:2.2.7.1--py38h4a8c8d9_3' :
-        'biocontainers/macs2:2.2.7.1--py38h4a8c8d9_3' }"
+    conda (params.use_nfcore_env ? "${moduleDir}/environment.yml" : "${projectDir}/envs/full_env.yml")
+    // conda "${moduleDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/macs2:2.2.7.1--py38h4a8c8d9_3' :
+    //     'biocontainers/macs2:2.2.7.1--py38h4a8c8d9_3' }"
 
     input:
     tuple val(meta), path(ipbam), path(controlbam)

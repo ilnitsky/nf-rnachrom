@@ -2,10 +2,15 @@ process TRIMGALORE {
     tag "$meta.id"
     label 'process_high'
 
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/trim-galore:0.6.7--hdfd78af_0' :
-        'biocontainers/trim-galore:0.6.7--hdfd78af_0' }"
+    conda (params.use_nfcore_env ? "${moduleDir}/environment.yml" : "${projectDir}/envs/full_env.yml")
+    // conda "${moduleDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/trim-galore:0.6.7--hdfd78af_0' :
+    //     'biocontainers/trim-galore:0.6.7--hdfd78af_0' }"
 
     input:
     tuple val(meta), path(reads)

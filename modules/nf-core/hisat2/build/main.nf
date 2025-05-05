@@ -4,10 +4,15 @@ process HISAT2_BUILD {
     label 'process_high_memory'
 
     // WARN: Version information not provided by tool on CLI. Please update version string below when bumping container versions.
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/hisat2:2.2.1--h1b792b2_3' :
-        'biocontainers/hisat2:2.2.1--h1b792b2_3' }"
+    conda (params.use_nfcore_env ? "${moduleDir}/environment.yml" : "${projectDir}/envs/full_env.yml")
+    // conda "${moduleDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/hisat2:2.2.1--h1b792b2_3' :
+    //     'biocontainers/hisat2:2.2.1--h1b792b2_3' }"
 
     input:
     tuple val(meta), path(fasta)

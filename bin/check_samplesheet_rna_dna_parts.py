@@ -36,6 +36,7 @@ class RowChecker:
         sample_col="sample",
         rna_col="rna",
         dna_col="dna",
+        description_col="description",
         **kwargs,
     ):
         """
@@ -48,12 +49,15 @@ class RowChecker:
                 FASTQ file path (default "rna").
             dna_col (str): The name of the column that contains the DNA part
                 FASTQ file path (default "dna").
+            description_col (str): The name of the column that contains additional
+                metadata in key:value format (default "description").
 
         """
         super().__init__(**kwargs)
         self._sample_col = sample_col
         self._rna_col = rna_col
         self._dna_col = dna_col
+        self._description_col = description_col
         self._seen = set()
         self.modified = []
 
@@ -70,6 +74,7 @@ class RowChecker:
         self._validate_rna(row)
         self._validate_dna(row)
         self._validate_pair(row)
+        self._validate_description(row)
         self._seen.add((row[self._sample_col], row[self._rna_col]))
         self.modified.append(row)
 
@@ -105,6 +110,19 @@ class RowChecker:
                 f"The FASTQ file has an unrecognized extension: {filename}\n"
                 f"It should be one of: {', '.join(self.VALID_FORMATS)}"
             )
+
+    def _validate_description(self, row):
+        """Validate the description field format if it exists."""
+        if self._description_col in row and row[self._description_col]:
+            description = row[self._description_col]
+            # Check for basic format compliance
+            for item in description.split(';'):
+                if item.strip():  # Skip empty items
+                    if ':' not in item:
+                        raise AssertionError(
+                            f"Description item '{item}' must be in 'key:value' format."
+                        )
+
 
     def validate_unique_samples(self):
         """
@@ -170,16 +188,11 @@ def check_samplesheet(file_in, file_out):
             be created; always in CSV format.
 
     Example:
-        This function checks that the samplesheet follows the following structure,
-        see also the `viral recon samplesheet`_::
+        This function checks that the samplesheet follows the following structure::
 
-            sample,fastq_1,fastq_2
-            SAMPLE_PE,SAMPLE_PE_RUN1_1.fastq.gz,SAMPLE_PE_RUN1_2.fastq.gz
-            SAMPLE_PE,SAMPLE_PE_RUN2_1.fastq.gz,SAMPLE_PE_RUN2_2.fastq.gz
-            SAMPLE_SE,SAMPLE_SE_RUN1_1.fastq.gz,
-
-    .. _viral recon samplesheet:
-        https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/samplesheet/samplesheet_test_illumina_amplicon.csv
+            sample,rna,dna,description
+            SAMPLE1,SAMPLE1_RNA.fastq.gz,SAMPLE1_DNA.fastq.gz,rnaseq:"rnaseq_SAMPLE1";tissue:"liver"
+            rnaseq_SAMPLE1,RNASEQ_1.fastq.gz,RNASEQ_2.fastq.gz,tissue:"liver"
 
     """
     required_columns = {"sample", "rna", "dna"}

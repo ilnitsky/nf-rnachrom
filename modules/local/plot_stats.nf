@@ -1,7 +1,12 @@
 
 process PLOT_STATS {
-    conda "${projectDir}/envs/secondary_processing.yml"
-
+    conda "${projectDir}/envs/full_env.yml"
+  
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+   
     publishDir (
         path: { "$params.outdir/stats" },
         mode: "copy"

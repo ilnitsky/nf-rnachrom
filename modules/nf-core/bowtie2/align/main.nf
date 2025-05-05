@@ -2,10 +2,16 @@ process BOWTIE2_ALIGN {
     tag "$meta.id"
     label "process_high"
 
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-ac74a7f02cebcfcc07d8e8d1d750af9c83b4d45a:f70b31a2db15c023d641c32f433fb02cd04df5a6-0' :
-        'biocontainers/mulled-v2-ac74a7f02cebcfcc07d8e8d1d750af9c83b4d45a:f70b31a2db15c023d641c32f433fb02cd04df5a6-0' }"
+    
+    conda (params.use_nfcore_env ? "${moduleDir}/environment.yml" : "${projectDir}/envs/full_env.yml")
+    // conda "${moduleDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/mulled-v2-ac74a7f02cebcfcc07d8e8d1d750af9c83b4d45a:f70b31a2db15c023d641c32f433fb02cd04df5a6-0' :
+    //     'biocontainers/mulled-v2-ac74a7f02cebcfcc07d8e8d1d750af9c83b4d45a:f70b31a2db15c023d641c32f433fb02cd04df5a6-0' }"
 
     input:
     tuple val(meta) , path(reads)
@@ -49,7 +55,7 @@ process BOWTIE2_ALIGN {
     def extension = extension_matcher.getCount() > 0 ? extension_matcher[0][2].toLowerCase() : "bam"
     def reference = fasta && extension=="cram"  ? "--reference ${fasta}" : ""
     if (!fasta && extension=="cram") error "Fasta reference is required for CRAM output"
-    if (meta.method == "OTA"){
+    if (meta.method == "OTA" || meta.method == "RNA-seq"){
         """
         INDEX=`find -L ./ -name "*.rev.1.bt2" | sed "s/\\.rev.1.bt2\$//"`
         [ -z "\$INDEX" ] && INDEX=`find -L ./ -name "*.rev.1.bt2l" | sed "s/\\.rev.1.bt2l\$//"`
@@ -62,7 +68,7 @@ process BOWTIE2_ALIGN {
             $unaligned \\
             $args \\
             2> >(tee ${prefix}.bowtie2.log >&2) \\
-            | samtools $samtools_command $args2 --threads $task.cpus ${reference} -o ${prefix}.${extension} -
+            | samtools sort -n --threads $task.cpus -O BAM - > sorted_${prefix}.${extension} 
 
         if [ -f ${prefix}.unmapped.fastq.1.gz ]; then
             mv ${prefix}.unmapped.fastq.1.gz ${prefix}.unmapped_1.fastq.gz
@@ -80,6 +86,17 @@ process BOWTIE2_ALIGN {
         END_VERSIONS
         """
     } else if (meta.method == "ATA") {
+        args = meta.rna ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
+
+        if (!task.ext.args_rna && meta.rna) {
+            log.warn "RNA aligner args not found, using empty string"
+        }
+        if (!task.ext.args_dna && !meta.rna) {
+            log.warn "DNA  aligner args not found, using empty string"
+        }
+        prefix = meta.RNA ? meta.RNA : meta.DNA
+        def postfix = meta.RNA ? 'rna' : 'dna' 
+        
         """
         INDEX=`find -L ./ -name "*.rev.1.bt2" | sed "s/\\.rev.1.bt2\$//"`
         [ -z "\$INDEX" ] && INDEX=`find -L ./ -name "*.rev.1.bt2l" | sed "s/\\.rev.1.bt2l\$//"`
@@ -91,25 +108,10 @@ process BOWTIE2_ALIGN {
             --threads $task.cpus \\
             $unaligned \\
             $args \\
-            2> >(tee ${prefix}.rna.bowtie2.log >&2) \\
-            | samtools $samtools_command $args2 --threads $task.cpus ${reference} -o ${prefix}.rna.${extension} -
+            2> >(tee ${prefix}.${postfix}.bowtie2.log >&2) \\
+            | samtools sort -n --threads $task.cpus -O BAM - > sorted_${meta.id}_${prefix}.${postfix}.bam
 
-        bowtie2 \\
-            -x \$INDEX \\
-            -U ${reads[1]} \\
-            --threads $task.cpus \\
-            $unaligned \\
-            $args \\
-            2> >(tee ${prefix}.dna.bowtie2.log >&2) \\
-            | samtools $samtools_command $args2 --threads $task.cpus ${reference} -o ${prefix}.dna.${extension} -
 
-        if [ -f ${prefix}.unmapped.fastq.1.gz ]; then
-            mv ${prefix}.unmapped.fastq.1.gz ${prefix}.unmapped_1.fastq.gz
-        fi
-
-        if [ -f ${prefix}.unmapped.fastq.2.gz ]; then
-            mv ${prefix}.unmapped.fastq.2.gz ${prefix}.unmapped_2.fastq.gz
-        fi
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

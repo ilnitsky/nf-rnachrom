@@ -3,10 +3,15 @@ nextflow.enable.dsl = 2
 process MULTIQC {
     label 'process_single'
 
-    conda "bioconda::multiqc=1.14"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/multiqc:1.14--pyhdfd78af_0' :
-        'biocontainers/multiqc:1.14--pyhdfd78af_0' }"
+    conda (params.use_nfcore_env ? "bioconda::multiqc=1.14" : "${projectDir}/envs/full_env.yml")
+    // conda "bioconda::multiqc=1.14"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+    
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/multiqc:1.14--pyhdfd78af_0' :
+    //     'biocontainers/multiqc:1.14--pyhdfd78af_0' }"
 
     publishDir (
         path: { "${params.outdir}/QC/MultiQC" },

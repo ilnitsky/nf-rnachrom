@@ -1,26 +1,27 @@
 process HTML_REPORT {
-    conda "${projectDir}/envs/secondary_processing.yml"
-
+    conda "${projectDir}/envs/full_env.yml"
+    // conda "${projectDir}/envs/secondary_processing.yml"
+  
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        
+   
     publishDir (
         path: "${params.outdir}/html_report",
         mode: "copy"
     )
 
     input:
-    tuple val(meta), path(adaptersfastp), path(fastqc), path(debridged), path(restrsites) 
-
+    val(sample_paths)
+    
     output:
-    path "${meta[0]}/", emit: folders
+    path "*.zip", emit: zip
 
     script:
     """
-    mkdir -p ${meta[0]}
-
-    cp ${adaptersfastp} ${meta[0]}/
-    cp -r ${fastqc} ${meta[0]}/
-    cp ${debridged} ${meta[0]}/
-    cp ${restrsites} ${meta[0]}/
-
-    python3 ${projectDir}/bin/generate_html_report.py --sample-id ${meta[0]} --out-dir ${meta[0]} --output report_${meta[0]}.html
+    python3 ${projectDir}/bin/generate_html_report.py --sample-paths ${sample_paths.join(' ')} --output-dir ./
     """
 }
+// python3 ${projectDir}/bin/generate_html_report.py --sample-id ${meta[0]} --out-dir ${meta[0]} --output ${meta[0]}/report_${meta[0]}.html
+        // zip -r ${meta[0]}.zip ${meta[0]}/

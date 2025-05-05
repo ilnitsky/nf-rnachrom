@@ -15,7 +15,12 @@ process FASTQ_DUPAWAY {
         pattern: "dedup/*",
         saveAs: { fn -> file(fn).name } 
     )
-    conda 'conda-forge::boost=1.84.0'
+    conda "${projectDir}/envs/full_env.yml"
+    
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+    // conda 'conda-forge::boost=1.84.0'
     
 
     input:

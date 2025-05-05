@@ -4,9 +4,10 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - pip==20.2
+  - python>=3.7
+  - pip>=21.0
   - bioframe==0.6.1
-  - bedtools=2.31.0=hf5e1c6e_3
+  - bedtools=2.31.0
   - bedops=2.4.41
   - versioned-hdf5
   - natsort
@@ -19,5 +20,10 @@ dependencies:
   - statsmodels==0.14.1
   - tqdm==4.66.1
   - seaborn
+  - samtools==1.16.1
   # - stereogene==2.20
   - ray-core
+  - pip:
+    - git+https://github.com/dmitrymyl/BaRDIC.git@v0.6.0
+
+

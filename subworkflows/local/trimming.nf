@@ -15,11 +15,12 @@ workflow TRIM {
     ch_adapters_redc = Channel.fromPath( "$projectDir/assets/adapters_redc.fa", checkIfExists: true)
     ch_adapters      = ch_adapters_redc
 
+
     if (params.trim_tool == "trimmomatic") {
         TRIMMOMATIC ( reads )
         ch_trimmed_reads    = TRIMMOMATIC.out.trimmed_reads
         ch_unpaired_reads   = TRIMMOMATIC.out.unpaired_reads
-        ch_trimmed_summary  = TRIMMOMATIC.out.summary
+        ch_trim_log  = TRIMMOMATIC.out.summary
         // ch_stats            = ch_stats.mix(TRIMMOMATIC.out.summary)
         ch_versions         = ch_versions.mix(TRIMMOMATIC.out.versions)
 
@@ -50,7 +51,7 @@ workflow TRIM {
     reads    =    ch_trimmed_reads  
     stats    =    ch_stats                                
     versions =    ch_versions // channel: [ versions.yml ]
-    // logs     =    ch_trim_log
+    logs     =    ch_trim_log
 
 }
 

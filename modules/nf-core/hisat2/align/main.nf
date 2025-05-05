@@ -4,10 +4,15 @@ process HISAT2_ALIGN {
     label 'process_medium'
 
     // WARN: Version information not provided by tool on CLI. Please update version string below when bumping container versions.
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-a97e90b3b802d1da3d6958e0867610c718cb5eb1:2cdf6bf1e92acbeb9b2834b1c58754167173a410-0' :
-        'biocontainers/mulled-v2-a97e90b3b802d1da3d6958e0867610c718cb5eb1:2cdf6bf1e92acbeb9b2834b1c58754167173a410-0' }"
+    conda (params.use_nfcore_env ? "${moduleDir}/environment.yml" : "${projectDir}/envs/full_env.yml")
+    // conda "${moduleDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/mulled-v2-a97e90b3b802d1da3d6958e0867610c718cb5eb1:2cdf6bf1e92acbeb9b2834b1c58754167173a410-0' :
+    //     'biocontainers/mulled-v2-a97e90b3b802d1da3d6958e0867610c718cb5eb1:2cdf6bf1e92acbeb9b2834b1c58754167173a410-0' }"
 
     input:
     tuple val(meta), path(reads)
@@ -39,7 +44,7 @@ process HISAT2_ALIGN {
     ss = "$splicesites" ? "--known-splicesite-infile $splicesites" : ''
     // def seq_center = params.seq_center ? "--rg-id ${prefix} --rg SM:$prefix --rg CN:${params.seq_center.replaceAll('\\s','_')}" : "--rg-id ${prefix} --rg SM:$prefix"
     // if (meta.method == "OTA" || meta.method == "RNA-seq" ){    
-    if (meta.method == "OTA" ){
+    if ( meta.method == "OTA" || meta.method == "RNA-seq" ){
         if (meta.single_end) {
             // def unaligned = params.save_unaligned ? "--un-gz ${prefix}.unmapped.fastq.gz" : ''
             """
@@ -55,6 +60,10 @@ process HISAT2_ALIGN {
                 | samtools view -bS - > ${meta.id}_${prefix}.bam
 
             ln -s ${meta.id}_${prefix}.bam ${meta.id}_${prefix}.COPY.bam 
+            
+            if [ -f *.tmp.* ]; then
+                rm *.tmp.*
+            fi
             
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":
@@ -85,6 +94,10 @@ process HISAT2_ALIGN {
             fi
             if [ -f ${prefix}.unmapped.fastq.2.gz ]; then
                 mv ${prefix}.unmapped.fastq.2.gz ${prefix}.unmapped_2.fastq.gz
+            fi
+
+            if [ -f *.tmp.* ]; then
+                rm *.tmp.*
             fi
 
             cat <<-END_VERSIONS > versions.yml
@@ -125,7 +138,11 @@ process HISAT2_ALIGN {
                 --threads $task.cpus \\
                 $args \\
                 $strandedness \\
-                | samtools sort -n -O BAM - > sorted_${meta.id}_${prefix}.${postfix}.bam
+                | samtools sort -n --threads $task.cpus -O BAM - > sorted_${meta.id}_${prefix}.${postfix}.bam
+
+            if [ -f *.tmp.* ]; then
+                rm *.tmp.*
+            fi
 
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":

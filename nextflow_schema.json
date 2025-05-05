@@ -79,6 +79,20 @@
                     "type": "string",
                     "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
                     "fa_icon": "fas fa-file-signature"
+                },
+                "stages": {
+                    "type": "string",
+                    "description": "Pipeline stages to run (comma-separated list)",
+                    "help_text": "Specify which stages of the pipeline to run, e.g. 'annotation,splicing,normalize,peak_calling'"
+                },
+                "description_sequence": {
+                    "type": "string",
+                    "description": "Description sequence pattern"
+                },
+                "adapters_file": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Path to adapters file"
                 }
             }
         },
@@ -87,6 +101,11 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
+            "required": [
+                "dedup_tool",
+                "trim_tool",
+                "align_tool"
+            ],
             "properties": {
                 "dedup_tool": {
                     "type": "string",
@@ -107,6 +126,100 @@
                     "type": "string",
                     "description": "Aligning tool name",
                     "default": "hisat2"
+                },
+                "procedure": {
+                    "type": "string",
+                    "default": "old"
+                },
+                "split_by_chromosomes": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "merge_pairedend_tool": {
+                    "type": "string",
+                    "default": "bbmerge"
+                },
+                "genome_fasta": {
+                    "type": "string",
+                    "default": "/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38/GRCh38.p13.fa"
+                },
+                "hisat2_index": {
+                    "type": "string",
+                    "default": "/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38"
+                },
+                "bridge_processing": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "debridge_tool": {
+                    "type": "string",
+                    "default": "bitap"
+                },
+                "forward_bridge_seq": {
+                    "type": "string",
+                    "default": "AGTCGGAGCGTTGCCTATCGCATTGATGGTGCTAGGA"
+                },
+                "reverse_bridge_seq": {
+                    "type": "string",
+                    "default": "TCCTAGCACCATCAATGCGATAGGCAACGCTCCGACT"
+                },
+                "min_rna_dna_parts_length": {
+                    "type": "integer",
+                    "default": 14
+                },
+                "max_mismatches": {
+                    "type": "integer",
+                    "default": 1
+                },
+                "smartseq_filter": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "ready_raw_contacts_dir": {
+                    "type": "string",
+                    "description": "Directory with ready raw contacts"
+                },
+                "ch_input_check_reads": {
+                    "type": "string",
+                    "description": "Channel for input check reads"
+                },
+                "skip_dedup": {
+                    "type": "boolean",
+                    "description": "Skip deduplication step"
+                },
+                "skip_trim": {
+                    "type": "boolean",
+                    "description": "Skip trimming step"
+                },
+                "skip_fastqc": {
+                    "type": "boolean",
+                    "description": "Skip FastQC step"
+                },
+                "run_blacklist": {
+                    "type": "boolean",
+                    "description": "Run blacklist filtering step"
+                },
+                "layout": {
+                    "type": "string",
+                    "description": "Sequencing layout (single or paired)",
+                    "default": "paired",
+                    "enum": ["single", "paired"]
+                },
+                "bwa_index": {
+                    "type": "string",
+                    "description": "Path to BWA index"
+                },
+                "disable_adapter_autodetect": {
+                    "type": "boolean",
+                    "description": "Disable adapter autodetection"
+                },
+                "dna_part_processing": {
+                    "type": "string",
+                    "description": "DNA part processing method"
+                },
+                "rna_part_processing": {
+                    "type": "string",
+                    "description": "RNA part processing method"
                 }
             }
         },
@@ -369,53 +482,6 @@
         }
     ],
     "properties": {
-        "procedure": {
-            "type": "string",
-            "default": "old"
-        },
-        "split_by_chromosomes": {
-            "type": "boolean",
-            "default": true
-        },
-        "merge_pairedend_tool": {
-            "type": "string",
-            "default": "bbmerge"
-        },
-        "genome_fasta": {
-            "type": "string",
-            "default": "/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38/GRCh38.p13.fa"
-        },
-        "hisat2_index": {
-            "type": "string",
-            "default": "/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38"
-        },
-        "bridge_processing": {
-            "type": "boolean",
-            "default": true
-        },
-        "debridge_tool": {
-            "type": "string",
-            "default": "bitap"
-        },
-        "forward_bridge_seq": {
-            "type": "string",
-            "default": "AGTCGGAGCGTTGCCTATCGCATTGATGGTGCTAGGA"
-        },
-        "reverse_bridge_seq": {
-            "type": "string",
-            "default": "TCCTAGCACCATCAATGCGATAGGCAACGCTCCGACT"
-        },
-        "min_rna_dna_parts_length": {
-            "type": "integer",
-            "default": 14
-        },
-        "max_mismatches": {
-            "type": "integer",
-            "default": 1
-        },
-        "smartseq_filter": {
-            "type": "boolean",
-            "default": true
-        }
+
     }
 }
