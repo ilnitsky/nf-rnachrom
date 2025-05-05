@@ -117,14 +117,14 @@ see [docs](https://nf-co.re/usage/configuration#custom-configuration-files).
 
 ## Test Run with External Data
 
-Download test dataset:
+To test the pipeline functionality using pre-configured test data, download test dataset:
 
 ```bash
 wget http://bioinf.fbb.msu.ru/ken/nextflow/test_data_nf-rnachrom.tar.gz && \
-tar -xzvf test_data_nf-rnachrom.tar.gz -C test_data_nf-rnachrom 
+tar -xzvf test_data_nf-rnachrom.tar.gz 
 ```
 
-To test the pipeline functionality using pre-configured test data, you can run:
+And run:
 
 ```bash
 nextflow run ./nf-rnachrom \
