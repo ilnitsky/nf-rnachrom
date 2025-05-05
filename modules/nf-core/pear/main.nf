@@ -6,7 +6,7 @@ process PEAR {
     // conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
         'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
-        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
 
     // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
     //     'https://depot.galaxyproject.org/singularity/pear:0.9.6--h67092d7_8':

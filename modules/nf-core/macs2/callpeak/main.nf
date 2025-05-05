@@ -8,7 +8,7 @@ process MACS2_CALLPEAK {
     // conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
         'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
-        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
 
     // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
     //     'https://depot.galaxyproject.org/singularity/macs2:2.2.7.1--py38h4a8c8d9_3' :

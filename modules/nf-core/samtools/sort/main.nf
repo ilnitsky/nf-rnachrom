@@ -6,7 +6,7 @@ process SAMTOOLS_SORT {
     // conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
         'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
-        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
 
     // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
     //     'https://depot.galaxyproject.org/singularity/samtools:1.19.2--h50ea8bc_0' :

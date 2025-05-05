@@ -11,7 +11,7 @@ process FASTUNIQ {
   // conda 'bioconda::fastuniq=1.1' 
   container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
         'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
-        workflow.containerEngine == 'docker' ? 'ilnitsky/nf-rnachrom:latest' : '' }"
+        workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
 
   // if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
   //   container "https://depot.galaxyproject.org/singularity/fastuniq:1.1--h470a237_1"
