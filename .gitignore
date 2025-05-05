@@ -11,3 +11,6 @@ testing*
 *ipynb_checkpoints*
 RnaChromATA
 Stereogene
+bin/bitap_temp
+.prettier*
+.pre-commit-config*
