@@ -6,6 +6,7 @@ include { FASTP                       } from '../../modules/nf-core/fastp/main'
 workflow TRIM {
     take:
     reads // file: /path/to/samplesheet.csv
+    ch_adapters_file // file: /path/to/adapters_file.fa
 
     main:
     ch_stats = Channel.empty()
@@ -32,7 +33,7 @@ workflow TRIM {
         ch_versions         = ch_versions.mix(BBMAP_BBDUK.out.versions)
 
     } else if (params.trim_tool == "fastp") {
-        FASTP ( reads, true, false, false ) // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
+        FASTP ( reads, ch_adapters_file, true, false, false ) // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
         ch_trimmed_reads    = FASTP.out.reads
         ch_trim_log         = FASTP.out.log
         ch_stats            = FASTP.out.html

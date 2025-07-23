@@ -14,7 +14,7 @@ process FASTP {
 
     input:
     tuple val(meta), path(reads)
-    // val adapter_fasta
+    val adapter_fasta
     val save_trimmed_fail
     val save_merged
     val only_remove_adapters
@@ -35,10 +35,10 @@ process FASTP {
 
     def args = only_remove_adapters ? (task.ext.args_adapters ?: '') : (task.ext.args ?: '')
 
-    def adapter_list = params.adapters_file ? "--adapter_fasta ${params.adapters_file}" : "--adapter_fasta ${projectDir}/assets/adapters_redc.fa"
+    // def adapter_list = params.adapters_file ? "--adapter_fasta ${params.adapters_file}" : "--adapter_fasta ${projectDir}/assets/adapters_redc.fa"
     def detect_adapters = params.disable_adapter_autodetect ? "" : "--detect_adapter_for_pe" 
     def postfix = only_remove_adapters ? 'adapt' : 'fastp'
-    def adapters = only_remove_adapters ? "${adapter_list} ${detect_adapters}" : "-A"
+    def adapters = only_remove_adapters ? "${detect_adapters}" : "-A"
 
     def prefix = task.ext.prefix ?: "${meta.id}"
     def fail_fastq = save_trimmed_fail && meta.single_end ? "--failed_out ${prefix}.fail.fastq.gz" : save_trimmed_fail && !meta.single_end ? "--failed_out ${prefix}.paired.fail.fastq.gz --unpaired1 ${prefix}_1.fail.fastq.gz --unpaired2 ${prefix}_2.fail.fastq.gz" : ''
@@ -57,7 +57,7 @@ process FASTP {
             --thread $task.cpus \\
             --json ${prefix}.fastp.json \\
             --html ${prefix}.fastp.html \\
-            $adapter_list \\
+            --adapter_fasta ${adapter_fasta}  \\
             $fail_fastq \\
             $args \\
             2> >(tee ${prefix}.fastp.log >&2) \\
@@ -78,6 +78,7 @@ process FASTP {
             --thread $task.cpus \\
             --json ${prefix}.${postfix}.json \\
             --html ${prefix}.${postfix}.html \\
+            --adapter_fasta ${adapter_fasta}  \\
             $adapters \\
             $fail_fastq \\
             $args \\

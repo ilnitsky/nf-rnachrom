@@ -33,14 +33,14 @@ process FINAL_ANNOTATION {
     sort -k1,1 -k2,2n ${annot_bedrc} > ${genes_prefix}.sorted.bedrc
 
     mkdir -p genes voted_${contacts_prefix}
-    bash ${projectDir}/bin/annotation/voting.sh \\
+    voting.sh \\
              -q . \\
              -g ${genes_prefix}.sorted.bedrc  \\
              -d ${dist}  \\
              -e .  \\
              -c ${contacts}  \\
              -o voted_${contacts_prefix}  \\
-             -s ${projectDir}/bin/annotation/
+             -s ${projectDir}/bin
 
     ln -s voted_${contacts_prefix}/contacts.voting.UU.bed ${contacts_prefix}.UU.voted.tab.rc
     ln -s voted_${contacts_prefix}/contacts.voting.UM.bed ${contacts_prefix}.UM.voted.tab.rc

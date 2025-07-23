@@ -20,7 +20,7 @@ process HTML_REPORT {
 
     script:
     """
-    python3 ${projectDir}/bin/generate_html_report.py --sample-paths ${sample_paths.join(' ')} --output-dir ./
+    generate_html_report.py --sample-paths ${sample_paths.join(' ')} --output-dir ./
     """
 }
 // python3 ${projectDir}/bin/generate_html_report.py --sample-id ${meta[0]} --out-dir ${meta[0]} --output ${meta[0]}/report_${meta[0]}.html

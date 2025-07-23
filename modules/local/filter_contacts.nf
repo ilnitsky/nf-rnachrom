@@ -37,7 +37,7 @@ process FILTER_CONTACTS {
     // def max_insert_size = params.pe_insert_size
 
     """
-    python3 ${projectDir}/bin/EditDistance_CIGAR_filter.py \\
+    EditDistance_CIGAR_filter.py \\
         "NM + N_softClipp_bp" 2 2 0 0 300 "${ucarna_assembly}" "not explorer" "${mode}" "${unique_tab}" "./" "./"
 
     mv filtered_out_"${unique_tab}" out_"${unique_tab}"

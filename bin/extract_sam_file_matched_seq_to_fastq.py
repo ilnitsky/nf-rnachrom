@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import pysam
 import sys
 from Bio.Seq import Seq

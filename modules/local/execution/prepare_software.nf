@@ -23,8 +23,8 @@ process PrepareSoftware {
     path("*.txt" )
     
     script:
-    def rnachrom = new File("${projectDir}/bin/RnaChromATA/setup.py")
-    def bitap = new File("${projectDir}/bin/bitap")
+    // def rnachrom = new File("${projectDir}/bin/RnaChromATA/setup.py")
+    // def bitap = new File("${projectDir}/bin/bitap")
 
     """
     set -e

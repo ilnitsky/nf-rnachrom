@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from itertools import groupby
 import json
 from pathlib import Path

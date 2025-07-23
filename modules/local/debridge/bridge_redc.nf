@@ -38,12 +38,12 @@ process RNA_AND_DNA_PARTS {
   """
   # Split Red-C Single end (Pear Assembled)
 
-  ${projectDir}/bin/split_parts_redc_SE.sh ${bridge_len} ${assembled} ${assembled_positions} \
+  split_parts_redc_SE.sh ${bridge_len} ${assembled} ${assembled_positions} \
                                            ${min_seq_len} ${meta.prefix} ${bridge_id}
 
   # Split Red-C Paired end (Pear Not Assembled)
 
-  ${projectDir}/bin/split_parts_redc_PE.sh ${bridge_len} ${unassembled_F} ${unassembled_positions_F} \
+  split_parts_redc_PE.sh ${bridge_len} ${unassembled_F} ${unassembled_positions_F} \
                                            ${unassembled_R} ${unassembled_positions_R} \
                                            ${min_seq_len} ${meta.prefix} ${bridge_id}
   """
@@ -51,13 +51,13 @@ process RNA_AND_DNA_PARTS {
   } else if (params.exp_type == 'char' )  {
   """
   # Split Char Single end (Pear Assembled)
-  ${projectDir}/bin/split_parts_char_SE.sh ${bridge_len} ${assembled} ${assembled_positions} \
+  split_parts_char_SE.sh ${bridge_len} ${assembled} ${assembled_positions} \
                                            ${min_seq_len} ${meta.prefix} ${bridge_id}
 
 
   # Split Char Paired end (Pear Not Assembled)
 
-  ${projectDir}/bin/split_parts_char_PE.sh ${bridge_len} ${unassembled_F} ${unassembled_positions_F} \
+  split_parts_char_PE.sh ${bridge_len} ${unassembled_F} ${unassembled_positions_F} \
                                            ${unassembled_R} ${unassembled_positions_R} \
                                            ${min_seq_len} ${meta.prefix} ${bridge_id}
 

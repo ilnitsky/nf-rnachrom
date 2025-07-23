@@ -42,7 +42,7 @@ def get_mapping_status(alignments, secondary_alignments):
         return 'N'
     return 'M' if secondary_alignments else 'U'
 
-def process_reads(r1_iter, r2_iter, other_tags, rna_mode='STAR', dna_mode='STAR'):
+def process_reads(r1_iter, r2_iter, other_tags, mode='STAR'):
     def get_base_name(query_name):
         return query_name.split('.')[-1] if query_name else None
 
@@ -53,57 +53,46 @@ def process_reads(r1_iter, r2_iter, other_tags, rna_mode='STAR', dna_mode='STAR'
         r1_data = {'alignments': [], 'secondary_alignments': [], 'other_tags': '*'}
         r2_data = {'alignments': [], 'secondary_alignments': [], 'other_tags': '*'}
 
-        # Process R1 reads (RNA)
-        while r1 and get_base_name(r1.query_name) == base_name:
-            if rna_mode == 'BWA':
-                r1_data['alignments'] = format_alignment(r1)
-                r1_data['other_tags'] = extract_other_tags(r1, other_tags)
-                if r1.has_tag('XA'):
-                    r1_data['secondary_alignments'].append(r1.get_tag('XA'))
-            else:
-                # HISAT2/STAR handling for RNA
-                if r1.is_secondary or r1.is_supplementary:
-                    r1_data['secondary_alignments'].append(format_secondary_alignment(r1))
+        for read, data, iter_func in [(r1, r1_data, r1_iter), (r2, r2_data, r2_iter)]:
+            while read and get_base_name(read.query_name) == base_name:
+                if mode == 'BWA':
+                    data['alignments'] = format_alignment(read)
+                    data['other_tags'] = extract_other_tags(read, other_tags)
+                    if read.has_tag('XA'):
+                        data['secondary_alignments'].append(read.get_tag('XA'))
                 else:
-                    r1_data['alignments'] = format_alignment(r1)
-                    r1_data['other_tags'] = extract_other_tags(r1, other_tags)
-            r1 = next(r1_iter, None)
+                    # HISAT2/STAR handling
+                    if read.is_secondary or read.is_supplementary:
+                        data['secondary_alignments'].append(format_secondary_alignment(read))
+                    else:
+                        data['alignments'] = format_alignment(read)
+                        data['other_tags'] = extract_other_tags(read, other_tags)
+                read = next(iter_func, None)
 
-        # Process R2 reads (DNA)
-        while r2 and get_base_name(r2.query_name) == base_name:
-            if dna_mode == 'BWA':
-                r2_data['alignments'] = format_alignment(r2)
-                r2_data['other_tags'] = extract_other_tags(r2, other_tags)
-                if r2.has_tag('XA'):
-                    r2_data['secondary_alignments'].append(r2.get_tag('XA'))
+            if data is r1_data:
+                r1 = read
             else:
-                # HISAT2/STAR handling for DNA
-                if r2.is_secondary or r2.is_supplementary:
-                    r2_data['secondary_alignments'].append(format_secondary_alignment(r2))
-                else:
-                    r2_data['alignments'] = format_alignment(r2)
-                    r2_data['other_tags'] = extract_other_tags(r2, other_tags)
-            r2 = next(r2_iter, None)
+                r2 = read
 
         yield query_name, r1_data, r2_data
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Process BAM files and output alignment information.')
     parser.add_argument('-r1', '--rna_bam', required=True, help='Input RNA BAM file (R1)')
-    parser.add_argument('-r2', '--dna_bam', help='Input DNA BAM file (R2)')
-    parser.add_argument('-mr', '--rna_mode', choices=['BWA', 'STAR', 'HISAT', 'BOWTIE'], required=True, 
-                        help='RNA alignment mode: BWA, STAR, HISAT, or BOWTIE')
-    parser.add_argument('-md', '--dna_mode', choices=['BWA', 'STAR', 'HISAT', 'BOWTIE'], 
-                        help='DNA alignment mode: BWA, STAR, HISAT, or BOWTIE (defaults to RNA mode if not specified)')
-    parser.add_argument('-e', '--exp_type', choices=['OTA_PE', 'OTA_SE', 'ATA', 'RNA_SEQ_PE', 'RNA_SEQ_SE'], required=True,
-                        help='Experiment type: OTA_PE, OTA_SE, ATA, RNA_SEQ_PE, or RNA_SEQ_SE')
+    parser.add_argument('-r2', '--dna_bam', required=True, help='Input DNA BAM file (R2)')
+    parser.add_argument('-m', '--mode', choices=['BWA', 'HISAT'], required=True, 
+                        help='Alignment mode: BWA or HISAT')
+    parser.add_argument('-e', '--exp_type', choices=['OTA_PE', 'OTA_SE', 'ATA'], required=True,
+                        help='Experiment type: OTA_PE, OTA_SE, or ATA')
     parser.add_argument('-t', '--other_tags', nargs='+', default=["NH"],
-                        help='List of additional SAM tags to extract (default: NH)')
+                        help='List of additional SAM tags to extract (default: NH GG WS KU)')
     parser.add_argument('-p', '--prefix', required=True,
                         help='Output file prefix')
     return parser.parse_args()
 
 def write_header(file, exp_type):
+    # Determine the pairtype column name based on experiment type
+
     if exp_type == 'ATA':
         header = ["read_id", "ATA_pairtype", 
                 "rna_chr", "rna_start", "rna_end", "rna_strand", "rna_cigar", "rna_NM", "rna_mapq",
@@ -122,60 +111,30 @@ def write_header(file, exp_type):
                 "dna2_chr", "dna2_start", "dna2_end", "dna2_strand", "dna2_cigar", "dna2_NM", "dna2_mapq",
                 "dna1_secondary_alignments", "dna2_secondary_alignments",
                 "dna1_other_tags", "dna2_other_tags"]
-    elif exp_type == 'RNA_SEQ_PE':          
-        header = ["read_id", "RNAseq_PE_pairtype", 
-                "rna1_chr", "rna1_start", "rna1_end", "rna1_strand", "rna1_cigar", "rna1_NM", "rna1_mapq",
-                "rna2_chr", "rna2_start", "rna2_end", "rna2_strand", "rna2_cigar", "rna2_NM", "rna2_mapq",
-                "rna1_secondary_alignments", "rna2_secondary_alignments",
-                "rna1_other_tags", "rna2_other_tags"]
-    elif exp_type == 'RNA_SEQ_SE':          
-        header = ["read_id", "RNAseq_SE_pairtype", 
-                "rna1_chr", "rna1_start", "rna1_end", "rna1_strand", "rna1_cigar", "rna1_NM", "rna1_mapq",
-                "rna2_chr", "rna2_start", "rna2_end", "rna2_strand", "rna2_cigar", "rna2_NM", "rna2_mapq",
-                "rna1_secondary_alignments", "rna2_secondary_alignments",
-                "rna1_other_tags", "rna2_other_tags"]
               
     file.write('\t'.join(header) + '\n')
 
 def main():
     args = parse_arguments()
-    
-    # Set default DNA mode to RNA mode if not specified
-    if not args.dna_mode:
-        args.dna_mode = args.rna_mode
-    
+
     try:
         unique_file = f"{args.prefix}_Unique_RNA.tab.rc"
         other_file = f"{args.prefix}_Other.tab.rc"
 
-        # For RNA-seq SE, use dummy values for r2
-        if args.exp_type == 'RNA_SEQ_SE':
-            args.dna_bam = args.rna_bam  
-            processing_exp_type = 'RNA_SEQ_SE'
-        elif args.exp_type == 'RNA_SEQ_PE':
-            if not args.dna_bam:
-                args.dna_bam = args.rna_bam  # Use the same file for PE RNA-seq
-            processing_exp_type = 'RNA_SEQ_PE'
-        else:
-            processing_exp_type = args.exp_type
-            if not args.dna_bam:
-                raise ValueError("DNA BAM file (-r2) is required for RNA-DNA experiments")
-
         with open(unique_file, 'w') as f_unique, open(other_file, 'w') as f_other:
-            write_header(f_unique, processing_exp_type)
-            write_header(f_other, processing_exp_type)
+            write_header(f_unique)
+            write_header(f_other)
 
             for query_name, r1_data, r2_data in process_reads(
                 process_bam(args.rna_bam), 
                 process_bam(args.dna_bam), 
                 args.other_tags, 
-                args.rna_mode,
-                args.dna_mode
+                args.mode
             ):
                 r1_status = get_mapping_status(r1_data['alignments'], r1_data['secondary_alignments'])
                 r2_status = get_mapping_status(r2_data['alignments'], r2_data['secondary_alignments'])
                 pairtype = f"{r1_status}{r2_status}"
-                print(r1_data, r2_data, pairtype)
+
                 r1_alignments = r1_data['alignments'] if r1_data['alignments'] else ['*'] * 7
                 r2_alignments = r2_data['alignments'] if r2_data['alignments'] else ['*'] * 7
 

@@ -15,7 +15,7 @@ process RSITES {
         saveAs: { fn -> file(fn).name }
     ) 
     publishDir (
-        path: { "$params.outdir/rsites/NucleotideDistribution5-3" },
+        path: { "$params.outdir/rsites" },
         mode: "copy",
         pattern: "*.tsv",
         saveAs: { fn -> file(fn).name }
@@ -31,16 +31,6 @@ process RSITES {
     tuple val(meta), path('*.png'), emit: png
 
     script:
-    // def descr_seq   = params.description_sequence
-
-    // String description_sequence = descr_seq
-    //     .replaceAll(/[?!<][^)]*\)/, '')
-    //     .replaceAll(/b[^)]*\)/, ' ')
-
-    // String[] parts = description_sequence.split(" ", 2) 
-
-    // String dna_part = parts.length > 0 ? parts[0] : ""
-    // String rna_part = parts.length > 1 ? parts[1] : ""
 
     def dna_part = params.dna_part_processing ?: '*' 
     def rna_part = params.rna_part_processing ?: '.' 
@@ -55,38 +45,18 @@ process RSITES {
     ln -s ${meta.DNA}_RNA_RS.fastq ${meta.RNA}.rna.rsites.fastq    
     ln -s ${meta.DNA}_DNA_RS.fastq ${meta.DNA}.dna.rsites.fastq
 
-    python3 ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}_last_oligos.tsv
+    plot_rsites.py ${meta.id} ${meta.DNA}_last_oligos.tsv
     """
-// python plot_rsites.py ${meta.prefix}  
 }
 
+// python plot_rsites.py ${meta.prefix}  
+    // def descr_seq   = params.description_sequence
 
-    // python ${projectDir}/bin/plot_rsites.py ${meta.id} ${meta.DNA}.dna.fastq_last_oligos.tsv
-//pigz -d ${meta.DNA}.dna.fastq.gz > ${meta.DNA}.dna.fastq
-//pigz -d ${meta.RNA}.rna.fastq.gz > ${meta.RNA}.rna.fastq
+    // String description_sequence = descr_seq
+    //     .replaceAll(/[?!<][^)]*\)/, '')
+    //     .replaceAll(/b[^)]*\)/, ' ')
 
+    // String[] parts = description_sequence.split(" ", 2) 
 
-
-
-
-
-
-
-
-//    cat <<-END_JSON > config.json
-//    {
-//        "rna_ids": ["${sample_rna}"],
-//       "dna_ids": ["${sample_dna}"],
-//        "base_dir" : ".",
-//        "input_dir": ".",
-//        "output_dir": ".",
-//        "cpus": ${task.cpus},
-//        "keep" : ["rsites"],
-//        "rsites": {
-//            "type": "${params.exp_type}"
-//       }
-//    }
-//    END_JSON
-
-//    rnachromprocessing -c config.json -s rsites -v
-    
+    // String dna_part = parts.length > 0 ? parts[0] : ""
+    // String rna_part = parts.length > 1 ? parts[1] : ""

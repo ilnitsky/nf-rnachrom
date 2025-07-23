@@ -36,6 +36,8 @@ def parse_bed_row_genes(row):
 def parse_bed_row(row):
     chr_, start, end, _id, _, strand, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster = row.strip().split("\t")
     return chr_, int(start), int(end), _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster
+    # 'chr21', 8393474, 8393475, 'SRR17331267.23', '8393464', '8393484', 'UU', '19M',         '0', '60',   'chr5', '158623806', '158623828', '23M', '0', '60', 'NAN', 'NAN', 'NH1', 'NH4', '', '57541'
+
 
 def contacts_to_str(gene_name, gene_type, fromSource, contacts, strand):
     if gene_name:
@@ -43,9 +45,11 @@ def contacts_to_str(gene_name, gene_type, fromSource, contacts, strand):
             "\n".join(
                 "\t".join(
                     [
+                        # chr_,str(start),str(end),str(id_),str("0"),strand,gene_name,
                         id_, pairtype, chr_, str(start_true), str(end_true), strand, gene_name, gene_type, fromSource, rna_cigar, str(rna_NM), str(rna_mapq), dna_chr, str(dna_start), str(dna_end), dna_strand, dna_cigar, str(dna_NM), str(dna_mapq), rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags
                     ]
                 )
+                # for chr_, start, end, id_, cluster_id in contacts
                 for chr_, start, end, id_, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster_id in contacts
             )
             + "\n"
@@ -55,9 +59,11 @@ def contacts_to_str(gene_name, gene_type, fromSource, contacts, strand):
             "\n".join(
                 "\t".join(
                     [
+                        # chr_,str(start),str(end),str(id_),str("0"),strand,
                         id_, pairtype, chr_, str(start_true), str(end_true), strand, rna_cigar, str(rna_NM), str(rna_mapq), dna_chr, str(dna_start), str(dna_end), dna_strand, dna_cigar, str(dna_NM), str(dna_mapq), rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags
                     ]
                 )
+                # for chr_, start, end, id_, cluster_id in contacts
                 for chr_, start, end, id_, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster_id in contacts
             )
             + "\n"
@@ -65,15 +71,18 @@ def contacts_to_str(gene_name, gene_type, fromSource, contacts, strand):
 
 
 def contacts_to_str_2(gene_name, gene_type, fromSource, contacts, chr_, strand):
+    # print('11111111111111111122222_____2333333333333333', gene_name, gene_type, fromSource, chr_, strand)
     if gene_name:
         return (
             "\n".join(
                 (
                     "\t".join(
                         [
+                            # chr_,str(start),str(end),id_,"0",strand,gene_name,
                             id_, pairtype, chr_, str(start_true), str(end_true), strand, gene_name, gene_type, fromSource, rna_cigar, str(rna_NM), str(rna_mapq), dna_chr, str(dna_start), str(dna_end), dna_strand, dna_cigar, str(dna_NM), str(dna_mapq), rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags
                         ]
                     )
+                    # for start, end, id_ in contacts
                     for start, end, id_, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags in contacts
                 )
             )
@@ -86,9 +95,11 @@ def contacts_to_str_2(gene_name, gene_type, fromSource, contacts, chr_, strand):
                 (
                     "\t".join(
                         [
+                            # chr_,str(start),str(end),id_,"0",strand,
                             id_, pairtype, chr_, str(start_true), str(end_true), strand, rna_cigar, str(rna_NM), str(rna_mapq), dna_chr, str(dna_start), str(dna_end), dna_strand, dna_cigar, str(dna_NM), str(dna_mapq), rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags
                         ]
                     )
+                    # for start, end, id_ in contacts
                     for start, end, id_, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags in contacts
                 )
             )
@@ -97,19 +108,26 @@ def contacts_to_str_2(gene_name, gene_type, fromSource, contacts, chr_, strand):
 
 
 def prepare_cov_2(starts, ends, cl_start, cl_end):
+    #shape = cl_end - cl_start
     pos = (starts + ends) // 2 - cl_start
+    # print(pos)
+    #pos = pos[pos > 0]
+    #pos = pos[pos < shape]
     cov = np.bincount(pos)
-    return cov
+    return cov #np.resize(cov, shape)
 
 
 def find_batki_from_cluster_2(cluster_info, starts, ends):
     cluster_start = cluster_info["start"]
     cluster_end = cluster_info["end"]
+    # print("&&&&&&&&&&&&&", cluster_info)
     genes = {
         g[3]: (g[0], g[1], g[2], g[1] - cluster_start, g[2] - cluster_start, g[4], g[5])
         for g in cluster_info["genes"]
     }
     cov = prepare_cov_2(starts, ends, cluster_start, cluster_end)
+    # print(cov)
+    # print(genes)
     batki = []
     while genes:
         batka = max(
@@ -129,6 +147,7 @@ def find_batki_from_cluster_2(cluster_info, starts, ends):
             ],
             key=lambda a: a[-1],
         )
+        # print('batka', batka)
         batki.append(batka)
         genes.pop(batka[0])
         cov[batka[4] : batka[5]+1] = 0
@@ -140,11 +159,12 @@ def get_batki_contacts_2(batki, starts, ends, ids, starts_true, ends_true, pairt
         indexes = np.arange(len(starts))
         gene_names, chrs_, gene_starts, gene_ends, starts_, ends_, gene_types, fromSources, covs_ = zip(*batki)
         gene_starts, gene_ends = np.array(gene_starts), np.array(gene_ends)
+        #mean_coord = (starts + ends) // 2
         ncls = NCLS(gene_starts, gene_ends, np.arange(gene_starts.shape[0]))
         (
             overlapped_contacts,
             overlapped_genes,
-        ) = ncls.all_overlaps_both(starts, ends, indexes)
+        ) = ncls.all_overlaps_both(starts, ends, indexes) #= ncls.all_overlaps_both(mean_coord, mean_coord, indexes)
         # check if sorted
         if not np.all(overlapped_genes[:-1] <= overlapped_genes[1:]):
             argsort = overlapped_genes.argsort()
@@ -164,6 +184,7 @@ def get_batki_contacts_2(batki, starts, ends, ids, starts_true, ends_true, pairt
 
             indexes = np.setdiff1d(indexes, overlapped_contacts_batka)
             if overlapped_contacts_batka.shape[0] > 0:
+                # print('000000000000000000000000000000', gene_names[batka_id], gene_types[batka_id], fromSources[batka_id])
                 yield gene_names[batka_id], gene_types[batka_id], fromSources[batka_id], list(
                     zip(
                         starts[overlapped_contacts_batka],
@@ -203,24 +224,11 @@ def process_cluster_2(cluster_info, contacts, strand):
         and (cluster_info["start"] == cluster_info["genes"][0][1])
         and (cluster_info["end"] == cluster_info["genes"][0][2])
     ):
-        gene = cluster_info["genes"][0]
-        batki = [(
-            gene[3],  # gene name
-            gene[0],  # chr
-            gene[1],  # start
-            gene[2],  # end
-            0,       # rel_start (0 так как один ген)
-            gene[2] - gene[1],  # rel_end
-            gene[4],  # gene_type
-            gene[5],  # from_source
-            len(contacts) / (int(gene[2]) - int(gene[1]) + 1)
-        )]
         return (
-            batki,
-            contacts_to_str(gene[3], gene[4], gene[5], contacts, strand),
+            cluster_info,
+            contacts_to_str(cluster_info["genes"][0][3], cluster_info["genes"][0][4], cluster_info["genes"][0][5], contacts, strand),
             "",
         )
-    
     starts = np.fromiter((start for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
     ends = np.fromiter((end for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
     ids = np.fromiter((_id for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
@@ -231,14 +239,13 @@ def process_cluster_2(cluster_info, contacts, strand):
     rna_cigars = np.fromiter((rna_cigar for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
     rna_NMs = np.fromiter((rna_NM for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
     rna_mapqs = np.fromiter((rna_mapq for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
-    
     dna_chrs = np.fromiter((dna_chr for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
-    dna_starts = np.fromiter((dna_start for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36") #int
-    dna_ends = np.fromiter((dna_end for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36") #int
+    dna_starts = np.fromiter((dna_start for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
+    dna_ends = np.fromiter((dna_end for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
     dna_strands = np.fromiter((dna_strand for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
     dna_cigars = np.fromiter((dna_cigar for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
-    dna_NMs = np.fromiter((dna_NM for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36") #int
-    dna_mapqs = np.fromiter((dna_mapq for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36") #int
+    dna_NMs = np.fromiter((dna_NM for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
+    dna_mapqs = np.fromiter((dna_mapq for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), int)
     rna_secondary_alignmentss = np.fromiter((rna_secondary_alignments for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
     dna_secondary_alignmentss = np.fromiter((dna_secondary_alignments for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
     rna_other_tagss = np.fromiter((rna_other_tags for chr_, start, end, _id, start_true, end_true, pairtype, rna_cigar, rna_NM, rna_mapq, dna_chr, dna_start, dna_end, dna_strand, dna_cigar, dna_NM, dna_mapq, rna_secondary_alignments, dna_secondary_alignments, rna_other_tags, dna_other_tags, cluster in contacts), "<U36")
@@ -247,7 +254,12 @@ def process_cluster_2(cluster_info, contacts, strand):
     batki = find_batki_from_cluster_2(cluster_info, starts, ends)
     results = []
     singletons = []
+    # print("!!!!!!!!!!!", batki, "\n")
+    # print('111111', starts, "\n")
+    # print('222222',ends, "\n")
+    # print('33333', ids, "\n")
     for gene_name, gene_type, fromSource, gene_contacts in get_batki_contacts_2(batki, starts, ends, ids, starts_true, ends_true, pairtypes,rna_cigars,rna_NMs,rna_mapqs,dna_chrs,dna_starts,dna_ends,dna_strands,dna_cigars,dna_NMs,dna_mapqs,rna_secondary_alignmentss,dna_secondary_alignmentss,rna_other_tagss,dna_other_tagss):
+        # print('******', gene_name, gene_type, fromSource, gene_contacts)
         if gene_name is None:
             singletons.append(contacts_to_str_2(None, None, None, gene_contacts, chr_, strand))
         else:
@@ -268,12 +280,16 @@ def process_clusters_2(
                     fsingl.write(contacts_to_str(None, None, None, contacts, strand))
                     continue
                 if not cluster_id in cluster_genes:
+                    print(cluster_id)
                     continue
                 cluster_info = cluster_genes[cluster_id]
                 contacts = list(contacts)
+                # print(cluster_id, cluster_info, contacts)
+                # break
                 batki, result, singletons = process_cluster_2(
                     cluster_info, contacts, strand
                 )
+                # print('++++++++++', batki, result, singletons)
                 fbatki.write(json.dumps(batki) + "\n")
                 fout.write(result)
                 if singletons:
@@ -284,6 +300,7 @@ def process_clusters_2(
 def main(output_dir, clusters_pos_strand, clusters_neg_strand):
     contacts_pos_strand_file = Path(output_dir) / "contacts.pos_strand.clusters.bed"
     contacts_neg_strand_file = Path(output_dir) / "contacts.neg_strand.clusters.bed"
+    print(clusters_pos_strand, clusters_neg_strand)
     cluster_genes_pos = read_cluster_genes(clusters_pos_strand)
     cluster_genes_neg = read_cluster_genes(clusters_neg_strand)
     voting_file_pos = Path(output_dir) / "contacts.pos_strand.voting.bed"

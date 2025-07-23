@@ -52,7 +52,7 @@ process JULIA_DEBRIDGE_CHARTOOLS {
   cat tmp/${meta.prefix}_single_merged_F.rna.fastq tmp/${meta.prefix}_single_merged_R.rna.fastq \\
       tmp/${meta.prefix}_unmerged_F0.rna.1.fastq tmp/${meta.prefix}_unmerged_0R.rna.2.fastq  > ${meta.prefix}.rna.fastq
 
-  python ${projectDir}/bin/debridge_stats.py tmp/${meta.prefix}_single_merged_summary.SE.txt tmp/${meta.prefix}_unmerged_summary.PE.txt ${meta.prefix}_bridge_summary_plot.png
+  debridge_stats.py tmp/${meta.prefix}_single_merged_summary.SE.txt tmp/${meta.prefix}_unmerged_summary.PE.txt ${meta.prefix}_bridge_summary_plot.png
 
 """
 }

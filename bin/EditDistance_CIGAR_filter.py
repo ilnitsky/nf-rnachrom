@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import pandas as pd
 from matplotlib import pyplot as plt
 from collections import Counter

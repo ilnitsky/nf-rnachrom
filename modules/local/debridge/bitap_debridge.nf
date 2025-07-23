@@ -34,7 +34,7 @@ process BITAP_DEBRIDGE {
     BridgeSplitter -s -e -t -i ${single_merged} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F,R
     cat ${meta.prefix}.DNA.fastq > ${meta.prefix}.dna.fastq
     cat ${meta.prefix}.RNA.fastq > ${meta.prefix}.rna.fastq
-    python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
+    plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
     """
   } else {
     if (params.exp_type == 'redc' || params.exp_type == 'redchip' ) {
@@ -43,7 +43,7 @@ process BITAP_DEBRIDGE {
       BridgeSplitter -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0R
       cat ${meta.prefix}.DNA.fastq ${meta.prefix}_2.DNA.fastq > ${meta.prefix}.dna.fastq
       cat ${meta.prefix}.RNA.fastq ${meta.prefix}_2.RNA.fastq > ${meta.prefix}.rna.fastq
-      python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
+      plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./
       """
     } else if (params.exp_type == 'char' || params.exp_type == 'grid' || params.exp_type == 'radicl' )  {
       """
@@ -51,8 +51,8 @@ process BITAP_DEBRIDGE {
       BridgeSplitter -p -e -t -j ${paired_unmerged_f} -k ${paired_unmerged_r} -d "${description_sequence}" -l ${min_seq_len} -m ${min_seq_len} -u F0,0F,R0,0R
       cat ${meta.prefix}.DNA.fastq ${meta.prefix}_2.DNA.fastq > ${meta.prefix}.dna.fastq
       cat ${meta.prefix}.RNA.fastq ${meta.prefix}_2.RNA.fastq > ${meta.prefix}.rna.fastq
-      python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./ 
-      python3 ${projectDir}/bin/plotBridgeCodes.py  ${meta.prefix}_2.codes.tsv PE ./ ./ 
+      plotBridgeCodes.py  ${meta.prefix}.codes.tsv SE ./ ./ 
+      plotBridgeCodes.py  ${meta.prefix}_2.codes.tsv PE ./ ./ 
       """
     }
   }

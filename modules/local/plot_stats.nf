@@ -24,7 +24,7 @@ process PLOT_STATS {
     echo 'Starting A' `date +%H-%M-%S`
     echo "${replica_stats}" >  replica_stats.tsv
     echo "${merged_stats}" >  merged_stats.tsv
-    python ${projectDir}/bin/plot_stats.py replica_stats.tsv merged_stats.tsv
+    plot_stats.py replica_stats.tsv merged_stats.tsv
     
     """
 

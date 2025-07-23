@@ -29,13 +29,14 @@ process BAM_TO_CONTACTS {
     def prefix = meta.prefix
     def rna_prefix = meta.RNA
     def dna_prefix = meta.DNA
-    def aligner = params.align_tool
+    def rna_aligner = params.rna_align_tool
+    def dna_aligner = params.dna_align_tool
 
     // dictionary for tools
     def tools = [
         'hisat2': 'HISAT',
         'star': 'STAR',
-        'bowtie2': 'STAR',
+        'bowtie2': 'BOWTIE',
         'bwa': 'BWA'
     ]
     
@@ -48,9 +49,11 @@ process BAM_TO_CONTACTS {
 
 
     """
-    python3 ${projectDir}/bin/Bam_to_Contacts_prerelease2.py \\
+    Bam_to_Contacts_prerelease2.py \\
         ${optional_input} \\
         -e ${mode} \\
+        --rna_mode ${tools[rna_aligner]} \\
+        --dna_mode ${tools[dna_aligner]} \\
         -m ${tools[aligner]}  \\
         -p ${prefix} \\
         -t NH

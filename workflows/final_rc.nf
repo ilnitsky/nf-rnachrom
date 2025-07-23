@@ -84,7 +84,7 @@ include { FILTER_CONTACTS                        } from '../modules/local/filter
 include { BLACKLIST                              } from '../modules/local/blacklist'
 include { DETECT_STRAND                          } from '../modules/local/detect_strand'
 include { MERGE_REPLICAS                         } from '../modules/local/merge_replicas'
-include { SPLIT_BY_CHRS                          } from '../modules/local/split_by_chrs'
+// include { SPLIT_BY_CHRS                          } from '../modules/local/split_by_chrs'
 // include { ANNOTATION_VOTING                      } from '../modules/local/annotation'
 include { FINAL_ANNOTATION as  ANNOTATION        } from '../modules/local/annotation'
 include { NORMALISATION                          } from '../modules/local/normalisation'
@@ -143,8 +143,9 @@ workflow ATA {
     ch_gtf = Channel.value(params.annot_GTF)        
     // ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
     // ch_splicesites    = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
-    // ch_adapters_file  = params.adapters_file ?  Channel.fromPath(params.adapters_file) : Channel.empty()
+    ch_adapters_file  = params.adapters_file ?  Channel.fromPath(params.adapters_file) : Channel.fromPath("${projectDir}/bin/adapters/TruSeq3-PE.fa")
     //ToDO Check for adapters file presence
+
 
 
     // Define optional processing steps
@@ -155,7 +156,7 @@ workflow ATA {
     if (!params.ready_raw_contacts_dir) {
 
         // Removing Adapter sequences
-        FASTP_ADAPTERS ( ch_input_check_reads, true, false, true )   // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
+        FASTP_ADAPTERS ( ch_input_check_reads, ch_adapters_file, true, false, true )   // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
         ch_for_dedup         = FASTP_ADAPTERS.out.reads
         ch_adapter_log       = FASTP_ADAPTERS.out.log
         ch_stats             = FASTP_ADAPTERS.out.html
@@ -218,7 +219,7 @@ workflow ATA {
             *  Available tools: FastP, Trimmomatic, BBduc, TrimGalore 
             */ 
         if (!params.skip_trim) {
-            TRIM ( ch_for_trimming )
+            TRIM ( ch_for_trimming, ch_adapters_file )
             ch_input_align = TRIM.out.reads
             // ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> [[id.id, id.prefix], ["Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] ] })
             ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
@@ -278,7 +279,8 @@ workflow ATA {
             ch_bwa_index,
             ch_splicesites,
             ch_genome_fasta,
-            ch_gtf
+            ch_gtf,
+            params.rna_align_tool
         )
         ch_rna_bam = RNA_ALIGN.out.bam
         ch_report   = ch_report.join(RNA_ALIGN.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)                             
@@ -292,7 +294,8 @@ workflow ATA {
             ch_bwa_index,
             ch_splicesites,
             ch_genome_fasta,
-            ch_gtf
+            ch_gtf,
+            params.dna_align_tool
         )
         ch_dna_bam = DNA_ALIGN.out.bam
         ch_report   = ch_report.join(DNA_ALIGN.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)                               
@@ -379,13 +382,13 @@ workflow ATA {
     ch_input_annotation     = MERGE_REPLICAS.out
     ch_statistic_merged    = ch_statistic_merged.concat(MERGE_REPLICAS.out.map { id, tab -> [id, "MergedReplicas", tab.countLines()] } )
 
-    if (params.split_by_chromosomes) {
-        SPLIT_BY_CHRS( ch_input_annotation )
-        ch_split_by_chrs   = SPLIT_BY_CHRS.out
-        ch_split_by_chrs
-        | transpose
-        | set { ch_input_annotation }
-    }
+    // if (params.split_by_chromosomes) {
+    //     SPLIT_BY_CHRS( ch_input_annotation )
+    //     ch_split_by_chrs   = SPLIT_BY_CHRS.out
+    //     ch_split_by_chrs
+    //     | transpose
+    //     | set { ch_input_annotation }
+    // }
 
     ANNOTATION ( ch_input_annotation )
     ch_uu_voted            = ANNOTATION.out.uu_voted

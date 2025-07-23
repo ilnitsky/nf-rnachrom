@@ -17,12 +17,13 @@ workflow ALIGN {
     ch_splicesites  // HISAT2 splice sites (required if using HISAT2)
     ch_genome_fasta // Genome FASTA file
     ch_gtf          // GTF annotation
+    ch_aligner      // Aligner tool
 
     main:
     ch_versions     = Channel.empty()
     ch_align_log    = Channel.empty()
 
-    if (params.align_tool == 'hisat2') {
+    if (ch_aligner == 'hisat2') {
         HISAT2_ALIGN ( 
             ch_input_align,
             ch_hisat2_index.map { [ [:], it ] }.collect(),
@@ -33,7 +34,7 @@ workflow ALIGN {
         ch_versions        = ch_versions.mix(HISAT2_ALIGN.out.versions)
     }
 
-    if (params.align_tool == 'star') {
+    if (ch_aligner == 'star') {
         STAR_ALIGN ( 
             ch_input_align,
             ch_star_index.map { [ [:], it ] }.collect(), 
@@ -54,7 +55,7 @@ workflow ALIGN {
 
     }
 
-    if (params.align_tool == 'bowtie2') {
+    if (ch_aligner == 'bowtie2') {
         BOWTIE2_ALIGN( 
             ch_input_align,
             ch_bowtie2_index.map { [ [:], it ] }.collect(),
@@ -67,7 +68,7 @@ workflow ALIGN {
         ch_versions        = ch_versions.mix(BOWTIE2_ALIGN.out.versions)
     }
 
-    if (params.align_tool == 'bwa_mem') {
+    if (ch_aligner == 'bwa_mem') {
         BWA_MEM (
             ch_input_align,
             ch_bwa_index.map { [ [:], it ] }.collect(),
@@ -78,7 +79,7 @@ workflow ALIGN {
     }
 
     //TODO: IMARGI
-    if (params.align_tool == 'bwa_mem_hisat' && params.exp_type == 'imargi') {
+    if (ch_aligner == 'bwa_mem_hisat' && params.exp_type == 'imargi') {
         BWA_MEM (
             ch_input_align,
             ch_bwa_index.map { [ [:], it ] }.collect(),

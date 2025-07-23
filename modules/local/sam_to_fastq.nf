@@ -26,8 +26,8 @@ process SAM_TO_FASTQ {
     // sample = params.procedure == 'new' ? meta.prefix + '_1' : meta.prefix
 
     """
-    samtools view -h -F 256 ${rna_prefix}.rna.bam | python3 ${projectDir}/bin/extract_sam_file_matched_seq_to_fastq.py > ${rna_prefix}.rna.fastq
-    samtools view -h -F 256 ${dna_prefix}.dna.bam | python3 ${projectDir}/bin/extract_sam_file_matched_seq_to_fastq.py > ${dna_prefix}.dna.fastq
+    samtools view -h -F 256 ${rna_prefix}.rna.bam | extract_sam_file_matched_seq_to_fastq.py > ${rna_prefix}.rna.fastq
+    samtools view -h -F 256 ${dna_prefix}.dna.bam | extract_sam_file_matched_seq_to_fastq.py > ${dna_prefix}.dna.fastq
 
     """
 

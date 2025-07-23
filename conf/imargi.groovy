@@ -8,142 +8,52 @@
 
 params {
     // INPUT OPTIONS:
-//     input                       = null
-//     exp_type                    = 'redc'
-//     procedure                   = 'old'
-//     split_by_chromosomes        = true
+    input                       = null
+    exp_type                    = 'imargi'
+    procedure                   = 'old'
+    split_by_chromosomes        = true
     
-//     // PROCESSING TOOLS:       --------------------------------------------------------------------------------
-//     dedup_tool                  = "fastq-dupaway"   // options: "fastq-dupaway", "fastuniq", "climpify"
-//     trim_tool                   = "fastp"     // options: "trimmomatic", "bbduk", "cutadapt", "fastp"
-//     align_tool                  = 'hisat2'
-//     merge_pairedend_tool        = 'bbmerge'         // options: "bbmerge", "pear"
-//     //                         --------------------------------------------------------------------------------
+    // PROCESSING TOOLS:       --------------------------------------------------------------------------------
+    dedup_tool                  = "fastq-dupaway"   // options: "fastq-dupaway", "fastuniq", "climpify"
+    trim_tool                   = "fastp"     // options: "trimmomatic", "bbduk", "cutadapt"
+    align_tool                  = 'hisat2'
+    //                         --------------------------------------------------------------------------------
 
-//     // REFERENCE:              --------------------------------------------------------------------------------
-//     genome                      = 'GRCh38'
-//     genome_fasta                = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38/GRCh38.p13.fa'
-//     hisat2_index                = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38'
-//     splice_sites                = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/gencode.asig.v43.ss'
-//     // splice_sites                = null
-//     //                         --------------------------------------------------------------------------------
+    // REFERENCE:              --------------------------------------------------------------------------------
+    genome                      = 'GRCh38'
+    genome_fasta                = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38/GRCh38.p13.fa'
+    hisat2_index                = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38'
+    bwa_index                   = '/gpfs/ilnitsky/nf-rnachrom/data/genome_index/bwa'
+    // splice_sites                = '/gpfs/ilnitsky/nf-rnachrom/reference/mm/gencode.vM32.ss'
+    splice_sites                = null
+    //                         --------------------------------------------------------------------------------
 
-//     // ANNOTATION:             --------------------------------------------------------------------------------
-//     annot_BED                   = "/gpfs/ilnitsky/nf-rnachrom/reference/hs/All_RNAs_hS_DB_pipe_new.bed"
-//     annot_GTF                   = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/gencode.v43.annotation.gtf'
-//     blacklist                   = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38.blacklist.bed'
-//     chromsizes                  = "/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38_canonical_chromsizes.tsv"
-//     //                         --------------------------------------------------------------------------------
+    // ANNOTATION:             --------------------------------------------------------------------------------
+    annot_BED                   = "/gpfs/ilnitsky/nf-rnachrom/reference/hs/All_RNAs_hS_DB_pipe_new.bed"
+    annot_GTF                   = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/gencode.v43.annotation.gtf'
+    blacklist                   = '/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38.blacklist.bed'
+    chromsizes                  = "/gpfs/ilnitsky/nf-rnachrom/reference/hs/hg38_canonical_chromsizes.tsv"
+    //                         --------------------------------------------------------------------------------
 
-//     // BRIDGE SEARCH:          --------------------------------------------------------------------------------
-//     bridge_processing           = true
-//     debridge_tool               = "bitap"     // options: "bitap", "chartools"
-//     forward_bridge_seq          = "AGTCGGAGCGTTGCCTATCGCATTGATGGTGCTAGGA"
-//     reverse_bridge_seq          = "TCCTAGCACCATCAATGCGATAGGCAACGCTCCGACT"
-//     min_rna_dna_parts_length    = 14
-//     max_mismatches              = 1
-//     //                         --------------------------------------------------------------------------------
+    // BRIDGE SEARCH:          --------------------------------------------------------------------------------
+    bridge_processing           = false
+    debridge_tool               = "bitap"     // options: "bitap", "chartools"
+    forward_bridge_seq          = "AGTCGGAGCGTTGCCTATCGCATTGATGGTGCTAGGA"
+    reverse_bridge_seq          = "TCCTAGCACCATCAATGCGATAGGCAACGCTCCGACT"
+    min_rna_dna_parts_length    = 14
+    max_mismatches              = 1
+    //                         --------------------------------------------------------------------------------
 
-//     // OTHER OPTIONS           --------------------------------------------------------------------------------
-//     detect_strand_genes_list    = "${projectDir}/assets/gencode_v43_rpl_genes.txt"    // RPL genes list        ( already provided with pipeline assets )
-//     smartseq_filter             = true
-//     //                         --------------------------------------------------------------------------------
+    // OTHER OPTIONS           --------------------------------------------------------------------------------
+    detect_strand_genes_list    = "${projectDir}/assets/gencode_v43_rpl_genes.txt"     // RPL genes list        ( already provided with pipeline assets )
+    //                         --------------------------------------------------------------------------------
     
-//     // BARDIC OPTIONS          --------------------------------------------------------------------------------
+    // BARDIC OPTIONS          --------------------------------------------------------------------------------
 
-//     //                         --------------------------------------------------------------------------------
-
-}
-
-// // COMMAND FLAGS  --------------------------------------------------------------------------------
-// //   def fastuniq       = "-t q -c 0"
-//     def fastq_dupaway           = "--format fastq --compare-seq loose"
-//     def trimmomatic             = "SLIDINGWINDOW:5:26 MINLEN:12"
-//     def fastp                   = "-5 --cut_window_size 5 --cut_mean_quality 26"
-//     def pear                    = "-p 0.01 -v 20 -n 50"
-//     def bam_filter              = "-bS -F 4 -e '[NH]==1 && [XM]<=2'"
-//               --------------------------------------------------------------------------------
-
-process {
-
-//    withName: '.*' {
-//        cpus = 6
-//        memory = 45.GB
-//    }
-//     withName: FASTQC {
-//         ext.prefix   = { "${meta.prefix}" }
-//     }
+    //                         --------------------------------------------------------------------------------
 
 
-//     withName: FASTUNIQ {
-//         ext.args     = { "${fastuniq}" }
-//         ext.prefix   = { "${meta.prefix}" }
-//     }
-
-//     withName: FASTQ_DUPAWAY {
-//         ext.args     =  { "${fastq_dupaway}" }
-//         ext.prefix   = { "${meta.prefix}" }
-//     }
-
-//     withName: TRIMMOMATIC {
-//         ext.args     =  { "${trimmomatic}" }
-//         ext.prefix   = { "${meta.prefix}" }
-//     }
-
-//     withName: FASTP {
-//         ext.args     =  { "${fastp}" }
-//         ext.prefix   = { "${meta.prefix}" }
-//     }
-
-//     withName: PEAR {
-//         ext.args     =  { "${pear}" }
-//         ext.prefix   = { "${meta.prefix}" }
-//     }
-
-//     withName: BBMAP_BBMERGE {
-//         ext.args     = ''
-//         ext.prefix   = { "${meta.prefix}" }
-//     }
-
-//     withName: HISAT2_ALIGN {
-//         time = 48.h
-//         ext.args     = '--no-softclip -k 100 --no-discordant --no-mixed --no-spliced-alignment'
-//         ext.args_rna = '--no-softclip --dta-cufflinks -k 100'
-//         ext.args_dna = '--no-softclip -k 100 --no-spliced-alignment'
-//         ext.prefix = { "${meta.prefix}" }
-//     }
-    
-//     withName: BAM_FILTER {
-//         ext.args     = { "${bam_filter}" }
-//         ext.prefix = { "${input.baseName}.filtered" }
-//     }
-
-//     withName: BEDTOOLS_BAMTOBED {
-//         ext.args     = "-cigar"
-//         ext.prefix = { "${bam.baseName.split('.filtered')[0]}" }
-//     }
-
-    // withLabel:process_low {
-    //   cpus = { check_max( 2 * task.attempt, 'cpus' ) }
-    //   memory = { check_max( 10.GB * task.attempt, 'memory' ) }
-    //   time = { check_max( 6.h * task.attempt, 'time' ) }
-    // }
-    // withLabel:process_medium {
-    //   cpus = { check_max( 6 * task.attempt, 'cpus' ) }
-    //   memory = 10.GB
-    //   time = { check_max( 8.h * task.attempt, 'time' ) }
-    // }
-    // withLabel:process_high {
-    //   cpus = { check_max( 6 * task.attempt, 'cpus' ) }
-    //   memory = { check_max( 10.GB * task.attempt, 'memory' ) }
-    //   time = { check_max( 10.h * task.attempt, 'time' ) }
-    // }   
-
-}
-
-
-params {
-       // MultiQC options
+    // MultiQC options
     multiqc_config              = null
     multiqc_title               = null
     multiqc_logo                = null
@@ -182,10 +92,81 @@ params {
     validationSchemaIgnoreParams     = 'genomes,igenomes_base'
     validationShowHiddenParams       = false
     validate_params                  = true
+
     igenomes_base               = 's3://ngi-igenomes/igenomes'
     igenomes_ignore             = false
+}
+
+
+
+process {
+
+//    withName: '.*' {
+//        memory = 10.GB
+//    }
+    withName: FASTQC {
+        ext.prefix   = { "${meta.prefix}" }
+    }
+
+    withName: FASTUNIQ {
+        ext.args     = '-t q -c 0'
+        ext.prefix   = { "${meta.prefix}" }
+    }
+
+    withName: FASTQ_DUPAWAY {
+        ext.args     = '--format fastq --compare-seq loose'
+        ext.prefix   = { "${meta.prefix}" }
+    }
+
+    withName: TRIMMOMATIC {
+        ext.args     = 'SLIDINGWINDOW:5:26 MINLEN:14'
+        ext.prefix   = { "${meta.prefix}" }
+    }
+
+
+    withName: HISAT2_ALIGN {
+        time = 48.h
+        ext.args     = '--no-softclip -k 100 --no-discordant --no-mixed --no-spliced-alignment'
+        ext.args_rna = '--no-softclip --dta-cufflinks -k 100'
+        ext.args_dna = '--no-softclip -k 100 --no-spliced-alignment'
+        ext.prefix = { "${meta.prefix}" }
+    }
+
+    withName: BWA_MEM {
+        time = 48.h
+        ext.args     = '-SP5M'
+        ext.args2     = '-F 256'
+        ext.prefix = { "${meta.prefix}" }
+    }
+    
+    withName: BAM_FILTER {
+        ext.args     = "-bS -F 4 -e '[NH]==1 && [XM]<2'"
+        ext.prefix = { "${input.baseName}.filtered" }
+    }
+
+    withName: BEDTOOLS_BAMTOBED {
+        ext.args     = "-cigar"
+        ext.prefix = { "${bam.baseName.split('.filtered')[0]}" }
+    }
+
+    withLabel:process_low {
+      cpus = { check_max( 2 * task.attempt, 'cpus' ) }
+      memory = { check_max( 10.GB * task.attempt, 'memory' ) }
+      time = { check_max( 6.h * task.attempt, 'time' ) }
+    }
+    withLabel:process_medium {
+      cpus = { check_max( 6 * task.attempt, 'cpus' ) }
+      memory = 10.GB
+      time = { check_max( 8.h * task.attempt, 'time' ) }
+    }
+    withLabel:process_high {
+      cpus = { check_max( 6 * task.attempt, 'cpus' ) }
+      memory = { check_max( 10.GB * task.attempt, 'memory' ) }
+      time = { check_max( 10.h * task.attempt, 'time' ) }
+    }   
 
 }
+
 
 env {
     PYTHONNOUSERSITE = 1
@@ -199,6 +180,8 @@ env {
 }
 
 conda.cacheDir = "/home/ilnitsky/nf-rnachrom/conda_env"
+
+
 
 // Load base.config by default for all pipelines
 includeConfig 'conf/base.config'
@@ -258,7 +241,6 @@ profiles {
     singularity {
         singularity.enabled    = true
         singularity.autoMounts = true
-        // singularity.runOptions = '--bind /gpfs/$(whoami):/gpfs/$(whoami),/home/$(whoami):/home/$(whoami)'
         conda.enabled          = false
         docker.enabled         = false
         podman.enabled         = false
@@ -296,7 +278,6 @@ profiles {
     apptainer {
         apptainer.enabled      = true
         apptainer.autoMounts   = true
-        // apptainer.runOptions = '--bind /home/$(whoami):/home/$(whoami)'
         conda.enabled          = false
         docker.enabled         = false
         singularity.enabled    = false

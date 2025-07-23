@@ -48,11 +48,11 @@ process FASTQ_DUPAWAY {
     export BOOST_ROOT=\$CONDA_PREFIX/include
     [[ ! -d "dedup" ]] && mkdir dedup
     
-    ${projectDir}/bin/fastq-dupaway \
-            ${fastq_dupaway_input} \
-            ${fastq_dupaway_output} \
-            -m ${task.memory.mega} \
-            $args
+    fastq-dupaway \
+        ${fastq_dupaway_input} \
+        ${fastq_dupaway_output} \
+        -m ${task.memory.mega} \
+        $args
 
             
 
