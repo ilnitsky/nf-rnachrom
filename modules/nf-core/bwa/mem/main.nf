@@ -74,11 +74,7 @@ process BWA_MEM {
             \$INDEX \\
             $reads \\
             | samtools  sort -n --threads $task.cpus -O BAM - >   sorted_${meta.id}_${prefix}.${postfix}.bam
-        """
-    }
-
-
-
+       
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             bwa: \$(echo \$(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*\$//')
