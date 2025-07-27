@@ -1,10 +1,12 @@
 process BITAP_DEBRIDGE {
   tag "$meta.id,$meta.prefix"
   //TO DO: add double bridge and no bridge stats
+  
   conda "${projectDir}/envs/full_env.yml"
   container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
         'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
         workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
+
   publishDir ( path: { "$params.outdir/debridged/bitap" }, mode: "copy" )
   
   input:
@@ -158,3 +160,5 @@ process BITAP_DEBRIDGE {
     
     // bioawk -c fastx '{print "@"\$name; print \$seq"CATG"; print "+"; print \$qual"IIII"}' \\
     //   ${meta.prefix}_2.tmp.fastq > ${meta.prefix}_2.fastq
+
+

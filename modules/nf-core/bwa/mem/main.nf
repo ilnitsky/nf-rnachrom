@@ -30,25 +30,63 @@ process BWA_MEM {
     def rna_prefix = meta.RNA
     def dna_prefix = meta.DNA
     def samtools_command = sort_bam ? 'sort' : 'view'
-    """
-    INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
+    // TO DO Fix iMARGI mapping
+    if (meta.method == 'imargi' || meta.method == 'margi') {
+        """
+        INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
 
-    bwa mem \\
-        $args \\
-        -t $task.cpus \\
-        \$INDEX \\
-        $reads \\
-        | tee >(samtools view $args2 -f 64 --threads $task.cpus -o ${rna_prefix}.rna.bam) \\
-              >(samtools view $args2 -f 128 --threads $task.cpus -o ${dna_prefix}.dna.bam) > /dev/null 
+        bwa mem \\
+            $args \\
+            -t $task.cpus \\
+            \$INDEX \\
+            $reads \\
+            | tee >(samtools view $args2 -f 64 --threads $task.cpus -o ${rna_prefix}.rna.bam) \\
+                >(samtools view $args2 -f 128 --threads $task.cpus -o ${dna_prefix}.dna.bam) > /dev/null 
 
 
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        bwa: \$(echo \$(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*\$//')
-        samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
-    END_VERSIONS
-    """
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            bwa: \$(echo \$(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*\$//')
+            samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+        END_VERSIONS
+        """    
+    } else {
+        args = meta.rna ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
+
+        if (!task.ext.args_rna && meta.rna) {
+            log.warn "RNA aligner args not found, using empty string"
+        }
+        if (!task.ext.args_dna && !meta.rna) {
+            log.warn "DNA  aligner args not found, using empty string"
+        }
+
+        prefix = meta.RNA ? meta.RNA : meta.DNA
+        def postfix = meta.RNA ? 'rna' : 'dna' 
+
+    
+        """
+        INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
+
+        bwa mem \\
+            $args \\
+            -t $task.cpus \\
+            \$INDEX \\
+            $reads \\
+            | samtools  sort -n --threads $task.cpus -O BAM - >   sorted_${meta.id}_${prefix}.${postfix}.bam
+        """
+    }
+
+
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            bwa: \$(echo \$(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*\$//')
+            samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+        END_VERSIONS
+        """
+    }
+    
 
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
