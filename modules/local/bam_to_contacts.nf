@@ -37,7 +37,7 @@ process BAM_TO_CONTACTS {
         'hisat2': 'HISAT',
         'star': 'STAR',
         'bowtie2': 'BOWTIE',
-        'bwa': 'BWA'
+        'bwa_mem': 'BWA'
     ]
     
     // sample = params.procedure == 'new' ? meta.prefix + '_1' : meta.prefix
