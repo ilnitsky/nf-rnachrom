@@ -54,7 +54,6 @@ process BAM_TO_CONTACTS {
         -e ${mode} \\
         --rna_mode ${tools[rna_aligner]} \\
         --dna_mode ${tools[dna_aligner]} \\
-        -m ${tools[aligner]}  \\
         -p ${prefix} \\
         -t NH
 
