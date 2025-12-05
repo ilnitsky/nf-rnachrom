@@ -14,7 +14,7 @@ process FASTP {
 
     input:
     tuple val(meta), path(reads)
-    val adapter_fasta
+    path(adapter_fasta)// val adapter_fasta
     val save_trimmed_fail
     val save_merged
     val only_remove_adapters
@@ -32,6 +32,8 @@ process FASTP {
     task.ext.when == null || task.ext.when
 
     script:
+    
+    // def adapter_fasta  = "${projectDir}/bin/adapters/TruSeq3-PE.fa"
 
     def args = only_remove_adapters ? (task.ext.args_adapters ?: '') : (task.ext.args ?: '')
 

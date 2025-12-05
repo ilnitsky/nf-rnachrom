@@ -86,8 +86,8 @@ process HISAT2_ALIGN {
                 --no-mixed \\
                 --no-discordant \\
                 $args \\
-                | tee >(samtools view -bS -f 64 ${samtools_view_args} - > ${meta.id}_${prefix}.R1.bam) \\
-                | samtools view -bS -f 128 ${samtools_view_args} - > ${meta.id}_${prefix}.R2.bam
+                | tee >(samtools view -@ ${task.cpus} -f 64  -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r1.bam -) \\
+                | samtools view -@ ${task.cpus} -f 128 -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r2.bam -
 
             if [ -f ${prefix}.unmapped.fastq.1.gz ]; then
                 mv ${prefix}.unmapped.fastq.1.gz ${prefix}.unmapped_1.fastq.gz

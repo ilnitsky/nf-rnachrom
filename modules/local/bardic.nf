@@ -7,7 +7,7 @@ process BARDIC {
         workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
         
    // tag "$norm_n2.baseName"
-
+    errorStrategy 'ignore'
     //Prepare files with protein-coding RNAs for background estimation by BaRDIC. Create BED6 headerless file and run BaRDIC
     //TODO: Add parameter to add grep pattern of biotypes 'protein_coding'
     publishDir (
@@ -40,7 +40,7 @@ process BARDIC {
     # Only unique genes from voted_merged
     sed 1d ${voted_merged} | awk -F"\\t" '{OFS=FS} {print \$3, \$4, \$5, \$7, \$12, \$6};' > ${name}.4-for_peaks.bed 
 
-    bardic run ${name}.4-for_peaks.bed bed6_${annot} ${chromsizes} ${name}.4-pc.txt  ./peaks \\
+    bardic run ${name}.4-for_peaks.bed bed6_${annot} ./${chromsizes} ${name}.4-pc.txt  ./peaks \\
         --min_contacts 1000  \\
         --trans_min 10000    \\
         --trans_max 1000000  \\

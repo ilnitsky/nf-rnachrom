@@ -13,7 +13,8 @@ process BAM_TO_CONTACTS {
     ) 
         
     input:
-    tuple val(meta), val(rna_bam), val(dna_bam)   
+    // tuple val(meta), val(rna_bam), val(dna_bam)
+    tuple val(meta), path(rna_bam), path(dna_bam)   
     // tuple val(meta) 
 
     output:

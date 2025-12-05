@@ -75,6 +75,7 @@ workflow ALIGN {
             false
         )
         ch_align_bam         = BWA_MEM.out.bam
+        ch_align_log       = BWA_MEM.out.log
         ch_versions        = ch_versions.mix(BWA_MEM.out.versions)
     }
 

@@ -1,65 +1,56 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
-import numpy as np
 
-def create_combined_plots(replica_file, merged_file):
+sns.set_style("whitegrid")
 
-    df_replica = pd.read_csv(replica_file, sep='\s+')
-    df_merged = pd.read_csv(merged_file, sep='\s+')
-   
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
-    
-    # Set style
-    sns.set_style("whitegrid")
-    
-    steps = ['Raw', 'SmartSeqFilter', 'Dedup', 'Trimming', 'OverlapMerged', 
-             'Debridged', 'RestrSites', 'UniqueRawContacts', 'FilteredUniqueRawContacts']
-    
-    for idx, row in df_replica.iterrows():
-        sample_name = row['sample']  
-        values = [row[step] for step in steps]
-        ax1.plot(range(len(steps)), values, marker='o', label=sample_name, 
-                linewidth=2, markersize=8)
-    
-    ax1.set_title('Read/Contact Extinction Plot', fontsize=16, pad=20)
-    ax1.set_xlabel('Processing Step', fontsize=12)
-    ax1.set_ylabel('Number of Reads/Contacts', fontsize=12)
-    ax1.set_xticks(range(len(steps)))
-    ax1.set_xticklabels(steps, rotation=45, ha='right')
-    ax1.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=8)  
-    
-    merged_steps = ['MergedReplicas', 'Voted', 'Singletons']
-    
-    x = np.arange(len(merged_steps))
-    width = 0.8 / len(df_merged)
-    
-    for idx, row in df_merged.iterrows():
-        sample_name = row['sample']  
-        values = [row[step] for step in merged_steps]
-        ax2.bar(x + idx * width, values, width, label=sample_name, alpha=0.8)
-    
-    ax2.set_title('Merged Statistics Plot', fontsize=16, pad=20)
-    ax2.set_xlabel('Processing Step', fontsize=12)
-    ax2.set_ylabel('Number of Contacts', fontsize=12)
-    ax2.set_xticks(x + (width * (len(df_merged) - 1)) / 2)
-    ax2.set_xticklabels(merged_steps, rotation=45, ha='right')
-    ax2.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=8)  
+def plot_df(df, ax, title):
+    """Plot every numeric column as a line (for per-replicate) or bar (for merged)"""
+    # Drop the sample column, keep everything numeric
+    numeric_cols = df.select_dtypes(include='number').columns
+    data = df.set_index('sample')[numeric_cols]
 
-    ax2.yaxis.grid(True, linestyle='--', alpha=0.7)
-    
-    plt.tight_layout()
-    
-    plt.savefig('combined_plots.png', dpi=300, bbox_inches='tight')
-    plt.close()
+    if len(data) <= 8:               # few samples → lines (replicates)
+        data.T.plot(ax=ax, marker='o', linewidth=2, markersize=6)
+    else:                            # many samples → bars (usually merged stats)
+        data.plot(kind='bar', ax=ax, width=0.8, alpha=0.85)
 
+    ax.set_title(title, fontsize=14, pad=15)
+    ax.set_ylabel("Count")
+    ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+    ax.grid(True, axis='y', linestyle='--', alpha=0.7)
+
+# ------------------------------------------------------------------
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python script.py <replica_stats.tsv> <merged_stats.tsv>")
+        print("Usage: plot_stats.py <replica_stats.tsv> <merged_stats.tsv>")
         sys.exit(1)
-    
-    create_combined_plots(sys.argv[1], sys.argv[2])
+
+    replica_file = sys.argv[1]
+    merged_file   = sys.argv[2]
+
+    # Read files (ignore blank lines / comments)
+    df_rep = pd.read_csv(replica_file, sep=r'\s+', comment='#', engine='python')
+    df_mer = pd.read_csv(merged_file,   sep=r'\s+', comment='#', engine='python', on_bad_lines='skip')
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+
+    plot_df(df_rep, ax1, "Per-replicate statistics")
+    ax1.tick_params(axis='x', rotation=50)
+
+    if not df_mer.empty and len(df_mer.columns) > 1:
+        plot_df(df_mer, ax2, "After merging replicates")
+    else:
+        ax2.text(0.5, 0.5, "No merged\nstatistics", ha='center', va='center',
+                 transform=ax2.transAxes, fontsize=16, color='gray')
+        ax2.set_xticks([])
+        ax2.set_yticks([])
+
+    ax2.tick_params(axis='x', rotation=50)
+    plt.tight_layout()
+    plt.savefig("combined_stats.png", dpi=300, bbox_inches='tight')
+    plt.close()
+    print("→ combined_stats.png created")

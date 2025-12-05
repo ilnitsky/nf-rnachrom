@@ -16,14 +16,14 @@ process NORMALISATION {
 
     input:
     tuple val(meta), path(voted)
-    val(chromsizes)
+    path(chromsizes)
 
     output:
     tuple val(meta), path("*.intersected.N2.bed"),     emit: normalized
 
     script:
 
-    def prefix     = task.ext.prefix ?: "${meta}"
+    def prefix     = task.ext.prefix ?: "${meta.id}"
     def binsize    = params.binsize ?: '500'
     def windowsize = params.windowsize ?: '1000000'
     

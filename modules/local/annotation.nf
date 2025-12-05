@@ -25,7 +25,7 @@ process FINAL_ANNOTATION {
 
     def annot_bedrc  = file(params.annot_BED)
     def genes_prefix = annot_bedrc.baseName
-    def contacts_prefix = "${meta}"
+    def contacts_prefix = "${meta.id}"
     def dist = '0'
 
     """

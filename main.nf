@@ -233,7 +233,7 @@ workflow RNACHROM {
             ch_rnaseq_results = RNASEQ.out.annotated_rnaseq
             ch_versions = ch_versions.mix(RNASEQ.out.versions)
         }
-  
+        
         ATA ( 
             ch_reads, 
             ch_chrom_sizes, 

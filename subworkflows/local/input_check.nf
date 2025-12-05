@@ -60,7 +60,7 @@ def create_fastq_channel(LinkedHashMap row) {
     meta.single_end = row.single_end.toBoolean()
     meta.prefix     = extractPrefix(filename)
     meta.method     = "OTA"                      // One-to-all type of methods
-    
+    meta.rnaseq     = "None"
     // Parse description field if it exists
     if (row.containsKey("description") && row.description) {
         parseDescription(row.description, meta)
@@ -106,10 +106,11 @@ def create_fastq_channel_rna_dna(LinkedHashMap row) {
 
     def meta = [:]
     meta.id         = row.sample
-    meta.prefix     = extractPrefix(rna_filename)
+    meta.prefix     = extractPrefix2(rna_filename)
     meta.RNA        = extractPrefix2(rna_filename)
     meta.DNA        = extractPrefix2(dna_filename)
     meta.single_end = false
+    meta.rnaseq     = "None"
     meta.method     = "ATA"                      // All-to-all type of methods
     
     // Parse description field if it exists
@@ -140,10 +141,14 @@ def create_fastq_channel_rna_dna(LinkedHashMap row) {
 def create_rnaseq_channel(LinkedHashMap row) {
     // create meta map
     def meta = [:]
+    def r1 = params.bridge_processing ? row.fastq_1 : row.rna
+    def r2 = params.bridge_processing ? row.fastq_2 : row.dna
+
     meta.id         = row.sample
     meta.single_end = row.single_end.toBoolean()
-    meta.prefix     = extractPrefix(new File(row.fastq_1).getName())
+    meta.prefix     = extractPrefix(new File(r1).getName())
     meta.method     = "RNA-seq"
+    meta.rnaseq     = "None"
     meta.group      = row.sample.replace("rnaseq_", "")  // Extract the group name without the prefix
     
     // Parse description field if it exists
@@ -153,16 +158,16 @@ def create_rnaseq_channel(LinkedHashMap row) {
 
     // add path(s) of the fastq file(s) to the meta map
     def fastq_meta = []
-    if (!file(row.fastq_1).exists()) {
-        exit 1, "ERROR: Please check input samplesheet -> Read 1 FastQ file does not exist!\n${row.fastq_1}"
+    if (!file(r1).exists()) {
+        exit 1, "ERROR: Please check input samplesheet -> Read 1 FastQ file does not exist!\n${r1}"
     }
     if (meta.single_end) {
-        fastq_meta = [ meta, [ file(row.fastq_1) ] ]
+        fastq_meta = [ meta, [ file(r1) ] ]
     } else {
-        if (!file(row.fastq_2).exists()) {
-            exit 1, "ERROR: Please check input samplesheet -> Read 2 FastQ file does not exist!\n${row.fastq_2}"
+        if (!file(r2).exists()) {
+            exit 1, "ERROR: Please check input samplesheet -> Read 2 FastQ file does not exist!\n${r2}"
         }
-        fastq_meta = [ meta, [ file(row.fastq_1), file(row.fastq_2) ] ]
+        fastq_meta = [ meta, [ file(r1), file(r2) ] ]
     }
     return fastq_meta
 }

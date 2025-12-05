@@ -140,10 +140,12 @@ workflow ATA {
     ch_statistic_merged = Channel.empty()
     ch_logs = Channel.empty()
 
-    ch_gtf = Channel.value(params.annot_GTF)        
-    // ch_hisat2_index   = params.hisat2_index ? Channel.fromPath(params.hisat2_index) : Channel.empty()
-    // ch_splicesites    = params.splice_sites ? Channel.fromPath(params.splice_sites) : Channel.empty()
+    ch_gtf   = params.annot_GTF ? Channel.fromPath(params.annot_GTF) : Channel.empty()
+    ch_bedrc = params.annot_BED ? Channel.fromPath(params.annot_BED) : Channel.empty()
+    ch_ds_gene_list   = params.detect_strand_genes_list ? Channel.fromPath(params.detect_strand_genes_list) : Channel.empty()     
     ch_adapters_file  = params.adapters_file ?  Channel.fromPath(params.adapters_file) : Channel.fromPath("${projectDir}/bin/adapters/TruSeq3-PE.fa")
+    
+    
     //ToDO Check for adapters file presence
 
 
@@ -156,7 +158,16 @@ workflow ATA {
     if (!params.ready_raw_contacts_dir) {
 
         // Removing Adapter sequences
-        FASTP_ADAPTERS ( ch_input_check_reads, ch_adapters_file, true, false, true )   // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
+        //combine adapters so all reads are emitted with adapters
+        ch_fastp_combine = ch_input_check_reads.combine(ch_adapters_file)
+        
+        FASTP_ADAPTERS ( 
+            ch_fastp_combine.map { meta, reads, adapters -> [meta, reads] }, //reads
+            ch_fastp_combine.map { meta, reads, adapters -> adapters },      //adapters
+            true, 
+            false, 
+            true 
+        )  
         ch_for_dedup         = FASTP_ADAPTERS.out.reads
         ch_adapter_log       = FASTP_ADAPTERS.out.log
         ch_stats             = FASTP_ADAPTERS.out.html
@@ -193,7 +204,7 @@ workflow ATA {
             ch_for_trimming = ch_for_dedup
         }
 
-
+   
         // RESTR. SITES PROCESSING ---------------------------------------------------------------------------    
         if ( !params.bridge_processing && ( params.exp_type in ['imargi', 'radicl', 'grid', 'char', 'redc', 'redchip'] ) ) {
             ch_dna = ch_for_trimming.map { meta, files -> def dnaFiles = files.findAll { file -> file.toString().contains(meta.DNA) }
@@ -207,11 +218,11 @@ workflow ATA {
             RSITES ( ch_dna, ch_rna )
             ch_for_trimming    = RSITES.out.fastq.map{meta, rna, dna -> [meta, [rna, dna]]}
             ch_rsites_figs     = RSITES.out.png
-            ch_report          = ch_report.combine(RSITES.out.png, by:0)
+            ch_report   = ch_report.join(RSITES.out.png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
+            // ch_report          = ch_report.combine(RSITES.out.png, by:0)
             // ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> [[id.id, id.prefix], ["RestrSites", dna.countFastq()] ] } )
             ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
         }
-
 
         // TRIMMING ------------------------------------------------------------------------------------------
         /*
@@ -219,18 +230,17 @@ workflow ATA {
             *  Available tools: FastP, Trimmomatic, BBduc, TrimGalore 
             */ 
         if (!params.skip_trim) {
-            TRIM ( ch_for_trimming, ch_adapters_file )
+            TRIM ( ch_for_trimming, ch_adapters_file) 
             ch_input_align = TRIM.out.reads
             // ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> [[id.id, id.prefix], ["Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] ] })
             ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
             ch_versions = ch_versions.mix(TRIM.out.versions)
             ch_report   = ch_report.join(TRIM.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)
-  
+        
         } else {
             // If skipping trim, pass the input directly to alignment or subsequent steps
             ch_input_align = ch_for_trimming
         }
-
 
 
         if (!params.skip_fastqc) {
@@ -238,7 +248,7 @@ workflow ATA {
             ch_versions = ch_versions.mix(FASTQC_AFTER.out.versions.first())
             ch_report   = ch_report.join(FASTQC_AFTER.out.html.map{ meta, html -> [[meta.id, meta.prefix], html] }, by: 0)
         }
-
+        
         // BRIDGE PROCESSING ---------------------------------------------------------------------------------
         /*
             *  Paired-end reads are assembled with paired-end read mergers (PEAR, BBMerge).
@@ -249,23 +259,23 @@ workflow ATA {
         if ( params.bridge_processing ) {
             ATA_BRIDGE ( ch_input_align )
             ch_input_align     = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [meta, [rna, dna]]}                 //[[id:redchip, single_end:false, prefix:SRR17331252, method:ATA, RNA:SRR17331252.assembled.fastq_RNA, DNA:SRR17331252.assembled.fastq_DNA], [SRR17331252.assembled.DNA.fastq, SRR17331252.assembled.RNA.fastq]]
-            ch_input_rna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "RNA":meta.RNA], [rna]]}                 
-            ch_input_dna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "DNA":meta.DNA], [dna]]}
+            ch_input_rna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "RNA":meta.RNA], [rna]]}                 
+            ch_input_dna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "DNA":meta.DNA], [dna]]}
             ch_versions        = ch_versions.mix(ATA_BRIDGE.out.versions)
             ch_statistic       = ch_statistic.concat(ATA_BRIDGE.out.statistic)
             ch_report          = ch_report.join(ATA_BRIDGE.out.report, by:0)
             // ch_pear_stats      = ATA_BRIDGE.out.pear_stats
         } else if ( !params.bridge_processing ) {
             ch_input_rna_align = ch_input_align.map { meta, files -> def rnaFiles = files.findAll { file -> file.toString().contains(meta.RNA) }
-                return rnaFiles ? [meta, rnaFiles] : [meta, []] }.map { meta, rna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "RNA":meta.RNA], rna ] }
+                return rnaFiles ? [meta, rnaFiles] : [meta, []] }.map { meta, rna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "RNA":meta.RNA], rna ] }
 
             ch_input_dna_align = ch_input_align.map { meta, files -> def dnaFiles = files.findAll { file -> file.toString().contains(meta.DNA) }
-                return dnaFiles ? [meta, dnaFiles] : [meta, []] }.map { meta, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "DNA":meta.DNA], dna ] }
+                return dnaFiles ? [meta, dnaFiles] : [meta, []] }.map { meta, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "DNA":meta.DNA], dna ] }
         }
 
 
 
-        // ch_report.view()
+        
         // ALIGNMENT -----------------------------------------------------------------------------------------
         /*
             *  Aligning separated RNA and DNA parts with alignment tool of choice:
@@ -282,10 +292,11 @@ workflow ATA {
             ch_gtf,
             params.rna_align_tool
         )
+        RNA_ALIGN.out.logs.view()
         ch_rna_bam = RNA_ALIGN.out.bam
         ch_report   = ch_report.join(RNA_ALIGN.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)                             
         ch_versions     =  ch_versions.mix(RNA_ALIGN.out.versions)
-
+        
         DNA_ALIGN ( 
             ch_input_dna_align,
             ch_hisat2_index,
@@ -300,20 +311,11 @@ workflow ATA {
         ch_dna_bam = DNA_ALIGN.out.bam
         ch_report   = ch_report.join(DNA_ALIGN.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)                               
         ch_versions     =  ch_versions.mix(DNA_ALIGN.out.versions)
+        
+        ch_rna_to_contacts = ch_rna_bam.map{ meta, rna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq], rna] }
+        ch_dna_to_contacts = ch_dna_bam.map{ meta, dna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq], dna] }
 
-
-        // ch_input_rna_align.view{ "ch_input_rna_align $it" }
-        // ch_input_dna_align.view{ "ch_input_dna_align $it" }
-
-        ch_rna_to_contacts = ch_rna_bam.map{ meta, rna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], rna] }
-        ch_dna_to_contacts = ch_dna_bam.map{ meta, dna -> [ ["id":meta.id, "prefix":meta.prefix, "method":meta.method], dna] }
-
-
-        ch_bam_join = ch_rna_to_contacts.join( ch_dna_to_contacts )
-        // ch_bam_join.view()
-
-        // ch_rna_to_contacts.view{ "ch_rna_to_contacts $it" }
-        // ch_dna_to_contacts.view{ "ch_dna_to_contacts $it" }
+        ch_bam_join = ch_rna_to_contacts.join( ch_dna_to_contacts, by: 0)
 
         BAM_TO_CONTACTS ( ch_bam_join )
         unique_raw_contacts = BAM_TO_CONTACTS.out.unique_raw_contacts
@@ -330,11 +332,13 @@ workflow ATA {
                 return [[id: subDir, method: "ATA"], files]
             }
             .transpose()
-            .map { meta, files ->  [ ["id":meta.id, "prefix":files.name.tokenize('.')[0], "method":meta.method], files]  }
+            .map { meta, files ->  [ ["id":meta.id, "prefix":files.name.tokenize('.')[0], "method":meta.method, "rnaseq":"None"], files]  }
             .set { unique_raw_contacts }
     }
 
     // files.name.tokenize('.')[0]
+
+    
 
     FILTER_CONTACTS ( unique_raw_contacts )
     ch_filtered_contacts = FILTER_CONTACTS.out.filtered_contacts
@@ -342,6 +346,7 @@ workflow ATA {
     ch_report          = ch_report.join(FILTER_CONTACTS.out.png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     // ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> [[id.id, id.prefix], ["FilteredUniqueRawContacts", files.countLines()] ] })
     ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
+
 
     if (params.run_blacklist) {
         BLACKLIST ( ch_filtered_contacts )
@@ -355,8 +360,7 @@ workflow ATA {
         ch_detect = ch_filtered_contacts
     }
 
-    ch_statistic.view()
-    
+       
 
 
     processChannelStatistics(ch_statistic).set { sample_statistic_table }
@@ -366,19 +370,27 @@ workflow ATA {
         new File("$params.outdir/Result_stats/Before_Merging_Replicas.stats.txt").text = table + "\n"  // Output the table to a file
     }
 
+    ch_detect_combine = ch_detect.combine(ch_gtf).combine(ch_ds_gene_list)
 
-    DETECT_STRAND ( ch_detect  )                          // tuple val(meta), path(contacts)
+    DETECT_STRAND ( 
+        ch_detect_combine.map { meta, contacts, gtf, ds_genes -> [meta, contacts] }, //contacts
+        ch_detect_combine.map { meta, contacts, gtf, ds_genes -> gtf },              //gtf annot
+        ch_detect_combine.map { meta, contacts, gtf, ds_genes -> ds_genes }          //detect strand
+    )                          
     ch_strand_vote_result = DETECT_STRAND.out.strand_vote_result
     ch_files_fixed_strand = DETECT_STRAND.out.files_fixed_strand
     ch_strand_vote_png    = DETECT_STRAND.out.strand_vote_png
     ch_report          = ch_report.join(DETECT_STRAND.out.strand_vote_png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     
+    
+    
+    
+    
     // MERGING REPLICATES-----------------------------------------------------------------------------
        /*
         *    Merging based on samplesheet.csv IDs
         */
-
-    MERGE_REPLICAS ( ch_files_fixed_strand.map { meta, files -> [meta.id, files ] }.groupTuple(by: 0) )
+    MERGE_REPLICAS ( ch_files_fixed_strand.map { meta, files -> [["id":meta.id, "rnaseq":meta.rnaseq], files ] }.groupTuple(by: 0) )
     ch_input_annotation     = MERGE_REPLICAS.out
     ch_statistic_merged    = ch_statistic_merged.concat(MERGE_REPLICAS.out.map { id, tab -> [id, "MergedReplicas", tab.countLines()] } )
 
@@ -390,18 +402,26 @@ workflow ATA {
     //     | set { ch_input_annotation }
     // }
 
+
     ANNOTATION ( ch_input_annotation )
     ch_uu_voted            = ANNOTATION.out.uu_voted
     ch_um_voted            = ANNOTATION.out.um_voted
 
-    NORMALISATION ( ch_uu_voted, ch_chrom_sizes.first() )
+    NORMALISATION ( 
+        ch_uu_voted, 
+        ch_uu_voted.combine(ch_chrom_sizes).map {meta, contacts, chrsizes -> chrsizes} 
+    )
     ch_norm                = NORMALISATION.out.normalized
 
 
     Channel.fromPath(params.annot_BED).ifEmpty { exit 1, "Input file not found: ${params.annot_BED}" }
     | set { bed6_annot_files_ch }
 
-    // BARDIC( ch_uu_voted, params.annot_BED, ch_chrom_sizes )
+    BARDIC ( 
+        ch_uu_voted, 
+        ch_uu_voted.combine(ch_bedrc).map {meta, contacts, bedrc -> bedrc},
+        ch_uu_voted.combine(ch_chrom_sizes).map {meta, contacts, chrsizes -> chrsizes}
+    )
 
 
     // AGGREGATE RAW MERGED CONTACTS STATS
@@ -410,71 +430,59 @@ workflow ATA {
     sample_statistic_merged.subscribe { id ->  println "${colors['bgblue']}  $id ${colors['reset']}"   }
     sample_statistic_merged.collectFile(storeDir: "$params.outdir/Result_stats", name: 'After_Merging_Replicas.stats.txt') { it + "\n" }
 
-    // processChannelStatistics(ch_statistic_merged).set { sample_statistic_merged }
+    processChannelStatistics(ch_statistic_merged).set { sample_statistic_merged }
 
-    // ch_mm = sample_statistic_merged.subscribe { table ->
-    //     // println "${colors['bgblue']} $table \n ${colors['reset']}"
-    //     new File("$params.outdir/stats/After_Merging_Replicas.stats.txt").text = table + "\n"  // Output the table to a file
-    // }
+    ch_mm = sample_statistic_merged.subscribe { table ->
+        // println "${colors['bgblue']} $table \n ${colors['reset']}"
+        new File("$params.outdir/Result_stats/After_Merging_Replicas.stats.txt").text = table + "\n"  // Output the table to a file
+    }
 
+    PLOT_STATS ( sample_statistic_table, sample_statistic_merged )  
 
+    ch_statistic            = Channel.empty()
+    ch_statistic_merged     = Channel.empty()
+    sample_statistic_table  = Channel.empty()
+    sample_statistic_merged = Channel.empty()
 
-
-    // PLOT_STATS ( sample_statistic_table, sample_statistic_merged )  
-
-    // ch_statistic            = Channel.empty()
-    // ch_statistic_merged     = Channel.empty()
-    // sample_statistic_table  = Channel.empty()
-    // sample_statistic_merged = Channel.empty()
-
-
-    // COLLECT_FILES(ch_report)
+    // ch_report.view()
+    COLLECT_FILES(ch_report)
     // HTML_REPORT(COLLECT_FILES.out.folders.collect())
 
 
-    // ch_report.view()
+    
     // ch_sample_reports = HTML_REPORT.out.folders
 
 
-    def has_rnaseq = file(params.input)
-        .splitCsv(header:true, sep:',')
-        .any { row -> row.sample?.startsWith('rnaseq_') }
-
-
+    def has_rnaseq = file(params.input).splitCsv(header:true, sep:',').any { row -> row.sample?.startsWith('rnaseq_') }
 
     if (has_rnaseq) {
-        ch_rnaseq_map = ch_rnaseq_results.map { group_id, file -> 
-            return [group_id, file] 
-        }.collectAsMap()
+        ch_col = ch_uu_voted.collect()
+
+       ch_ata_with_rnaseq = ch_uu_voted
+        .map { meta, ata -> [ meta.rnaseq, meta, ata ] }
+        .cross( ch_rnaseq_results.map { m, f -> [ m.rnaseq, f ] })
+        // .map { group, meta, ata_file, rnaseq_file -> [ meta, ata_file, rnaseq_file ] }
+ 
         
-        // For each annotated contact file, find the corresponding RNA-seq data
-        ch_uu_voted.map { sample_id, contacts ->
-            def rnaseq_file = null
-            // Try to find RNA-seq data for this sample
-            if (ch_rnaseq_map.containsKey(sample_id)) {
-                rnaseq_file = ch_rnaseq_map[sample_id]
-            }
-            return [[ id: sample_id ], contacts, rnaseq_file]
-        }
-        .set { ch_for_normalization }
+    //     // Apply chromatin potential normalization
+       CHROMATIN_POTENTIAL (
+           ch_ata_with_rnaseq.map { contacts, rnaseq -> [contacts[1], contacts[2]] },
+           ch_ata_with_rnaseq.map { contacts, rnaseq -> rnaseq[1] },
+           ch_chrom_sizes
+       )
         
-        // Apply chromatin potential normalization
-        CHROMATIN_POTENTIAL (
-            ch_for_normalization.map { meta, contacts, rnaseq -> [meta, contacts] },
-            ch_for_normalization.map { meta, contacts, rnaseq -> rnaseq },
-            ch_chrom_sizes
-        )
+       ch_normalized_contacts = CHROMATIN_POTENTIAL.out.normalized_contacts
+       ch_normalization_stats = CHROMATIN_POTENTIAL.out.stats
+       ch_versions = ch_versions.mix(CHROMATIN_POTENTIAL.out.versions)
         
-        ch_normalized_contacts = CHROMATIN_POTENTIAL.out.normalized_contacts
-        ch_normalization_stats = CHROMATIN_POTENTIAL.out.stats
-        ch_versions = ch_versions.mix(CHROMATIN_POTENTIAL.out.versions)
-        
-        // Use normalized contacts for downstream analysis
-        ch_input_annotation = ch_normalized_contacts.map { meta, file -> [meta.id, file] }
-    } else {
+    //     // Use normalized contacts for downstream analysis
+    //    ch_input_annotation = ch_normalized_contacts.map { meta, file -> [meta.id, file] }
+   } else {
         // If no RNA-seq data, use the regular annotated contacts
-        ch_input_annotation = ch_uu_voted
-    }
+       ch_input_annotation = ch_uu_voted
+   }
+
+
 
 }
 

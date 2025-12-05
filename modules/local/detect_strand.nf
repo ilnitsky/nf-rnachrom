@@ -15,7 +15,10 @@ process DETECT_STRAND {
     ) 
         
     input:
+    // tuple val(meta), path(contacts)
     tuple val(meta), path(contacts)
+    path(gtf_file)
+    path(genes_list_file)
 
     output:
     tuple val(meta), path('res/*.{bed,tab,tab.rc}'), emit: files_fixed_strand
@@ -41,22 +44,22 @@ process DETECT_STRAND {
     mkdir res
     mv ${contacts[0]} res/${contacts[0]}
 
-    ln -s res/${contacts[0]} ${prefix}.tab
+    ln -s res/${contacts[0]} ${sample}.tab
     
 
     cat <<-END_JSON > config.json
     {
       "input_dir":".",
       "output_dir":".",
-      "gene_annotation":"${params.annot_GTF}",
-      "genes_list":"${params.detect_strand_genes_list}",
-      "prefix":"${prefix}",
-      "exp_groups":{"${params.exp_type}":["${prefix}"]}
+      "gene_annotation":"${gtf_file}",
+      "genes_list":"${genes_list_file}",
+      "prefix":"${sample}",
+      "exp_groups":{"${params.exp_type}":["${sample}"]}
     }
     END_JSON
 
     detect-strand -c config.json -v
-    strand=\$(grep "${prefix}" ${prefix}_wins.tsv | awk -F"\\t" '{print \$5}')
+    strand=\$(grep "${sample}" ${sample}_wins.tsv | awk -F"\\t" '{print \$5}')
 
     case \$strand in
         "ANTI")

@@ -1,6 +1,7 @@
 process CHROMATIN_POTENTIAL {
     tag "$meta.id"
     label 'process_medium'
+    errorStrategy 'ignore'
 
     conda "${projectDir}/envs/full_env.yml"
 
@@ -11,7 +12,7 @@ process CHROMATIN_POTENTIAL {
         
    
     input:
-    tuple val(meta), path(contacts_dir)
+    tuple val(meta), path(contacts)
     path(rnaseq_data)
     path chrom_sizes
 
@@ -30,14 +31,26 @@ process CHROMATIN_POTENTIAL {
     
     count_contacts_all.sh \
             -d 500000 \
-            -i ${contacts_dir} \
+            -i . \
             -o ./chP \
-            -u contacts.voting.UU.bed \
-            -m contacts.voting.UM.bed \
+            -u ${contacts}\
+            -m ${contacts} \
             -n 100 \
             -f 0.05 \
             -r ${rnaseq_data}
+            -s ${projectDir}/bin
     
 
     """
 }
+
+    // count_contacts_all.sh \
+    //         -d 500000 \
+    //         -i . \
+    //         -o ./chP \
+    //         -u contacts.voting.UU.bed \
+    //         -m contacts.voting.UM.bed \
+    //         -n 100 \
+    //         -f 0.05 \
+    //         -r ${rnaseq_data}
+    

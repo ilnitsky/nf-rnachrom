@@ -14,7 +14,7 @@ process PLOT_STATS {
 
     input:
     val(replica_stats)
-    val(merged_stats)
+    val(merged_id)
 
     output:
     path("*.png"), emit: png
@@ -23,7 +23,7 @@ process PLOT_STATS {
     """
     echo 'Starting A' `date +%H-%M-%S`
     echo "${replica_stats}" >  replica_stats.tsv
-    echo "${merged_stats}" >  merged_stats.tsv
+    echo "${merged_id}" >  merged_stats.tsv
     plot_stats.py replica_stats.tsv merged_stats.tsv
     
     """

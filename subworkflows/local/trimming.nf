@@ -5,7 +5,7 @@ include { FASTP                       } from '../../modules/nf-core/fastp/main'
 
 workflow TRIM {
     take:
-    reads // file: /path/to/samplesheet.csv
+    ch_reads // file: /path/to/samplesheet.csv
     ch_adapters_file // file: /path/to/adapters_file.fa
 
     main:
@@ -16,6 +16,9 @@ workflow TRIM {
     ch_adapters_redc = Channel.fromPath( "$projectDir/assets/adapters_redc.fa", checkIfExists: true)
     ch_adapters      = ch_adapters_redc
 
+    ch_reads_with_adapters = ch_reads.combine(ch_adapters_file)
+    reads =  ch_reads_with_adapters.map { meta, reads, adapters -> [meta, reads] }
+    ch_adapters_file = ch_reads_with_adapters.map { meta, reads, adapters -> adapters }
 
     if (params.trim_tool == "trimmomatic") {
         TRIMMOMATIC ( reads )
@@ -26,14 +29,24 @@ workflow TRIM {
         ch_versions         = ch_versions.mix(TRIMMOMATIC.out.versions)
 
     } else if (params.trim_tool == "bbduk") {
-        BBMAP_BBDUK ( reads, ch_adapters )
+        BBMAP_BBDUK ( 
+            reads, 
+            ch_adapters_file 
+        )
         ch_trimmed_reads    = BBMAP_BBDUK.out.reads
         ch_trim_log         = BBMAP_BBDUK.out.log
         // ch_stats            = ch_stats.mix(BBMAP_BBDUK.out.log)
         ch_versions         = ch_versions.mix(BBMAP_BBDUK.out.versions)
 
     } else if (params.trim_tool == "fastp") {
-        FASTP ( reads, ch_adapters_file, true, false, false ) // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
+        FASTP ( 
+            reads, 
+            ch_adapters_file, 
+            true, 
+            false, 
+            false 
+        )
+        // FASTP ( reads, true, false, false )
         ch_trimmed_reads    = FASTP.out.reads
         ch_trim_log         = FASTP.out.log
         ch_stats            = FASTP.out.html

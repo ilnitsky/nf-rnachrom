@@ -32,17 +32,32 @@ workflow RNASEQ {
     ch_versions = Channel.empty()
     ch_report = Channel.empty()
     ch_statistic_merged = Channel.empty()
-    ch_gtf = Channel.value(params.annot_GTF)
+
     ch_genome_fasta = Channel.value(params.genome_fasta)
 
+    ch_gtf   = params.annot_GTF ? Channel.fromPath(params.annot_GTF) : Channel.empty()
+    ch_bedrc = params.annot_BED ? Channel.fromPath(params.annot_BED) : Channel.empty()
+    ch_ds_gene_list   = params.detect_strand_genes_list ? Channel.fromPath(params.detect_strand_genes_list) : Channel.empty()     
+    ch_adapters_file  = params.adapters_file ?  Channel.fromPath(params.adapters_file) : Channel.fromPath("${projectDir}/bin/adapters/TruSeq3-PE.fa")
 
     // ADAPTER REMOVAL
 
-    FASTP_ADAPTERS_RNASEQ ( ch_rnaseq_reads, true, false, true )   // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
+        //combine adapters so all reads are emitted with adapters
+    ch_fastp_combine = ch_rnaseq_reads.combine(ch_adapters_file)
+    
+    FASTP_ADAPTERS_RNASEQ ( 
+        ch_fastp_combine.map { meta, reads, adapters -> [meta, reads] }, //reads
+        ch_fastp_combine.map { meta, reads, adapters -> adapters },      //adapters
+        true, 
+        false, 
+        true 
+    )  
     ch_for_dedup         = FASTP_ADAPTERS_RNASEQ.out.reads
     ch_adapter_log       = FASTP_ADAPTERS_RNASEQ.out.log
     ch_stats             = FASTP_ADAPTERS_RNASEQ.out.html
     ch_versions          = ch_versions.mix(FASTP_ADAPTERS_RNASEQ.out.versions)
+    ch_report            = ch_report.mix(FASTP_ADAPTERS_RNASEQ.out.html.map{ meta, html -> [[meta.id, meta.prefix], html]})
+        
 
     
     // FASTQC BEFORE PROCESSING
@@ -53,7 +68,7 @@ workflow RNASEQ {
 
     // DEDUPLICATION
     if (!params.skip_dedup) {
-        DEDUP_RNASEQ(ch_for_dedup)
+        DEDUP_RNASEQ ( ch_for_dedup )
         ch_for_trimming = DEDUP_RNASEQ.out.reads
         ch_statistic = ch_statistic.concat(DEDUP_RNASEQ.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Dedup", files instanceof List ? files[0].countFastq() : files.countFastq()] })
         ch_versions = ch_versions.mix(DEDUP_RNASEQ.out.versions)
@@ -62,7 +77,7 @@ workflow RNASEQ {
     }
     // TRIMMING
     if (!params.skip_trim) {
-        TRIM_RNASEQ(ch_for_trimming)
+        TRIM_RNASEQ ( ch_for_trimming, ch_adapters_file)
         ch_input_align = TRIM_RNASEQ.out.reads
         ch_statistic = ch_statistic.concat(TRIM_RNASEQ.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
         ch_versions = ch_versions.mix(TRIM_RNASEQ.out.versions)
@@ -75,7 +90,7 @@ workflow RNASEQ {
         ch_input_align
     )
     ch_versions = ch_versions.mix(FASTQC_AFTER_RNASEQ.out.versions.first())
-    ch_input_align.view{it -> "INPUT ALIGN: ${it}"}
+    
     // ALIGNMENT for RNA-seq
     RNASEQ_ALIGN ( 
         ch_input_align,
@@ -85,25 +100,19 @@ workflow RNASEQ {
         ch_bwa_index,
         ch_splicesites,
         ch_genome_fasta,
-        ch_gtf
+        ch_gtf,
+        params.rna_align_tool
     )
     ch_bam = RNASEQ_ALIGN.out.bam
+
     ch_align_log = RNASEQ_ALIGN.out.logs
     ch_versions = ch_versions.mix(RNASEQ_ALIGN.out.versions)
-
-    ch_bam.map { meta, bam -> 
-        if (meta.single_end) {
-            [meta, bam[0], 'NO_FILE']
-        } else {
-            [meta, bam[0], bam[1]]
-        }
-    }.view{it -> "RNASEQ BAM: ${it}"}
 
     // BAM TO CONTACTS
     BAM_TO_CONTACTS (
         ch_bam.map { meta, bam -> 
             if (meta.single_end) {
-                [meta, bam[0], 'NO_FILE']
+                [meta, bam, 'NO_FILE']
             } else {
                 [meta, bam[0], bam[1]]
             }
@@ -120,30 +129,35 @@ workflow RNASEQ {
     // ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> [[id.id, id.prefix], ["FilteredUniqueRawContacts", files.countLines()] ] })
     // ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
 
+    ch_detect_combine = ch_detect.combine(ch_gtf).combine(ch_ds_gene_list)
 
-    
-    DETECT_STRAND ( ch_detect  )                          // tuple val(meta), path(contacts)
+    DETECT_STRAND ( 
+        ch_detect_combine.map { meta, contacts, gtf, ds_genes -> [meta, contacts] }, //contacts
+        ch_detect_combine.map { meta, contacts, gtf, ds_genes -> gtf },              //gtf annot
+        ch_detect_combine.map { meta, contacts, gtf, ds_genes -> ds_genes }          //detect strand
+    )                          
     ch_strand_vote_result = DETECT_STRAND.out.strand_vote_result
     ch_files_fixed_strand = DETECT_STRAND.out.files_fixed_strand
     ch_strand_vote_png    = DETECT_STRAND.out.strand_vote_png
     ch_report          = ch_report.join(DETECT_STRAND.out.strand_vote_png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     
+ 
     // MERGING REPLICATES-----------------------------------------------------------------------------
        /*
         *    Merging based on samplesheet.csv IDs
         */
 
-    MERGE_REPLICAS ( ch_files_fixed_strand.map { meta, files -> [meta.id, files ] }.groupTuple(by: 0) )
+    MERGE_REPLICAS ( ch_files_fixed_strand.map { meta, files -> [[id:meta.id, rnaseq:meta.id], files ] }.groupTuple(by: 0) )
     ch_input_annotation     = MERGE_REPLICAS.out
     ch_statistic_merged    = ch_statistic_merged.concat(MERGE_REPLICAS.out.map { id, tab -> [id, "MergedReplicas", tab.countLines()] } )
 
 
     ANNOTATION ( ch_input_annotation )
-    ch_voted               = ANNOTATION.out.voted
-
+    ch_uu_voted            = ANNOTATION.out.uu_voted
+    ch_um_voted            = ANNOTATION.out.um_voted
 
     emit:
-    annotated_rnaseq = ch_voted       // channel: [group_id, annotated_file]
+    annotated_rnaseq = ch_uu_voted       // channel: [group_id, annotated_file]
     versions = ch_versions            // channel: [versions.yml]
 }
 

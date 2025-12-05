@@ -8,7 +8,7 @@ usage() {
 }
 
 # Parse command line arguments
-while getopts "d:i:o:u:m:n:f:r:" opt; do
+while getopts "d:i:o:u:m:n:f:r:s:" opt; do
     case $opt in
         d) d="$OPTARG";;
         i) input_path="$OPTARG";;
@@ -18,10 +18,13 @@ while getopts "d:i:o:u:m:n:f:r:" opt; do
         n) n_contacts_min="$OPTARG";;
         f) fdr_threshold="$OPTARG";;
         r) input_path_RNAseq="$OPTARG";;
+        s) SCRIPTSPATH="$OPTARG";;
         *) usage;;
     esac
 done
 
+
+SCRIPTSPATH=/data/home/mironov/rnachrom/nf-pipeline/nf-rnachrom/bin
 # Check if all required parameters are provided
 if [ -z "$d" ] || [ -z "$input_path" ] || [ -z "$output_path" ] || [ -z "$uu_file" ] || [ -z "$um_file" ] || [ -z "$n_contacts_min" ] || [ -z "$fdr_threshold" ] || [ -z "$input_path_RNAseq" ]; then
     usage
@@ -202,7 +205,7 @@ rm "$output_file_um_dist"
 cp "$input_path/counts.tsv" "$output_path"
 
 # Run Python script for different datasets
-python3 RD_chP.py \
+python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
     --input_path_RNAseq "$input_path_RNAseq" \
@@ -212,7 +215,7 @@ python3 RD_chP.py \
     --fdr_threshold "$fdr_threshold" \
     --type "UU_all"
 
-python3 RD_chP.py \
+python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
     --input_path_RNAseq "$input_path_RNAseq" \
@@ -222,7 +225,7 @@ python3 RD_chP.py \
     --fdr_threshold "$fdr_threshold" \
     --type "UU_filter_dist_${d}"
 
-python3 RD_chP.py \
+python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
     --input_path_RNAseq "$input_path_RNAseq" \
@@ -232,7 +235,7 @@ python3 RD_chP.py \
     --fdr_threshold "$fdr_threshold" \
     --type "UU_UM_all"
 
-python3 RD_chP.py \
+python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
     --input_path_RNAseq "$input_path_RNAseq" \
