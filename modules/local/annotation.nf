@@ -16,6 +16,7 @@ process FINAL_ANNOTATION {
     ) 
     input:
     tuple val(meta), path(contacts)
+    path(annot_bedrc)
 
     output:
     tuple val(meta), path("*UU.voted.tab.rc"),     emit: uu_voted
@@ -23,13 +24,13 @@ process FINAL_ANNOTATION {
 
     script:
 
-    def annot_bedrc  = file(params.annot_BED)
+    // def annot_bedrc  = file(params.annot_BED)
     def genes_prefix = annot_bedrc.baseName
     def contacts_prefix = "${meta.id}"
     def dist = '0'
 
     """
-    ln -s ${annot_bedrc} ${genes_prefix}.bedrc
+    #ln -s ${annot_bedrc} ${genes_prefix}.bedrc
     sort -k1,1 -k2,2n ${annot_bedrc} > ${genes_prefix}.sorted.bedrc
 
     mkdir -p genes voted_${contacts_prefix}

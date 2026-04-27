@@ -402,8 +402,11 @@ workflow ATA {
     //     | set { ch_input_annotation }
     // }
 
-
-    ANNOTATION ( ch_input_annotation )
+    ch_input_annotation_combine = ch_input_annotation.combine(ch_bedrc)
+    ANNOTATION ( 
+        ch_input_annotation_combine.map { meta, contacts, bedrc -> [meta, contacts] }, 
+        ch_input_annotation_combine.map { meta, contacts, bedrc -> bedrc } 
+    )
     ch_uu_voted            = ANNOTATION.out.uu_voted
     ch_um_voted            = ANNOTATION.out.um_voted
 

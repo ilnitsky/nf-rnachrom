@@ -200,8 +200,12 @@ workflow RNACHROM {
     // Process RNA-seq reads based on detection in input file
     ch_rnaseq_results = Channel.value([])  // Default empty value
 
-    // ch_rnaseq_reads.view{"RNA-seq reads: ${it}"}
+    // check for exp_type correctness (should be from the list of allowed values)
+    if (params.exp_type !in ['rap', 'chirp', 'chart', 'grid', 'char', 'radicl', 'imargi', 'redc', 'redchip']) {
+        error "Invalid exp_type: ${params.exp_type}. Allowed values are: rap, chirp, chart, grid, char, radicl, imargi, redc, redchip"
+    }
 
+    // add check for exp_type correctness
     if (params.exp_type in ['rap', 'chirp', 'chart']) {                                             // ONE-TO-ALL
         OTA ( 
             ch_reads, 
