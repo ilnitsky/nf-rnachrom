@@ -22,6 +22,7 @@ workflow ALIGN {
     main:
     ch_versions     = Channel.empty()
     ch_align_log    = Channel.empty()
+    ch_align_bam    = Channel.empty()
 
     if (ch_aligner == 'hisat2') {
         HISAT2_ALIGN ( 

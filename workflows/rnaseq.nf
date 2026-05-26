@@ -120,7 +120,7 @@ workflow RNASEQ {
     )
     unique_raw_contacts = BAM_TO_CONTACTS.out.unique_raw_contacts
     other_raw_contacts  = BAM_TO_CONTACTS.out.other_raw_contacts
-    ch_statistic        = ch_statistic.concat(BAM_TO_CONTACTS.out.unique_raw_contacts.map { id, files -> [[id.id, id.prefix], ["UniqueRawContacts", files.countLines()] ] })
+    ch_statistic        = ch_statistic.concat(BAM_TO_CONTACTS.out.unique_raw_contacts.map { id, files -> ["${id.id} (${id.prefix})", "UniqueRawContacts", files.countLines()] })
 
     FILTER_CONTACTS ( unique_raw_contacts )
     ch_detect = FILTER_CONTACTS.out.filtered_contacts
@@ -152,7 +152,11 @@ workflow RNASEQ {
     ch_statistic_merged    = ch_statistic_merged.concat(MERGE_REPLICAS.out.map { id, tab -> [id, "MergedReplicas", tab.countLines()] } )
 
 
-    ANNOTATION ( ch_input_annotation )
+    ch_input_annotation_combine = ch_input_annotation.combine(ch_bedrc)
+    ANNOTATION (
+        ch_input_annotation_combine.map { meta, contacts, bedrc -> [meta, contacts] },
+        ch_input_annotation_combine.map { meta, contacts, bedrc -> bedrc }
+    )
     ch_uu_voted            = ANNOTATION.out.uu_voted
     ch_um_voted            = ANNOTATION.out.um_voted
 
