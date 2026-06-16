@@ -13,7 +13,8 @@ process STAR_ALIGN {
     //     'biocontainers/mulled-v2-1fa26d1ce03c295fe2fdcf85831a92fbcbd7e8c2:ded3841da0194af2701c780e9b3d653a85d27489-0' }"
 
     input:
-    tuple val(meta), path(reads, stageAs: "input*/*")
+    // tuple val(meta), path(reads, stageAs: "input*/*")
+    tuple val(meta), path(reads)
     tuple val(meta2), path(index)
     tuple val(meta3), path(gtf)
     val star_ignore_sjdbgtf
@@ -44,54 +45,112 @@ process STAR_ALIGN {
 
     script:
     def args = task.ext.args ?: ''
-    def args_rna = task.ext.args_rna ?: ''
-    def args_dna = task.ext.args_dna ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def reads1 = [], reads2 = []
-    meta.single_end ? [reads].flatten().each{reads1 << it} : reads.eachWithIndex{ v, ix -> ( ix & 1 ? reads2 : reads1) << v }
-    def ignore_gtf      = star_ignore_sjdbgtf ? '' : "--sjdbGTFfile $gtf"
-    def seq_platform    = seq_platform ? "'PL:$seq_platform'" : ""
-    def seq_center      = seq_center ? "'CN:$seq_center'" : ""
-    def attrRG          = args.contains("--outSAMattrRGline") ? "" : "--outSAMattrRGline 'ID:$prefix' $seq_center 'SM:$prefix' $seq_platform"
-    // def out_sam_type    = (args.contains('--outSAMtype')) ? '' : '--outSAMtype BAM Unsorted'
-    def mv_unsorted_bam = (args.contains('--outSAMtype BAM Unsorted SortedByCoordinate')) ? "mv ${prefix}.Aligned.out.bam ${prefix}.Aligned.unsort.out.bam" : ''
-    """
-    STAR \\
-        --genomeDir $index \\
-        --readFilesIn ${reads[0]}  \\
-        --runThreadN $task.cpus \\
-        --outFileNamePrefix ${meta.RNA}. \\
-        $ignore_gtf \\
-        $attrRG \\
-        $args_rna
+    def ignore_gtf   = star_ignore_sjdbgtf ? '' : "--sjdbGTFfile $gtf"
+    def seq_platform = seq_platform ? "'PL:$seq_platform'" : ""
+    def seq_center   = seq_center   ? "'CN:$seq_center'"   : ""
+    def attrRG       = args.contains("--outSAMattrRGline") ? "" : "--outSAMattrRGline 'ID:$prefix' $seq_center 'SM:$prefix' $seq_platform"
+    def read_files_command = reads[0].toString().endsWith('.gz') ? '--readFilesCommand zcat' : ''
 
-    STAR \\
-        --genomeDir $index \\
-        --readFilesIn ${reads[1]} \\
-        --runThreadN $task.cpus \\
-        --outFileNamePrefix ${meta.DNA}. \\
-        $ignore_gtf \\
-        $attrRG \\
-        $args_dna
+    if (meta.method == "OTA" || meta.method == "RNA-seq") {
+        if (meta.single_end) {
+            """
+            STAR \\
+                --genomeDir $index \\
+                --readFilesIn ${reads[0]} \\
+                --runThreadN $task.cpus \\
+                --outFileNamePrefix ${prefix}. \\
+                $read_files_command \\
+                $ignore_gtf \\
+                $attrRG \\
+                $args
 
-    $mv_unsorted_bam
+            ln -s ${prefix}.Aligned.sortedByCoord.out.bam ${prefix}.COPY.bam || true
 
-    if [ -f ${prefix}.Unmapped.out.mate1 ]; then
-        mv ${prefix}.Unmapped.out.mate1 ${prefix}.unmapped_1.fastq
-        gzip ${prefix}.unmapped_1.fastq
-    fi
-    if [ -f ${prefix}.Unmapped.out.mate2 ]; then
-        mv ${prefix}.Unmapped.out.mate2 ${prefix}.unmapped_2.fastq
-        gzip ${prefix}.unmapped_2.fastq
-    fi
+            if [ -f ${prefix}.Unmapped.out.mate1 ]; then
+                mv ${prefix}.Unmapped.out.mate1 ${prefix}.unmapped_1.fastq
+                gzip ${prefix}.unmapped_1.fastq
+            fi
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        star: \$(STAR --version | sed -e "s/STAR_//g")
-        samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
-        gawk: \$(echo \$(gawk --version 2>&1) | sed 's/^.*GNU Awk //; s/, .*\$//')
-    END_VERSIONS
-    """
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                star: \$(STAR --version | sed -e "s/STAR_//g")
+                samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+                gawk: \$(echo \$(gawk --version 2>&1) | sed 's/^.*GNU Awk //; s/, .*\$//')
+            END_VERSIONS
+            """
+        } else {
+            """
+            STAR \\
+                --genomeDir $index \\
+                --readFilesIn ${reads[0]} ${reads[1]} \\
+                --runThreadN $task.cpus \\
+                --outFileNamePrefix ${prefix}. \\
+                $read_files_command \\
+                $ignore_gtf \\
+                $attrRG \\
+                $args \\
+                | tee >(samtools view -@ ${task.cpus} -f 64  -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r1.bam -) \\
+                | samtools view -@ ${task.cpus} -f 128 -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r2.bam -
+
+            if [ -f ${prefix}.Unmapped.out.mate1 ]; then
+                mv ${prefix}.Unmapped.out.mate1 ${prefix}.unmapped_1.fastq
+                gzip ${prefix}.unmapped_1.fastq
+            fi
+            if [ -f ${prefix}.Unmapped.out.mate2 ]; then
+                mv ${prefix}.Unmapped.out.mate2 ${prefix}.unmapped_2.fastq
+                gzip ${prefix}.unmapped_2.fastq
+            fi
+
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                star: \$(STAR --version | sed -e "s/STAR_//g")
+                samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+                gawk: \$(echo \$(gawk --version 2>&1) | sed 's/^.*GNU Awk //; s/, .*\$//')
+            END_VERSIONS
+            """
+        }
+    } else if (meta.method == "ATA") {
+        args = meta.rna ? (task.ext.args_rna ?: task.ext.args ?: '') : (task.ext.args_dna ?: task.ext.args ?: '')
+
+        if (!task.ext.args_rna && meta.rna) {
+            log.warn "RNA aligner args not found, using empty string"
+        }
+        if (!task.ext.args_dna && !meta.rna) {
+            log.warn "DNA aligner args not found, using empty string"
+        }
+
+        prefix = meta.RNA ? meta.RNA : meta.DNA
+        def postfix = meta.RNA ? 'rna' : 'dna'
+
+        """
+        STAR \\
+            --genomeDir $index \\
+            --readFilesIn ${reads[0]} \\
+            --runThreadN $task.cpus \\
+            --outFileNamePrefix ${prefix}. \\
+            --outSAMtype BAM SortedByCoordinate \\
+            # --outSAMtype BAM Unsorted \\
+            # --outStd BAM_Unsorted \\
+            $read_files_command \\
+            $ignore_gtf \\
+            $attrRG \\
+            $args 
+            # | samtools sort -n --threads $task.cpus -O BAM - > sorted_${meta.id}_${prefix}.${postfix}.bam
+
+        if [ -f ${prefix}.Unmapped.out.mate1 ]; then
+            mv ${prefix}.Unmapped.out.mate1 ${prefix}.unmapped_1.fastq
+            gzip ${prefix}.unmapped_1.fastq
+        fi
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            star: \$(STAR --version | sed -e "s/STAR_//g")
+            samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+            gawk: \$(echo \$(gawk --version 2>&1) | sed 's/^.*GNU Awk //; s/, .*\$//')
+        END_VERSIONS
+        """
+    }
 
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -122,15 +181,3 @@ process STAR_ALIGN {
     END_VERSIONS
     """
 }
-
-
-
-    // STAR \\
-    //     --genomeDir $index \\
-    //     --readFilesIn ${reads1.join(",")} ${reads2.join(",")} \\
-    //     --runThreadN $task.cpus \\
-    //     --outFileNamePrefix $prefix. \\
-    //     $out_sam_type \\
-    //     $ignore_gtf \\
-    //     $attrRG \\
-    //     $args
