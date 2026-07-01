@@ -30,8 +30,10 @@ process BAM_TO_CONTACTS {
     def prefix = meta.prefix
     def rna_prefix = meta.RNA
     def dna_prefix = meta.DNA
-    def rna_aligner = params.rna_align_tool
-    def dna_aligner = params.dna_align_tool
+    // Fall back to align_tool when rna/dna-specific tool is not set (e.g. OTA experiments where
+    // params.rna_align_tool is never assigned because final_rc.nf defaults don't run)
+    def rna_aligner = params.rna_align_tool ?: params.align_tool ?: 'hisat2'
+    def dna_aligner = params.dna_align_tool ?: params.align_tool ?: 'hisat2'
 
     // dictionary for tools
     def tools = [

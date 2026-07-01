@@ -27,7 +27,7 @@ process STAR_ALIGN {
     tuple val(meta), path('*Log.progress.out'), emit: log_progress
     path  "versions.yml"                      , emit: versions
 
-    tuple val(meta), path('*d.out.bam')              , optional:true, emit: bam
+    tuple val(meta), path('sorted_*.bam')              , optional:true, emit: bam
     tuple val(meta), path('*sortedByCoord.out.bam')  , optional:true, emit: bam_sorted
     tuple val(meta), path('*toTranscriptome.out.bam'), optional:true, emit: bam_transcript
     tuple val(meta), path('*Aligned.unsort.out.bam') , optional:true, emit: bam_unsorted
@@ -53,6 +53,9 @@ process STAR_ALIGN {
     def read_files_command = reads[0].toString().endsWith('.gz') ? '--readFilesCommand zcat' : ''
 
     if (meta.method == "OTA" || meta.method == "RNA-seq") {
+        if (meta.method == "RNA-seq") {
+            args = task.ext.args_rna ?: task.ext.args ?: ''
+        }
         if (meta.single_end) {
             """
             STAR \\
@@ -60,12 +63,14 @@ process STAR_ALIGN {
                 --readFilesIn ${reads[0]} \\
                 --runThreadN $task.cpus \\
                 --outFileNamePrefix ${prefix}. \\
+                --outStd SAM \\
                 $read_files_command \\
                 $ignore_gtf \\
                 $attrRG \\
-                $args
+                $args \\
+                | samtools sort -n -@ ${task.cpus} -O BAM - > sorted_${meta.id}.bam
 
-            ln -s ${prefix}.Aligned.sortedByCoord.out.bam ${prefix}.COPY.bam || true
+            ln -s sorted_${meta.id}.bam sorted_${meta.id}.COPY.bam
 
             if [ -f ${prefix}.Unmapped.out.mate1 ]; then
                 mv ${prefix}.Unmapped.out.mate1 ${prefix}.unmapped_1.fastq
@@ -86,6 +91,7 @@ process STAR_ALIGN {
                 --readFilesIn ${reads[0]} ${reads[1]} \\
                 --runThreadN $task.cpus \\
                 --outFileNamePrefix ${prefix}. \\
+                --outStd SAM \\
                 $read_files_command \\
                 $ignore_gtf \\
                 $attrRG \\
@@ -111,17 +117,22 @@ process STAR_ALIGN {
             """
         }
     } else if (meta.method == "ATA") {
-        args = meta.rna ? (task.ext.args_rna ?: task.ext.args ?: '') : (task.ext.args_dna ?: task.ext.args ?: '')
+        args = meta.RNA ? (task.ext.args_rna ?: task.ext.args ?: '') : (task.ext.args_dna ?: task.ext.args ?: '')
 
-        if (!task.ext.args_rna && meta.rna) {
+        if (!task.ext.args_rna && meta.RNA) {
             log.warn "RNA aligner args not found, using empty string"
         }
-        if (!task.ext.args_dna && !meta.rna) {
+        if (!task.ext.args_dna && !meta.RNA) {
             log.warn "DNA aligner args not found, using empty string"
         }
 
         prefix = meta.RNA ? meta.RNA : meta.DNA
         def postfix = meta.RNA ? 'rna' : 'dna'
+        def imargi_extra = ''
+        if (params.exp_type == 'imargi' || params.exp_type == 'margi') {
+            args = args.replaceAll(/--alignEndsType\s+\S+/, '').trim()
+            imargi_extra = '--alignEndsType Extend5pOfRead1'
+        }
 
         """
         STAR \\
@@ -129,14 +140,14 @@ process STAR_ALIGN {
             --readFilesIn ${reads[0]} \\
             --runThreadN $task.cpus \\
             --outFileNamePrefix ${prefix}. \\
-            --outSAMtype BAM SortedByCoordinate \\
-            # --outSAMtype BAM Unsorted \\
-            # --outStd BAM_Unsorted \\
+            --outStd SAM \\
+            --outSAMunmapped Within \\
             $read_files_command \\
             $ignore_gtf \\
             $attrRG \\
-            $args 
-            # | samtools sort -n --threads $task.cpus -O BAM - > sorted_${meta.id}_${prefix}.${postfix}.bam
+            $args \\
+            $imargi_extra \\
+            | samtools sort -n -@ ${task.cpus} -O BAM - > sorted_${prefix}.${postfix}.bam
 
         if [ -f ${prefix}.Unmapped.out.mate1 ]; then
             mv ${prefix}.Unmapped.out.mate1 ${prefix}.unmapped_1.fastq

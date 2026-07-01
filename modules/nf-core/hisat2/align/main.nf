@@ -108,14 +108,12 @@ process HISAT2_ALIGN {
             """
         }
     } else if (meta.method == "ATA") {
-        //TODO fix dna/rna determination for alignment
-            args = meta.rna ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
+            args = meta.RNA ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
 
-            //  logging
-            if (!task.ext.args_rna && meta.rna) {
+            if (!task.ext.args_rna && meta.RNA) {
                 log.warn "RNA aligner args not found, using empty string"
             }
-            if (!task.ext.args_dna && !meta.rna) {
+            if (!task.ext.args_dna && !meta.RNA) {
                 log.warn "DNA  aligner args not found, using empty string"
             }
 

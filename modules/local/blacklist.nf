@@ -16,6 +16,7 @@ process BLACKLIST {
 
     input:
     tuple val(meta), path(filtered_contacts)
+    path(blacklist)
 
     output:
     tuple val(meta), path("*.blacklist.tab"), emit: blacklist
@@ -23,7 +24,7 @@ process BLACKLIST {
 
     script:
 
-    def blacklist = params.blacklist
+    // def blacklist = params.blacklist
     def prefix = meta.prefix
 
     def columns = meta.method == "OTA" ? 

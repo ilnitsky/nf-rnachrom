@@ -41,6 +41,9 @@ process FILTER_CONTACTS {
         "NM + N_softClipp_bp" 2 2 0 0 300 "${ucarna_assembly}" "not explorer" "${mode}" "${unique_tab}" "./" "./"
 
     mv filtered_out_"${unique_tab}" out_"${unique_tab}"
+
+    # If input was empty the plot function produces no PNG — create a placeholder so output glob is satisfied
+    ls *png 2>/dev/null || touch empty_filter_plot.png
     """
 
 }

@@ -3,9 +3,9 @@ process ANNOTATE_DNA {
 
     conda "${projectDir}/envs/full_env.yml"
     // conda "bioconda::bedops=2.4.41 bioconda::bedtools=2.31.0"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/bedops:2.4.41--h9f5acd7_0' :
-        'quay.io/biocontainers/bedops:2.4.41--h9f5acd7_0' }"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
 
     publishDir "${params.outdir}/annotate", mode: 'copy'
 

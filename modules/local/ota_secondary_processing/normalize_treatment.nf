@@ -3,9 +3,9 @@ process NORMALIZE_TREATMENT {
     tag "$meta.id"
     conda "${projectDir}/envs/full_env.yml"
     // conda "bioconda::bedops=2.4.41 bioconda::bedtools=2.31.0"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/bedops:2.4.41--h9f5acd7_0' :
-        'quay.io/biocontainers/bedops:2.4.41--h9f5acd7_0' }"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
 
     publishDir "${params.outdir}/normalize_treatment", mode: 'copy'
 
@@ -13,6 +13,7 @@ process NORMALIZE_TREATMENT {
     tuple val(meta), path(treatment)
     tuple val(meta), path(input_sm)
     tuple val(meta), path(peaks)
+    path(blacklist)
     path(bins)
 
     output:
@@ -21,7 +22,7 @@ process NORMALIZE_TREATMENT {
 
     script:
     """
-    cat ${treatment} | bedtools intersect -v -a stdin -b ${params.blacklist} | \\
+    cat ${treatment} | bedtools intersect -v -a stdin -b ${blacklist} | \\
     LC_NUMERIC="C" awk -v FS='\\t' -v OFS='\\t' '{print \$1, int((\$2+\$3)/2), int((\$2+\$3)/2)+1, \$2, \$3}' | \\
     sort-bed --tmpdir . --max-mem ${task.memory.mega}M - > ${meta.id}.treatment.bed
 

@@ -118,7 +118,9 @@ workflow ATA_BRIDGE {
         ch_separated_rna       = BITAP_DEBRIDGE.out.rna
         ch_bridge_positions    = BITAP_DEBRIDGE.out.positions
         ch_bridge_figs         = BITAP_DEBRIDGE.out.bridge_stats
-        ch_report              = ch_report.mix( BITAP_DEBRIDGE.out.bridge_stats.groupTuple(by: 0).map{ meta, png -> [[meta.id, meta.prefix], png] } )
+        // groupTuple produces a Groovy ArrayList which Nextflow cannot stage as path() input.
+        // BITAP_DEBRIDGE already emits one item per sample with all PNGs as a native Nextflow list (path("*.png") glob).
+        ch_report              = ch_report.mix( BITAP_DEBRIDGE.out.bridge_stats.map{ meta, pngs -> [[meta.id, meta.prefix], pngs] } )
         ch_statistic           = ch_statistic.concat(BITAP_DEBRIDGE.out.dna.map { id, files ->  ["${id.id} (${id.prefix})", "Debridged", files instanceof List ? files[0].countFastq() : files.countFastq() ] } )
         // ch_bridge_not_found      = BITAP_DEBRIDGE.out.bridge_not_found_fastq
         // ch_separated_dna.view()

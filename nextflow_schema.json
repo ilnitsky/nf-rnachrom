@@ -127,6 +127,14 @@
                     "description": "Aligning tool name",
                     "default": "hisat2"
                 },
+                "rna_align_tool": {
+                    "type": "string",
+                    "description": "Aligning tool for RNA part (overrides align_tool for RNA)"
+                },
+                "dna_align_tool": {
+                    "type": "string",
+                    "description": "Aligning tool for DNA part (overrides align_tool for DNA)"
+                },
                 "procedure": {
                     "type": "string",
                     "default": "old"

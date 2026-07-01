@@ -31,9 +31,14 @@ process TRIMMOMATIC {
     def adapters = params.adapters_file ?  "${params.adapters_file}" : (meta.single_end ? "TruSeq3-SE" : "TruSeq3-PE.fa")
     def prefix = task.ext.prefix ?: "${meta.id}"
     def trimmed = meta.single_end ? "SE" : "PE"
+    // For ATA non-bridge mode, name outputs with meta.RNA/meta.DNA so the findAll search in final_rc.nf
+    // can identify which trimmed file is RNA and which is DNA (same convention as fastp).
+    def prefix_r1 = (!params.bridge_processing && meta.method == "ATA" && meta.RNA) ? meta.RNA : prefix
+    def prefix_r2 = (!params.bridge_processing && meta.method == "ATA" && meta.DNA) ? meta.DNA : prefix
     def output = meta.single_end ?
         "${prefix}.SE.paired.trim.fastq" // HACK to avoid unpaired and paired in the trimmed_reads output
-        : "${prefix}.paired.trim_1.fastq ${prefix}.unpaired.trim_1.fastq ${prefix}.paired.trim_2.fastq ${prefix}.unpaired.trim_2.fastq"
+        // : "${prefix}.paired.trim_1.fastq ${prefix}.unpaired.trim_1.fastq ${prefix}.paired.trim_2.fastq ${prefix}.unpaired.trim_2.fastq"
+        : "${prefix_r1}.paired.trim_1.fastq ${prefix_r1}.unpaired.trim_1.fastq ${prefix_r2}.paired.trim_2.fastq ${prefix_r2}.unpaired.trim_2.fastq"
     // TODO Give better error output
     def qual_trim = task.ext.args2 ?: ''
     """

@@ -218,8 +218,7 @@ workflow ATA {
             RSITES ( ch_dna, ch_rna )
             ch_for_trimming    = RSITES.out.fastq.map{meta, rna, dna -> [meta, [rna, dna]]}
             ch_rsites_figs     = RSITES.out.png
-            ch_report   = ch_report.join(RSITES.out.png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
-            // ch_report          = ch_report.combine(RSITES.out.png, by:0)
+            // ch_report join moved to after FASTQC_AFTER to match bridge case tuple positions
             // ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> [[id.id, id.prefix], ["RestrSites", dna.countFastq()] ] } )
             ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
         }
@@ -259,13 +258,20 @@ workflow ATA {
         if ( params.bridge_processing ) {
             ATA_BRIDGE ( ch_input_align )
             ch_input_align     = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [meta, [rna, dna]]}                 //[[id:redchip, single_end:false, prefix:SRR17331252, method:ATA, RNA:SRR17331252.assembled.fastq_RNA, DNA:SRR17331252.assembled.fastq_DNA], [SRR17331252.assembled.DNA.fastq, SRR17331252.assembled.RNA.fastq]]
-            ch_input_rna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "RNA":meta.RNA], [rna]]}                 
+            ch_input_rna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "RNA":meta.RNA], [rna]]}
             ch_input_dna_align = ATA_BRIDGE.out.separated_fastq.map{meta, rna, dna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "DNA":meta.DNA], [dna]]}
             ch_versions        = ch_versions.mix(ATA_BRIDGE.out.versions)
             ch_statistic       = ch_statistic.concat(ATA_BRIDGE.out.statistic)
+            // ATA_BRIDGE.out.report emits [key, bridge_stats_png, rsites_png] — 2 values — filling debridged + restrsites slots in COLLECT_FILES
             ch_report          = ch_report.join(ATA_BRIDGE.out.report, by:0)
             // ch_pear_stats      = ATA_BRIDGE.out.pear_stats
         } else if ( !params.bridge_processing ) {
+            // Mirror the bridge case: add NO_FILE for debridged slot, then rsites_png for restrsites slot
+            // This keeps the tuple length at 10, matching COLLECT_FILES input declaration
+            ch_report = ch_report.join(
+                ch_rsites_figs.map { meta, png -> [[meta.id, meta.prefix], file("${projectDir}/assets/NO_FILE"), png] },
+                by: 0
+            )
             ch_input_rna_align = ch_input_align.map { meta, files -> def rnaFiles = files.findAll { file -> file.toString().contains(meta.RNA) }
                 return rnaFiles ? [meta, rnaFiles] : [meta, []] }.map { meta, rna -> [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq, "RNA":meta.RNA], rna ] }
 

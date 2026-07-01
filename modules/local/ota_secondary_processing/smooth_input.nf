@@ -4,15 +4,16 @@ process SMOOTH_INPUT {
 
     conda "${projectDir}/envs/full_env.yml"
     // conda "bioconda::bedops=2.4.41 bioconda::bedtools=2.31.0"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/bedops:2.4.41--h9f5acd7_0' :
-        'quay.io/biocontainers/bedops:2.4.41--h9f5acd7_0' }"
+    container "${ workflow.containerEngine == 'singularity' || workflow.containerEngine == 'apptainer' ? 
+        'http://bioinf.fbb.msu.ru/ken/nextflow/nf-rnachrom_1.0.0_apptainer.sif' :
+        workflow.containerEngine == 'docker' ? 'docker.io/ilnitsky/nf-rnachrom:latest' : '' }"
     // tag "$name"
     publishDir "${params.outdir}/smooth_input", mode: 'copy'
 
     input:
     tuple val(meta), path(input)
     path(bins)
+    path(chromsizes_file)
 
     output:
     tuple val(meta), path("*_sm.bins.bgr"), emit: smoothed
@@ -20,8 +21,8 @@ process SMOOTH_INPUT {
 
     script:
     """
-    cat <<-END > smoother.cfg  
-    chrom=${params.chromsizes}             
+    cat <<-END > smoother.cfg
+    chrom=${chromsizes_file}
     profPath =./profiles              
     trackPath=.
     resPath=./res

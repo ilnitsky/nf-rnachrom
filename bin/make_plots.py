@@ -25,19 +25,23 @@ def make_plots(input_file, output_dir):
 
 
     contacts_not_zero = contacts[contacts['N_counts'] != 0]
-    N_counts_median = int(contacts_not_zero['N_counts'].median())
-
-    sns.ecdfplot(data=contacts_not_zero, x="N_counts")
-    plt.plot([1,contacts_not_zero['N_counts'].max()], [0.5,0.5], 'r-')
-    plt.plot([N_counts_median,N_counts_median], [0,1], 'r-')
-    plt.xscale("log")
-    plt.ylabel('Proportion of RNAs with the corresponding\nnumber of contacts or less')
-    plt.xlabel('Number of contacts in i-th RNA')
-    plt.title('RNAs representation in data. Half of RNAs has less than {} contacts'.format(N_counts_median))
-    # Save the plot
-    plt.tight_layout()
-    plt.savefig(f"{output_dir}/RNAs_representation_in_data.png", dpi=360, bbox_inches="tight")
-    plt.close()
+    if contacts_not_zero.empty:
+        plt.figure()
+        plt.text(0.5, 0.5, 'No contacts with N_counts > 0', ha='center', va='center')
+        plt.savefig(f"{output_dir}/RNAs_representation_in_data.png", dpi=360)
+        plt.close()
+    else:
+        N_counts_median = int(contacts_not_zero['N_counts'].median())
+        sns.ecdfplot(data=contacts_not_zero, x="N_counts")
+        plt.plot([1,contacts_not_zero['N_counts'].max()], [0.5,0.5], 'r-')
+        plt.plot([N_counts_median,N_counts_median], [0,1], 'r-')
+        plt.xscale("log")
+        plt.ylabel('Proportion of RNAs with the corresponding\nnumber of contacts or less')
+        plt.xlabel('Number of contacts in i-th RNA')
+        plt.title('RNAs representation in data. Half of RNAs has less than {} contacts'.format(N_counts_median))
+        plt.tight_layout()
+        plt.savefig(f"{output_dir}/RNAs_representation_in_data.png", dpi=360, bbox_inches="tight")
+        plt.close()
 
 
     table_df = contacts.groupby(['gene_type']).size().reset_index().merge(contacts_not_zero.groupby(['gene_type']).size().reset_index(), on='gene_type', how='left').fillna(0)

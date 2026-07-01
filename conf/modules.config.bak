@@ -229,12 +229,9 @@ process {
 
     withName: 'HISAT2_ALIGN' {
         time = 48.h
-        // ext.args     = { "${flags.align_options}" } ? { "${flags.align_options}" } : '--no-softclip -k 100 --no-discordant --no-mixed --no-spliced-alignment'
-        // ext.args_rna = { "${flags.rna_align_options}" } ? { "${flags.rna_align_options}" } : '--no-softclip --dta-cufflinks -k 100'
-        // ext.args_dna = { "${flags.dna_align_options}" } ? { "${flags.dna_align_options}" } : '--no-softclip -k 100 --no-spliced-alignment'
-        ext.args     = { flags.align_options     ?: '--no-softclip -k 100 --no-discordant --no-mixed --no-spliced-alignment' }
-        ext.args_rna = { flags.rna_align_options ?: '--no-softclip --dta-cufflinks -k 100' }
-        ext.args_dna = { flags.dna_align_options ?: '--no-softclip -k 100 --no-spliced-alignment' }
+        ext.args     = { "${flags.align_options}" } ? { "${flags.align_options}" } : '--no-softclip -k 100 --no-discordant --no-mixed --no-spliced-alignment'
+        ext.args_rna = { "${flags.rna_align_options}" } ? { "${flags.rna_align_options}" } : '--no-softclip --dta-cufflinks -k 100'
+        ext.args_dna = { "${flags.dna_align_options}" } ? { "${flags.dna_align_options}" } : '--no-softclip -k 100 --no-spliced-alignment'
         ext.prefix = { "${meta.prefix}" }
         publishDir = [
             [   path: { "${params.outdir}/2_Alignment/hisat2" },
@@ -283,12 +280,9 @@ process {
 
     withName: 'BWA_MEM' {
         time = 48.h
-        // ext.args     = { "${flags.align_options}" } ? { "${flags.align_options}" } : '-k 100'
-        // ext.args_rna = { "${flags.rna_align_options}" } ? { "${flags.rna_align_options}" } : '-k 100'
-        // ext.args_dna = { "${flags.dna_align_options}" } ? { "${flags.dna_align_options}" } : '-k 100'
-        ext.args     = { flags.align_options     ?: '-k 100' }
-        ext.args_rna = { flags.rna_align_options ?: '-k 100' }
-        ext.args_dna = { flags.dna_align_options ?: '-k 100' }
+        ext.args     = { "${flags.align_options}" } ? { "${flags.align_options}" } : '-k 100'
+        ext.args_rna = { "${flags.rna_align_options}" } ? { "${flags.rna_align_options}" } : '-k 100'
+        ext.args_dna = { "${flags.dna_align_options}" } ? { "${flags.dna_align_options}" } : '-k 100'
         ext.prefix = { "${meta.prefix}" }
         publishDir = [
             [   path: { "${params.outdir}/2_Alignment/bowtie2" },
@@ -306,12 +300,9 @@ process {
     
     withName: 'BOWTIE2_ALIGN' {
         time = 48.h
-        // ext.args     = { "${flags.align_options}" } ? { "${flags.align_options}" } : '-k 100'
-        // ext.args_rna = { "${flags.rna_align_options}" } ? { "${flags.rna_align_options}" } : '-k 100'
-        // ext.args_dna = { "${flags.dna_align_options}" } ? { "${flags.dna_align_options}" } : '-k 100'
-        ext.args     = { flags.align_options     ?: '-k 100' }
-        ext.args_rna = { flags.rna_align_options ?: '-k 100' }
-        ext.args_dna = { flags.dna_align_options ?: '-k 100' }
+        ext.args     = { "${flags.align_options}" } ? { "${flags.align_options}" } : '-k 100'
+        ext.args_rna = { "${flags.rna_align_options}" } ? { "${flags.rna_align_options}" } : '-k 100'
+        ext.args_dna = { "${flags.dna_align_options}" } ? { "${flags.dna_align_options}" } : '-k 100'
         ext.prefix = { "${meta.prefix}" }
         publishDir = [
             [   path: { "${params.outdir}/2_Alignment/bowtie2" },

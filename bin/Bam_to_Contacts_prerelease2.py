@@ -55,35 +55,49 @@ def process_reads(r1_iter, r2_iter, other_tags, rna_mode='STAR', dna_mode='STAR'
 
         # Process R1 reads (RNA)
         while r1 and get_base_name(r1.query_name) == base_name:
-            if rna_mode == 'BWA':
+            # BWA with -a flag outputs secondary alignments as separate BAM records (like HISAT/STAR).
+            # Use secondary-flag check for all aligners for consistent multi-mapper detection.
+            if r1.is_secondary or r1.is_supplementary:
+                r1_data['secondary_alignments'].append(format_secondary_alignment(r1))
+            else:
                 r1_data['alignments'] = format_alignment(r1)
                 r1_data['other_tags'] = extract_other_tags(r1, other_tags)
-                if r1.has_tag('XA'):
-                    r1_data['secondary_alignments'].append(r1.get_tag('XA'))
-            else:
-                # HISAT2/STAR handling for RNA
-                if r1.is_secondary or r1.is_supplementary:
-                    r1_data['secondary_alignments'].append(format_secondary_alignment(r1))
-                else:
-                    r1_data['alignments'] = format_alignment(r1)
-                    r1_data['other_tags'] = extract_other_tags(r1, other_tags)
             r1 = next(r1_iter, None)
+            # Old BWA-specific XA-tag handling (replaced by secondary-flag check above):
+            # if rna_mode == 'BWA':
+            #     r1_data['alignments'] = format_alignment(r1)
+            #     r1_data['other_tags'] = extract_other_tags(r1, other_tags)
+            #     if r1.has_tag('XA'):
+            #         r1_data['secondary_alignments'].append(r1.get_tag('XA'))
+            # else:
+            #     if r1.is_secondary or r1.is_supplementary:
+            #         r1_data['secondary_alignments'].append(format_secondary_alignment(r1))
+            #     else:
+            #         r1_data['alignments'] = format_alignment(r1)
+            #         r1_data['other_tags'] = extract_other_tags(r1, other_tags)
 
         # Process R2 reads (DNA)
         while r2 and get_base_name(r2.query_name) == base_name:
-            if dna_mode == 'BWA':
+            # BWA with -a flag outputs secondary alignments as separate BAM records (like HISAT/STAR).
+            # Use secondary-flag check for all aligners for consistent multi-mapper detection.
+            if r2.is_secondary or r2.is_supplementary:
+                r2_data['secondary_alignments'].append(format_secondary_alignment(r2))
+            else:
                 r2_data['alignments'] = format_alignment(r2)
                 r2_data['other_tags'] = extract_other_tags(r2, other_tags)
-                if r2.has_tag('XA'):
-                    r2_data['secondary_alignments'].append(r2.get_tag('XA'))
-            else:
-                # HISAT2/STAR handling for DNA
-                if r2.is_secondary or r2.is_supplementary:
-                    r2_data['secondary_alignments'].append(format_secondary_alignment(r2))
-                else:
-                    r2_data['alignments'] = format_alignment(r2)
-                    r2_data['other_tags'] = extract_other_tags(r2, other_tags)
             r2 = next(r2_iter, None)
+            # Old BWA-specific XA-tag handling (replaced by secondary-flag check above):
+            # if dna_mode == 'BWA':
+            #     r2_data['alignments'] = format_alignment(r2)
+            #     r2_data['other_tags'] = extract_other_tags(r2, other_tags)
+            #     if r2.has_tag('XA'):
+            #         r2_data['secondary_alignments'].append(r2.get_tag('XA'))
+            # else:
+            #     if r2.is_secondary or r2.is_supplementary:
+            #         r2_data['secondary_alignments'].append(format_secondary_alignment(r2))
+            #     else:
+            #         r2_data['alignments'] = format_alignment(r2)
+            #         r2_data['other_tags'] = extract_other_tags(r2, other_tags)
 
         yield query_name, r1_data, r2_data
 
@@ -175,7 +189,6 @@ def main():
                 r1_status = get_mapping_status(r1_data['alignments'], r1_data['secondary_alignments'])
                 r2_status = get_mapping_status(r2_data['alignments'], r2_data['secondary_alignments'])
                 pairtype = f"{r1_status}{r2_status}"
-                print(r1_data, r2_data, pairtype)
                 r1_alignments = r1_data['alignments'] if r1_data['alignments'] else ['*'] * 7
                 r2_alignments = r2_data['alignments'] if r2_data['alignments'] else ['*'] * 7
 

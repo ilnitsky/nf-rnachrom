@@ -36,14 +36,18 @@ process BWA_MEM {
         if (meta.single_end) {
             """
             INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
-            
+
             bwa mem \\
+            -a \\
             $args \\
             -t $task.cpus \\
             \$INDEX \\
             $reads \\
+            2> sorted_${meta.id}_${prefix}.bwa.log \\
             | samtools  sort -n --threads $task.cpus -O BAM - > sorted_${meta.id}_${prefix}.bam
-            
+
+            ln -s sorted_${meta.id}_${prefix}.bam sorted_${meta.id}_${prefix}.COPY.bam
+
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":
                 bwa: \$(echo \$(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*\$//')
@@ -53,12 +57,14 @@ process BWA_MEM {
         } else {
         """
             INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
-            
+
             bwa mem \\
+            -a \\
             $args \\
             -t $task.cpus \\
             \$INDEX \\
             $reads \\
+            2> ${meta.id}.bwa.log \\
             | tee >(samtools view -@ ${task.cpus} -f 64  -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r1.bam -) \\
             | samtools view -@ ${task.cpus} -f 128 -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r2.bam -
             
@@ -71,30 +77,38 @@ process BWA_MEM {
         }
     } else if (meta.method == 'ATA') {
         if (params.exp_type == 'imargi' || params.exp_type == 'margi') {
+            // iMARGI: R1=RNA, R2=DNA are pre-split (circularized construct, no bridge).
+            // Align each file independently as single-end; RNA_ALIGN and DNA_ALIGN call this separately.
+            def imargi_args = meta.RNA ? (task.ext.args_rna ?: task.ext.args ?: '') : (task.ext.args_dna ?: task.ext.args ?: '')
+            def imargi_prefix = meta.RNA ?: meta.DNA
+            def imargi_postfix = meta.RNA ? 'rna' : 'dna'
             """
             INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
 
             bwa mem \\
-                $args \\
+                -a \\
+                -5 \\
+                -T 1 \\
+                $imargi_args \\
                 -t $task.cpus \\
                 \$INDEX \\
-                $reads \\
-                | tee >(samtools view $args2 -f 64 --threads $task.cpus -o ${rna_prefix}.rna.bam) \\
-                    >(samtools view $args2 -f 128 --threads $task.cpus -o ${dna_prefix}.dna.bam) > /dev/null 
+                ${reads[0]} \\
+                2> ${imargi_prefix}.bwa.log \\
+                | samtools sort -n --threads $task.cpus -O BAM - > sorted_${meta.id}_${imargi_prefix}.${imargi_postfix}.bam
 
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":
                 bwa: \$(echo \$(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*\$//')
                 samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
             END_VERSIONS
-            """    
+            """
         } else {
-            args = meta.rna ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
+            args = meta.RNA ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
 
-            if (!task.ext.args_rna && meta.rna) {
+            if (!task.ext.args_rna && meta.RNA) {
                 log.warn "RNA aligner args not found, using empty string"
             }
-            if (!task.ext.args_dna && !meta.rna) {
+            if (!task.ext.args_dna && !meta.RNA) {
                 log.warn "DNA  aligner args not found, using empty string"
             }
 
@@ -106,12 +120,15 @@ process BWA_MEM {
             INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
 
             bwa mem \\
+                -a \\
+                -T 10 \\
                 $args \\
                 -t $task.cpus \\
                 \$INDEX \\
                 $reads \\
-                | samtools  sort -n --threads $task.cpus -O BAM - >   sorted_${meta.id}_${prefix}.${postfix}.bam
-        
+                2> ${prefix}.bwa.log \\
+                | samtools sort -n --threads $task.cpus -O BAM - > sorted_${meta.id}_${prefix}.${postfix}.bam
+
             cat <<-END_VERSIONS > versions.yml
             "${task.process}":
                 bwa: \$(echo \$(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*\$//')

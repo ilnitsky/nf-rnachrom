@@ -56,42 +56,68 @@ process BOWTIE2_ALIGN {
     def reference = fasta && extension=="cram"  ? "--reference ${fasta}" : ""
     if (!fasta && extension=="cram") error "Fasta reference is required for CRAM output"
     if (meta.method == "OTA" || meta.method == "RNA-seq"){
-        """
-        INDEX=`find -L ./ -name "*.rev.1.bt2" | sed "s/\\.rev.1.bt2\$//"`
-        [ -z "\$INDEX" ] && INDEX=`find -L ./ -name "*.rev.1.bt2l" | sed "s/\\.rev.1.bt2l\$//"`
-        [ -z "\$INDEX" ] && echo "Bowtie2 index files not found" 1>&2 && exit 1
+        if (meta.single_end) {
+            """
+            INDEX=`find -L ./ -name "*.rev.1.bt2" | sed "s/\\.rev.1.bt2\$//"`
+            [ -z "\$INDEX" ] && INDEX=`find -L ./ -name "*.rev.1.bt2l" | sed "s/\\.rev.1.bt2l\$//"`
+            [ -z "\$INDEX" ] && echo "Bowtie2 index files not found" 1>&2 && exit 1
 
-        bowtie2 \\
-            -x \$INDEX \\
-            $reads_args \\
-            --threads $task.cpus \\
-            $unaligned \\
-            $args \\
-            2> >(tee ${prefix}.bowtie2.log >&2) \\
-            | samtools sort -n --threads $task.cpus -O BAM - > sorted_${prefix}.${extension} 
+            bowtie2 \\
+                -x \$INDEX \\
+                $reads_args \\
+                --threads $task.cpus \\
+                $unaligned \\
+                $args \\
+                2> >(tee ${prefix}.bowtie2.log >&2) \\
+                | samtools sort -n --threads $task.cpus -O BAM - > sorted_${prefix}.${extension}
 
-        if [ -f ${prefix}.unmapped.fastq.1.gz ]; then
-            mv ${prefix}.unmapped.fastq.1.gz ${prefix}.unmapped_1.fastq.gz
-        fi
+            ln -s sorted_${prefix}.${extension} sorted_${prefix}.COPY.${extension}
 
-        if [ -f ${prefix}.unmapped.fastq.2.gz ]; then
-            mv ${prefix}.unmapped.fastq.2.gz ${prefix}.unmapped_2.fastq.gz
-        fi
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                bowtie2: \$(echo \$(bowtie2 --version 2>&1) | sed 's/^.*bowtie2-align-s version //; s/ .*\$//')
+                samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+                pigz: \$( pigz --version 2>&1 | sed 's/pigz //g' )
+            END_VERSIONS
+            """
+        } else {
+            """
+            INDEX=`find -L ./ -name "*.rev.1.bt2" | sed "s/\\.rev.1.bt2\$//"`
+            [ -z "\$INDEX" ] && INDEX=`find -L ./ -name "*.rev.1.bt2l" | sed "s/\\.rev.1.bt2l\$//"`
+            [ -z "\$INDEX" ] && echo "Bowtie2 index files not found" 1>&2 && exit 1
 
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            bowtie2: \$(echo \$(bowtie2 --version 2>&1) | sed 's/^.*bowtie2-align-s version //; s/ .*\$//')
-            samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
-            pigz: \$( pigz --version 2>&1 | sed 's/pigz //g' )
-        END_VERSIONS
-        """
+            bowtie2 \\
+                -x \$INDEX \\
+                $reads_args \\
+                --threads $task.cpus \\
+                $unaligned \\
+                $args \\
+                2> >(tee ${prefix}.bowtie2.log >&2) \\
+                | tee >(samtools view -@ ${task.cpus} -f 64  -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r1.${extension} -) \\
+                | samtools view -@ ${task.cpus} -f 128 -b - | samtools sort -n -@ ${task.cpus} -o sorted_${meta.id}.r2.${extension} -
+
+            if [ -f ${prefix}.unmapped.fastq.1.gz ]; then
+                mv ${prefix}.unmapped.fastq.1.gz ${prefix}.unmapped_1.fastq.gz
+            fi
+            if [ -f ${prefix}.unmapped.fastq.2.gz ]; then
+                mv ${prefix}.unmapped.fastq.2.gz ${prefix}.unmapped_2.fastq.gz
+            fi
+
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                bowtie2: \$(echo \$(bowtie2 --version 2>&1) | sed 's/^.*bowtie2-align-s version //; s/ .*\$//')
+                samtools: \$(echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//')
+                pigz: \$( pigz --version 2>&1 | sed 's/pigz //g' )
+            END_VERSIONS
+            """
+        }
     } else if (meta.method == "ATA") {
-        args = meta.rna ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
+        args = meta.RNA ? (task.ext.args_rna ?: '') : (task.ext.args_dna ?: '')
 
-        if (!task.ext.args_rna && meta.rna) {
+        if (!task.ext.args_rna && meta.RNA) {
             log.warn "RNA aligner args not found, using empty string"
         }
-        if (!task.ext.args_dna && !meta.rna) {
+        if (!task.ext.args_dna && !meta.RNA) {
             log.warn "DNA  aligner args not found, using empty string"
         }
         prefix = meta.RNA ? meta.RNA : meta.DNA

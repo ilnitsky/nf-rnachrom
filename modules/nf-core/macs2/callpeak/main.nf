@@ -45,7 +45,7 @@ process MACS2_CALLPEAK {
         args_list.remove(id)
     }
     """
-    macs2 \\
+    macs3 \\
         callpeak \\
         ${args_list.join(' ')} \\
         --gsize $macs2_gsize \\
@@ -56,7 +56,7 @@ process MACS2_CALLPEAK {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        macs2: \$(macs2 --version | sed -e "s/macs2 //g")
+        macs3: \$(macs3 --version | sed -e "s/macs3 //g")
     END_VERSIONS
     """
 }

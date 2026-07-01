@@ -258,8 +258,11 @@ def output_string_modifier(output_string, mode, header_dict, edit_dist_type, exp
         length_statistics(softClipp_NM_statistics_dict, r1_start_new, r1_end_new, r1)
         
     else: #experiment_type == 'OTA_PE'
-        r1_start_new = min(r1_start_new, r2_start_new)
-        r1_end_new = max(r1_end_new, r2_end_new)
+        # Only merge paired-end coordinates when both reads are uniquely mapped;
+        # for UM/MU pairs r2_start_new is a raw string (coordinate_trimmer_by_cigar not called)
+        if pairtype == 'UU':
+            r1_start_new = min(r1_start_new, r2_start_new)
+            r1_end_new = max(r1_end_new, r2_end_new)
         output = "\t".join([
             SRR_ID, pairtype,
             "*", "*", "*", "*", "*", "*", "*",

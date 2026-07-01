@@ -162,6 +162,9 @@ workflow OTA {
      
     ch_gtf = Channel.value(params.annot_GTF)
 
+    ch_blacklist     = params.blacklist ? Channel.fromPath(params.blacklist) : Channel.empty()
+    ch_adapters_file = params.adapters_file ? Channel.fromPath(params.adapters_file) : Channel.fromPath("${projectDir}/bin/adapters/TruSeq3-PE.fa")
+
     if (!params.ch_input_check_reads) {
         FASTQC_FIRST ( ch_input_check_reads )
         ch_versions = ch_versions.mix(FASTQC_FIRST.out.versions.first())
@@ -169,8 +172,14 @@ workflow OTA {
     }
 
     // Removing Adapter sequences
+
     if (!params.skip_fastp_adapters) {
-        FASTP_ADAPTERS ( ch_input_check_reads, true, false, true )   // val adapter_fasta, val save_trimmed_fail, val save_merged, val only_remove_adapters
+        ch_fastp_combine = ch_input_check_reads.combine(ch_adapters_file)
+        FASTP_ADAPTERS (
+            ch_fastp_combine.map { meta, reads, adapters -> [meta, reads] },
+            ch_fastp_combine.map { meta, reads, adapters -> adapters },
+            true, false, true
+        )
         ch_for_dedup    = FASTP_ADAPTERS.out.reads
         ch_adapter_log  = FASTP_ADAPTERS.out.log
         ch_stats        = FASTP_ADAPTERS.out.html
@@ -197,7 +206,7 @@ workflow OTA {
     // Trimming can be done either on compressed fastq file, or on uncompressed.
           
     if (!params.skip_trim) {
-        TRIM ( ch_for_trimming )
+        TRIM ( ch_for_trimming, ch_adapters_file )
         ch_input_align = TRIM.out.reads
         ch_statistic = ch_statistic.concat(TRIM.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
         ch_versions = ch_versions.mix(TRIM.out.versions)
@@ -221,7 +230,7 @@ workflow OTA {
     // ch_for_trimming.view()
 
 
-    ALIGN ( 
+    ALIGN (
         ch_input_align,
         ch_hisat2_index,
         ch_star_index,
@@ -229,7 +238,8 @@ workflow OTA {
         ch_bwa_index,
         ch_splicesites,
         ch_genome_fasta,
-        ch_gtf
+        ch_gtf,
+        params.align_tool
     )
     ch_bam                  = ALIGN.out.bam
     ch_align_log            = ALIGN.out.logs                               
@@ -247,7 +257,10 @@ workflow OTA {
     ch_filtered_contacts    = FILTER_CONTACTS.out.filtered_contacts
     ch_statistic            = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
 
-    BLACKLIST ( ch_filtered_contacts )
+    BLACKLIST ( 
+        ch_filtered_contacts,
+        ch_filtered_contacts.combine(ch_blacklist).map {id, files, blacklist -> blacklist}        
+    )
     ch_blacklisted_contacts =  BLACKLIST.out.macs
     ch_statistic            = ch_statistic.concat(BLACKLIST.out.blacklist.map { id, files -> ["${id.id} (${id.prefix})", "BlacklistedUniqueRawContacts", files.countLines()] })
 
@@ -306,12 +319,15 @@ workflow OTA {
     // ch_input_bed_files     = ch_bed_files.filter { meta, files -> meta.control == '' }.map{ meta, file -> [meta.id, file] }.groupTuple(by: 0)
     // ch_treatment_bed_files = ch_bed_files.filter { meta, files -> meta.control != '' }.map{ meta, file -> [meta.control, file] }.groupTuple(by: 0)
 
-    GENERATE_BINS()
+    GENERATE_BINS(
+        ch_chrom_sizes
+    )
     ch_genome_bins      = GENERATE_BINS.out
 
     SMOOTH_INPUT(
         ch_inputs.map{id, meta, bed -> [meta, bed]},
-        ch_genome_bins.first()
+        ch_genome_bins.first(),
+        ch_chrom_sizes
     )
     ch_input_smoothed   = SMOOTH_INPUT.out.smoothed
     ch_smooth_log       = SMOOTH_INPUT.out.log
@@ -325,6 +341,7 @@ workflow OTA {
         ch_treatments.map{id, meta, bed -> [meta, bed]},
         ch_input_smoothed,
         ch_macs2_peaks,
+        ch_treatments.combine(ch_blacklist).map {id, meta, bed, blacklist -> blacklist},
         ch_genome_bins.first()
     )
 
