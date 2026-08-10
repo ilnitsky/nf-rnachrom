@@ -24,7 +24,7 @@ while getopts "d:i:o:u:m:n:f:r:s:" opt; do
 done
 
 
-SCRIPTSPATH=/data/home/mironov/rnachrom/nf-pipeline/nf-rnachrom/bin
+SCRIPTSPATH="${SCRIPTSPATH:-/data/home/mironov/rnachrom/nf-pipeline/nf-rnachrom/bin}"
 # Check if all required parameters are provided
 if [ -z "$d" ] || [ -z "$input_path" ] || [ -z "$output_path" ] || [ -z "$uu_file" ] || [ -z "$um_file" ] || [ -z "$n_contacts_min" ] || [ -z "$fdr_threshold" ] || [ -z "$input_path_RNAseq" ]; then
     usage
@@ -43,6 +43,11 @@ fi
 
 if [ ! -f "$input_path/$um_file" ]; then
     echo "Error: UM contacts file does not exist: $input_path/$um_file"
+    exit 1
+fi
+
+if [ ! -f "$input_path_RNAseq" ]; then
+    echo "Error: RNA-seq voted contacts file does not exist: $input_path_RNAseq"
     exit 1
 fi
 
@@ -157,10 +162,13 @@ END {
 }' "$input_path/$um_file" > "$output_file_um_dist"
 
 # Create final UU files with headers
-echo "gene_name\tgene_type\tfrom_source\tN_counts" > "$output_file_uu_all"
+# (was `echo "a\tb"` -- bash's builtin echo does NOT interpret \t without -e,
+# so this wrote a literal backslash-t, giving a single malformed header column
+# instead of 4 real tab-separated ones; printf always interprets escapes)
+printf "gene_name\tgene_type\tfrom_source\tN_counts\n" > "$output_file_uu_all"
 cat "$temp_file_uu_all" >> "$output_file_uu_all"
 
-echo "gene_name\tgene_type\tfrom_source\tN_counts" > "$output_file_uu_dist"
+printf "gene_name\tgene_type\tfrom_source\tN_counts\n" > "$output_file_uu_dist"
 cat "$temp_file_uu_dist" >> "$output_file_uu_dist"
 
 # Add header to UM file
@@ -202,13 +210,34 @@ awk -F'\t' '
 
 
 rm "$output_file_um_dist"
-cp "$input_path/counts.tsv" "$output_path"
+
+# Build RNA-seq gene counts.tsv the same way contact gene counts are built
+# above -- input_path_RNAseq is actually a *file* (a RNASEQ-branch
+# *.UU.voted.tab.rc, same 22/23-column schema as the ATA contacts files,
+# just with dna_* columns as "*"), not a pre-built-elsewhere directory as the
+# original usage text assumed. Reuses the exact gene_name(col7)/gene_type(col8)
+# counting logic already proven correct for the contacts side.
+awk -F'\t' '
+NR > 1 {
+    if (!($7 in gene_info)) {
+        gene_info[$7] = $8
+    }
+    genes_all[$7]++
+}
+END {
+    for (gene in genes_all) {
+        print gene "\t" gene_info[gene] "\t" genes_all[gene]
+    }
+}' "$input_path_RNAseq" > "$output_path/counts.tsv.body"
+printf "gene_name\tgene_type\tN_counts\n" > "$output_path/counts.tsv"
+cat "$output_path/counts.tsv.body" >> "$output_path/counts.tsv"
+rm "$output_path/counts.tsv.body"
 
 # Run Python script for different datasets
 python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
-    --input_path_RNAseq "$input_path_RNAseq" \
+    --input_path_RNAseq "$output_path" \
     --counts_RNAseq "counts.tsv" \
     --counts_contacts "counts_contacts_UU_all.tsv" \
     --N_contacts_min "$n_contacts_min" \
@@ -218,7 +247,7 @@ python3 $SCRIPTSPATH/RD_chP.py \
 python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
-    --input_path_RNAseq "$input_path_RNAseq" \
+    --input_path_RNAseq "$output_path" \
     --counts_RNAseq "counts.tsv" \
     --counts_contacts "counts_contacts_UU_filter_dist_${d}.tsv" \
     --N_contacts_min "$n_contacts_min" \
@@ -228,7 +257,7 @@ python3 $SCRIPTSPATH/RD_chP.py \
 python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
-    --input_path_RNAseq "$input_path_RNAseq" \
+    --input_path_RNAseq "$output_path" \
     --counts_RNAseq "counts.tsv" \
     --counts_contacts "counts.tsv" \
     --N_contacts_min "$n_contacts_min" \
@@ -238,7 +267,7 @@ python3 $SCRIPTSPATH/RD_chP.py \
 python3 $SCRIPTSPATH/RD_chP.py \
     --input_path "$output_path" \
     --output_path "$output_path" \
-    --input_path_RNAseq "$input_path_RNAseq" \
+    --input_path_RNAseq "$output_path" \
     --counts_RNAseq "counts.tsv" \
     --counts_contacts "counts_contacts_UU_UM_filter_dist_${d}.tsv" \
     --N_contacts_min "$n_contacts_min" \

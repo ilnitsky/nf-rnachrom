@@ -33,6 +33,9 @@ def processChannelStatistics(ch_statistic) {
         }
         .toList()
         .map { allSamples ->
+            // TEMP DEBUG: dump allSamples right before the crash-prone .max() call
+            // (remove after root-causing)
+            println "DBG[processChannelStatistics] allSamples.size()=${allSamples.size()}  content=${allSamples}"
             def maxWidths = allSamples.collect { it[0].toString().length() }.max()
             def channelWidths = allSamples*.get(1).collectMany { it.keySet() }.unique().collectEntries { [(it): it.toString().length()] }
             allSamples.each { sample, counts -> counts.each { k, v -> channelWidths[k] = Math.max(channelWidths[k], v.toString().length()) } }

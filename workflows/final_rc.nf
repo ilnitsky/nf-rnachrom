@@ -84,6 +84,7 @@ include { FILTER_CONTACTS                        } from '../modules/local/filter
 include { BLACKLIST                              } from '../modules/local/blacklist'
 include { DETECT_STRAND                          } from '../modules/local/detect_strand'
 include { MERGE_REPLICAS                         } from '../modules/local/merge_replicas'
+include { UCARNA_ASSEMBLY                        } from '../modules/local/ucarna_assembly'
 // include { SPLIT_BY_CHRS                          } from '../modules/local/split_by_chrs'
 // include { ANNOTATION_VOTING                      } from '../modules/local/annotation'
 include { FINAL_ANNOTATION as  ANNOTATION        } from '../modules/local/annotation'
@@ -176,6 +177,8 @@ workflow ATA {
         
         // ch_statistic     = ch_statistic.concat(FASTP_ADAPTERS.out.reads.map { id, files -> [[id.id, id.prefix], ["Adapters", files instanceof List ? files[0].countFastq() : files.countFastq()] ] }) 
         ch_statistic     = ch_statistic.concat(FASTP_ADAPTERS.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Adapters", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+        // TEMP DEBUG: trace ch_statistic after each stage (remove after root-causing)
+
 
         if (!params.ch_input_check_reads) {
             FASTQC_FIRST ( ch_input_check_reads )
@@ -189,7 +192,6 @@ workflow ATA {
             ch_for_dedup     = SMARTSEQ_FILTER.out.fastq
             // ch_statistic     = ch_statistic.concat(SMARTSEQ_FILTER.out.fastq.map { id, files -> [[id.id, id.prefix], ["SmartSeqFilter", files instanceof List ? files[0].countFastq() : files.countFastq()] ] })
             ch_statistic     = ch_statistic.concat(SMARTSEQ_FILTER.out.fastq.map { id, files -> ["${id.id} (${id.prefix})", "SmartSeqFilter", files instanceof List ? files[0].countFastq() : files.countFastq()] })
-        
         }
         
         // DEDUPLICATION -------------------------------------------------------------------------------------  
@@ -221,6 +223,7 @@ workflow ATA {
             // ch_report join moved to after FASTQC_AFTER to match bridge case tuple positions
             // ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> [[id.id, id.prefix], ["RestrSites", dna.countFastq()] ] } )
             ch_statistic       = ch_statistic.concat(RSITES.out.fastq.map { id, rna, dna -> ["${id.id} (${id.prefix})", "RestrSites", dna.countFastq()] } )
+            ch_statistic.view()
         }
 
         // TRIMMING ------------------------------------------------------------------------------------------
@@ -298,7 +301,6 @@ workflow ATA {
             ch_gtf,
             params.rna_align_tool
         )
-        RNA_ALIGN.out.logs.view()
         ch_rna_bam = RNA_ALIGN.out.bam
         ch_report   = ch_report.join(RNA_ALIGN.out.logs.map{ meta, log -> [[meta.id, meta.prefix], log] }, by: 0)                             
         ch_versions     =  ch_versions.mix(RNA_ALIGN.out.versions)
@@ -352,7 +354,7 @@ workflow ATA {
     ch_report          = ch_report.join(FILTER_CONTACTS.out.png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     // ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> [[id.id, id.prefix], ["FilteredUniqueRawContacts", files.countLines()] ] })
     ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
-
+    ch_statistic.view()
 
     if (params.run_blacklist) {
         BLACKLIST ( ch_filtered_contacts )
@@ -399,6 +401,32 @@ workflow ATA {
     MERGE_REPLICAS ( ch_files_fixed_strand.map { meta, files -> [["id":meta.id, "rnaseq":meta.rnaseq], files ] }.groupTuple(by: 0) )
     ch_input_annotation     = MERGE_REPLICAS.out
     ch_statistic_merged    = ch_statistic_merged.concat(MERGE_REPLICAS.out.map { id, tab -> [id, "MergedReplicas", tab.countLines()] } )
+
+    // UCARNA ASSEMBLY -------------------------------------------------------------------------------
+    /*
+     *   Assembles ucaRNAs (StringTie + Poisson p-value) straight from the RNA-part
+     *   alignment bam (ch_rna_bam) and the UU/UM read ids that passed the
+     *   EditDistance-CIGAR filter (FILTER_CONTACTS.out.ucarna_id). Grouped by the same
+     *   {id, rnaseq} key MERGE_REPLICAS uses, so ucarna_assembly.sh merges the exact same
+     *   set of technical-replicate bams into biological replicates that MERGE_REPLICAS
+     *   merges for contacts. Strand flips flagged by DETECT_STRAND are applied by hand to
+     *   this module's output afterwards, not here - see ucarna_assembly.sh header.
+     */
+    if (params.run_ucarna_assembly) {
+        ch_ucarna_bam = ch_rna_bam.map { meta, bam ->
+            [["id":meta.id, "prefix":meta.prefix, "method":meta.method, "rnaseq":meta.rnaseq], bam]
+        }
+        ch_ucarna_input = ch_ucarna_bam
+            .join(ch_ucarna_id, by: 0)
+            .map { meta, bam, ids -> [["id":meta.id, "rnaseq":meta.rnaseq], bam, ids] }
+            .groupTuple(by: 0)
+        ch_ucarna_combine = ch_ucarna_input.combine(ch_gtf)
+
+        UCARNA_ASSEMBLY (
+            ch_ucarna_combine.map { meta, bams, ids, gtf -> [meta, bams, ids] },
+            ch_ucarna_combine.map { meta, bams, ids, gtf -> gtf }
+        )
+    }
 
     // if (params.split_by_chromosomes) {
     //     SPLIT_BY_CHRS( ch_input_annotation )
@@ -467,22 +495,43 @@ workflow ATA {
     if (has_rnaseq) {
         ch_col = ch_uu_voted.collect()
 
-       ch_ata_with_rnaseq = ch_uu_voted
-        .map { meta, ata -> [ meta.rnaseq, meta, ata ] }
-        .cross( ch_rnaseq_results.map { m, f -> [ m.rnaseq, f ] })
-        // .map { group, meta, ata_file, rnaseq_file -> [ meta, ata_file, rnaseq_file ] }
- 
-        
-    //     // Apply chromatin potential normalization
-       CHROMATIN_POTENTIAL (
-           ch_ata_with_rnaseq.map { contacts, rnaseq -> [contacts[1], contacts[2]] },
-           ch_ata_with_rnaseq.map { contacts, rnaseq -> rnaseq[1] },
-           ch_chrom_sizes
-       )
-        
-       ch_normalized_contacts = CHROMATIN_POTENTIAL.out.normalized_contacts
-       ch_normalization_stats = CHROMATIN_POTENTIAL.out.stats
-       ch_versions = ch_versions.mix(CHROMATIN_POTENTIAL.out.versions)
+        // UU and UM voted contacts come from the same ANNOTATION call (same
+        // meta, two output channels) -- join them first so CHROMATIN_POTENTIAL
+        // gets real UM data instead of the UU file passed twice for both -u/-m.
+        // Original (UM never wired in, -u/-m ended up pointing at the same
+        // UU file inside modules/local/chromatin_potential.nf), kept for reference:
+        // ch_ata_with_rnaseq = ch_uu_voted
+        //  .map { meta, ata -> [ meta.rnaseq, meta, ata ] }
+        //  .cross( ch_rnaseq_results.map { m, f -> [ m.rnaseq, f ] })
+        //  // .map { group, meta, ata_file, rnaseq_file -> [ meta, ata_file, rnaseq_file ] }
+        ch_uu_um_voted = ch_uu_voted.join(ch_um_voted, by: 0)
+
+        ch_ata_with_rnaseq = ch_uu_um_voted
+         .map { meta, uu, um -> [ meta.rnaseq, meta, uu, um ] }
+         .cross( ch_rnaseq_results.map { m, f -> [ m.rnaseq, f ] })
+         // .map { group, meta, uu_file, um_file, rnaseq_file -> [ meta, uu_file, um_file, rnaseq_file ] }
+
+        // Apply chromatin potential normalization
+        // Original call, kept for reference:
+        // CHROMATIN_POTENTIAL (
+        //     ch_ata_with_rnaseq.map { contacts, rnaseq -> [contacts[1], contacts[2]] },
+        //     ch_ata_with_rnaseq.map { contacts, rnaseq -> rnaseq[1] },
+        //     ch_chrom_sizes
+        // )
+        CHROMATIN_POTENTIAL (
+            ch_ata_with_rnaseq.map { contacts, rnaseq -> [contacts[1], contacts[2], contacts[3]] },
+            ch_ata_with_rnaseq.map { contacts, rnaseq -> rnaseq[1] },
+            ch_chrom_sizes
+        )
+
+        // Renamed to match modules/local/chromatin_potential.nf's corrected
+        // output: block (the real files are chP/chP_*.tab and chP/chP_*.png,
+        // not *.normalized.tab / *.stats.txt as originally declared).
+        // ch_normalized_contacts = CHROMATIN_POTENTIAL.out.normalized_contacts
+        // ch_normalization_stats = CHROMATIN_POTENTIAL.out.stats
+        ch_normalized_contacts = CHROMATIN_POTENTIAL.out.chp_tables
+        ch_normalization_stats = CHROMATIN_POTENTIAL.out.chp_plots
+        ch_versions = ch_versions.mix(CHROMATIN_POTENTIAL.out.versions)
         
     //     // Use normalized contacts for downstream analysis
     //    ch_input_annotation = ch_normalized_contacts.map { meta, file -> [meta.id, file] }

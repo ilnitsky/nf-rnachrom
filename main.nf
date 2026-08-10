@@ -97,6 +97,7 @@ workflow RNACHROM {
     ch_input_check_reads = INPUT_CHECK.out.reads
     ch_rnaseq_reads      = INPUT_CHECK.out.rnaseq_reads.ifEmpty { Channel.empty() }
     ch_statistic         = ch_statistic.concat(INPUT_CHECK.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Raw", files instanceof List ? files[0].countFastq() : files.countFastq()] })
+    // TEMP DEBUG: trace ch_statistic after each stage (remove after root-causing)
     ch_versions          = ch_versions.mix(INPUT_CHECK.out.versions)
 
 

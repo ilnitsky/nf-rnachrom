@@ -17,18 +17,26 @@ process BARDIC {
    // memory '15 GB'
 
     input:
-    tuple val(name), path(voted_merged)
+    // Original interpolated `name` (the raw meta map, not meta.id) directly
+    // into filenames below -- `${name}` stringified to something like
+    // "[id:K562_CTCF_RedChIP, rnaseq:rnaseq_redchip_hs_k562]", and the
+    // unescaped brackets/space/comma broke every downstream shell command
+    // (confirmed via .command.err: "uniq: 'rnaseq:...].4-pc.txt': No such
+    // file or directory" on every combo, every run -- BARDIC has never
+    // produced output, only masked by errorStrategy 'ignore').
+    // tuple val(name), path(voted_merged)
+    tuple val(meta), path(voted_merged)
     path(annot)
     path(chromsizes)
 
     output:
-    tuple val(name), path("*")
+    // tuple val(name), path("*")
+    tuple val(meta), path("*")
 
     script:
-
     """
 
-    grep -w 'protein_coding' ${voted_merged} | awk '{print \$7}' | sort | uniq > ${name}.4-pc.txt
+    grep -w 'protein_coding' ${voted_merged} | awk '{print \$7}' | sort | uniq > ${meta.id}.4-pc.txt
 
     # Only unique genes from annotation, remove forbidden characters
     awk -F"\\t" 'OFS="\\t" {if (!seen[\$4]++) print \$1, \$2, \$3, \$4, ".", "."}' ${annot} \\
@@ -38,9 +46,21 @@ process BARDIC {
     > bed6_${annot}
 
     # Only unique genes from voted_merged
-    sed 1d ${voted_merged} | awk -F"\\t" '{OFS=FS} {print \$3, \$4, \$5, \$7, \$12, \$6};' > ${name}.4-for_peaks.bed 
+    # Original pulled RNA-side coords/strand/mapq (\$3,\$4,\$5=rna_chr/rna_start/
+    # rna_end, \$12=rna_mapq, \$6=rna_strand) -- but bardic's own CLI docs say
+    # this file must hold DNA-part coordinates (name column = RNA id), so
+    # every "peak" was just the RNA's own gene body, never its actual DNA
+    # contact site. Also skipped the tr -d '/' | tr -d '\' stripping the
+    # annotation file gets, so gene names with those characters (e.g.
+    # "mgU12-22/U4-8" vs "mgU12-22U4-8") mismatched and crashed BaRDIC's
+    # validate_dna_frame.
+    # sed 1d ${voted_merged} | awk -F"\\t" '{OFS=FS} {print \$3, \$4, \$5, \$7, \$12, \$6};' > ${meta.id}.4-for_peaks.bed
+    sed 1d ${voted_merged} | awk -F"\\t" '{OFS=FS} {print \$13, \$14, \$15, \$7, \$19, \$16};' \\
+    | tr -d '/' \\
+    | tr -d '\\' \\
+    > ${meta.id}.4-for_peaks.bed
 
-    bardic run ${name}.4-for_peaks.bed bed6_${annot} ./${chromsizes} ${name}.4-pc.txt  ./peaks \\
+    bardic run ${meta.id}.4-for_peaks.bed bed6_${annot} ./${chromsizes} ${meta.id}.4-pc.txt  ./peaks \\
         --min_contacts 1000  \\
         --trans_min 10000    \\
         --trans_max 1000000  \\

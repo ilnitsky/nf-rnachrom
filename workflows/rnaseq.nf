@@ -81,6 +81,8 @@ workflow RNASEQ {
         ch_input_align = TRIM_RNASEQ.out.reads
         ch_statistic = ch_statistic.concat(TRIM_RNASEQ.out.reads.map { id, files -> ["${id.id} (${id.prefix})", "Trimming", files instanceof List ? files[0].countFastq() : files.countFastq()] })
         ch_versions = ch_versions.mix(TRIM_RNASEQ.out.versions)
+
+ 
     } else {
         ch_input_align = ch_for_trimming
     }
@@ -108,6 +110,8 @@ workflow RNASEQ {
     ch_align_log = RNASEQ_ALIGN.out.logs
     ch_versions = ch_versions.mix(RNASEQ_ALIGN.out.versions)
 
+
+    ch_statistic.view()
     // BAM TO CONTACTS
     BAM_TO_CONTACTS (
         ch_bam.map { meta, bam -> 
@@ -127,7 +131,7 @@ workflow RNASEQ {
     ch_ucarna_id         = FILTER_CONTACTS.out.ucarna_id
     ch_report          = ch_report.join(FILTER_CONTACTS.out.png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     // ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> [[id.id, id.prefix], ["FilteredUniqueRawContacts", files.countLines()] ] })
-    // ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
+    ch_statistic        = ch_statistic.concat(FILTER_CONTACTS.out.filtered_contacts.map { id, files -> ["${id.id} (${id.prefix})", "FilteredUniqueRawContacts", files.countLines()] })
 
     ch_detect_combine = ch_detect.combine(ch_gtf).combine(ch_ds_gene_list)
 
@@ -141,7 +145,7 @@ workflow RNASEQ {
     ch_strand_vote_png    = DETECT_STRAND.out.strand_vote_png
     ch_report          = ch_report.join(DETECT_STRAND.out.strand_vote_png.map{ meta, png -> [[meta.id, meta.prefix], png] }, by: 0)
     
- 
+  
     // MERGING REPLICATES-----------------------------------------------------------------------------
        /*
         *    Merging based on samplesheet.csv IDs

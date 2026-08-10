@@ -148,9 +148,10 @@ def create_rnaseq_channel(LinkedHashMap row) {
     meta.single_end = row.single_end.toBoolean()
     meta.prefix     = extractPrefix(new File(r1).getName())
     meta.method     = "RNA-seq"
-    meta.rnaseq     = "None"
+    // self-referential: ATA/OTA rows tag themselves with rnaseq:"rnaseq_<group>" matching this row's own sample name exactly
+    meta.rnaseq     = meta.id
     meta.group      = row.sample.replace("rnaseq_", "")  // Extract the group name without the prefix
-    
+
     // Parse description field if it exists
     if (row.containsKey("description") && row.description) {
         parseDescription(row.description, meta)
@@ -175,8 +176,17 @@ def create_rnaseq_channel(LinkedHashMap row) {
 // Helper function to parse the description field
 def parseDescription(String description, Map meta) {
     if (!description) return
-    
-    description.split(';').each { item ->
+
+    def desc = description.trim()
+    // Nextflow's splitCsv(header:true, sep:',') does not do CSV quote-unescaping,
+    // so a field written with standard CSV outer-quoting (e.g. "key:""value""")
+    // arrives here verbatim, literal quotes and all. Undo that encoding first so
+    // both quoted and bare (key:"value") description fields parse identically.
+    if (desc.length() >= 2 && desc.startsWith('"') && desc.endsWith('"')) {
+        desc = desc.substring(1, desc.length() - 1).replace('""', '"')
+    }
+
+    desc.split(';').each { item ->
         def keyValue = item.trim().split(':', 2)
         if (keyValue.size() == 2) {
             def key = keyValue[0].trim()

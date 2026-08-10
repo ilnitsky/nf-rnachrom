@@ -48,7 +48,21 @@ process NORMALISATION {
     END
 
 
-    awk '\$8 == "protein_coding" && \$3 != \$13 { print \$13, \$14, \$15, \$1 }' OFS='\\t' ${voted} > ${voted}.bg.bed
+    # Background model needs trans-contacts (RNA and DNA on different chromosomes)
+    # as a proxy for random/non-specific ligation. Single-chromosome genomes
+    # (bacteria) can never satisfy \$3 != \$13, so the background is always
+    # empty there and Smoother fails with "profile contains only zeros".
+    # Fix: fall back to far-apart cis-contacts (same chromosome, but farther
+    # apart than normalisation_cis_bg_mindist) as an equivalent background
+    # proxy -- at large enough genomic distance, contact frequency decays to
+    # the same background level trans-contacts represent. Opt-in only
+    # (params.normalisation_cis_bg_mindist defaults to 0 => disabled): with
+    # mindist=0 the added clause is always false, so this is byte-for-byte
+    # identical to the original line for every organism that doesn't set it.
+    # Original line, kept for reference:
+    # awk '\$8 == "protein_coding" && \$3 != \$13 { print \$13, \$14, \$15, \$1 }' OFS='\\t' ${voted} > ${voted}.bg.bed
+    
+    awk -v mindist="${params.normalisation_cis_bg_mindist ?: 0}" '\$8 == "protein_coding" && (\$3 != \$13 || (mindist > 0 && \$3 == \$13 && (\$14 > \$4 + mindist || \$4 > \$14 + mindist))) { print \$13, \$14, \$15, \$1 }' OFS='\\t' ${voted} > ${voted}.bg.bed
 
     Smoother cfg="smoother.cfg" ${voted}.bg.bed
 
