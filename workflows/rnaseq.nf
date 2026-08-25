@@ -20,7 +20,6 @@ workflow RNASEQ {
     take:
     ch_rnaseq_reads      // channel: [ val(meta), [ reads ] ]
     ch_chrom_sizes       // channel: /path/to/chrom.sizes
-    ch_statistic         // channel for statistics
     ch_hisat2_index      // HISAT2 index
     ch_star_index        // STAR index
     ch_bowtie2_index     // Bowtie2 index
@@ -31,6 +30,7 @@ workflow RNASEQ {
     main:
     ch_versions = Channel.empty()
     ch_report = Channel.empty()
+    ch_statistic = Channel.empty()
     ch_statistic_merged = Channel.empty()
 
     ch_genome_fasta = Channel.value(params.genome_fasta)
@@ -167,6 +167,7 @@ workflow RNASEQ {
     emit:
     annotated_rnaseq = ch_uu_voted       // channel: [group_id, annotated_file]
     versions = ch_versions            // channel: [versions.yml]
+    statistic = ch_statistic          // channel: [sample_label, stage, count]
 }
 
 /*

@@ -200,6 +200,7 @@ workflow RNACHROM {
 
     // Process RNA-seq reads based on detection in input file
     ch_rnaseq_results = Channel.value([])  // Default empty value
+    ch_rnaseq_statistic = Channel.empty()  // Default empty value
 
     // check for exp_type correctness (should be from the list of allowed values)
     if (params.exp_type !in ['rap', 'chirp', 'chart', 'grid', 'char', 'radicl', 'imargi', 'redc', 'redchip']) {
@@ -226,9 +227,8 @@ workflow RNACHROM {
         // Run RNA-seq workflow if RNA-seq samples were detected in the input
         if (has_rnaseq) {
             RNASEQ(
-                ch_rnaseq_reads, 
-                ch_chrom_sizes, 
-                ch_statistic,
+                ch_rnaseq_reads,
+                ch_chrom_sizes,
                 ch_hisat2_index,
                 ch_star_index,
                 ch_bowtie2_index,
@@ -236,15 +236,17 @@ workflow RNACHROM {
                 ch_splicesites
             )
             ch_rnaseq_results = RNASEQ.out.annotated_rnaseq
+            ch_rnaseq_statistic = RNASEQ.out.statistic
             ch_versions = ch_versions.mix(RNASEQ.out.versions)
         }
         
-        ATA ( 
-            ch_reads, 
-            ch_chrom_sizes, 
-            ch_statistic, 
-            ch_versions, 
+        ATA (
+            ch_reads,
+            ch_chrom_sizes,
+            ch_statistic,
+            ch_versions,
             ch_rnaseq_results,
+            ch_rnaseq_statistic,
             ch_hisat2_index,
             ch_star_index,
             ch_bowtie2_index,

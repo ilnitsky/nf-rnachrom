@@ -126,6 +126,7 @@ workflow ATA {
     ch_statistic
     ch_versions
     ch_rnaseq_results
+    ch_rnaseq_statistic
     ch_hisat2_index
     ch_star_index
     ch_bowtie2_index
@@ -371,6 +372,8 @@ workflow ATA {
        
 
 
+    ch_statistic = ch_statistic.mix(ch_rnaseq_statistic)
+
     processChannelStatistics(ch_statistic).set { sample_statistic_table }
 
     ch_m = sample_statistic_table.subscribe { table ->
@@ -405,12 +408,14 @@ workflow ATA {
     // UCARNA ASSEMBLY -------------------------------------------------------------------------------
     /*
      *   Assembles ucaRNAs (StringTie + Poisson p-value) straight from the RNA-part
-     *   alignment bam (ch_rna_bam) and the UU/UM read ids that passed the
-     *   EditDistance-CIGAR filter (FILTER_CONTACTS.out.ucarna_id). Grouped by the same
-     *   {id, rnaseq} key MERGE_REPLICAS uses, so ucarna_assembly.sh merges the exact same
-     *   set of technical-replicate bams into biological replicates that MERGE_REPLICAS
-     *   merges for contacts. Strand flips flagged by DETECT_STRAND are applied by hand to
-     *   this module's output afterwards, not here - see ucarna_assembly.sh header.
+     *   alignment bam (ch_rna_bam), the UU/UM read ids that passed the
+     *   EditDistance-CIGAR filter (FILTER_CONTACTS.out.ucarna_id), and each
+     *   replicate's DETECT_STRAND vote (ch_strand_vote_result) so ucarna_assembly.sh
+     *   can correct FLAG-derived strand per replicate before assembly (ANTI votes are
+     *   the norm, not the exception, in this data - see ucarna_assembly.sh header).
+     *   Grouped by the same {id, rnaseq} key MERGE_REPLICAS uses, so ucarna_assembly.sh
+     *   merges the exact same set of technical-replicate bams into biological
+     *   replicates that MERGE_REPLICAS merges for contacts.
      */
     if (params.run_ucarna_assembly) {
         ch_ucarna_bam = ch_rna_bam.map { meta, bam ->
@@ -418,13 +423,14 @@ workflow ATA {
         }
         ch_ucarna_input = ch_ucarna_bam
             .join(ch_ucarna_id, by: 0)
-            .map { meta, bam, ids -> [["id":meta.id, "rnaseq":meta.rnaseq], bam, ids] }
+            .join(ch_strand_vote_result, by: 0)
+            .map { meta, bam, ids, votes -> [["id":meta.id, "rnaseq":meta.rnaseq], bam, ids, votes] }
             .groupTuple(by: 0)
         ch_ucarna_combine = ch_ucarna_input.combine(ch_gtf)
 
         UCARNA_ASSEMBLY (
-            ch_ucarna_combine.map { meta, bams, ids, gtf -> [meta, bams, ids] },
-            ch_ucarna_combine.map { meta, bams, ids, gtf -> gtf }
+            ch_ucarna_combine.map { meta, bams, ids, votes, gtf -> [meta, bams, ids, votes] },
+            ch_ucarna_combine.map { meta, bams, ids, votes, gtf -> gtf }
         )
     }
 

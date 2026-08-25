@@ -6,18 +6,30 @@ set -euo pipefail
 # assembled ucaRNA with a Poisson p-value (Gogolevskaya et al. approach).
 #
 # Each technical replicate is passed as one BAM + one read-id list (ids that
-# passed the EditDistance-CIGAR filter); all technical replicates belonging
-# to the same biological replicate are merged into one BAM before assembly
-# (more reads -> less sparse -> StringTie assembles better). Strand
-# orientation is assumed already correct: if detect-strand flagged a
-# replicate for a flip, that flip is applied by hand to this module's
-# *output* afterwards, not here.
+# passed the EditDistance-CIGAR filter) + one DETECT_STRAND *_wins.tsv vote
+# file; all technical replicates belonging to the same biological replicate
+# are merged into one BAM before assembly (more reads -> less sparse ->
+# StringTie assembles better). Before anything strand-aware happens, a
+# replicate whose vote is ANTI gets SAM FLAG 0x10 (the reverse-strand bit)
+# toggled on every read - the interpreted strand was systematically inverted
+# for that replicate, so this is a real correction, not a hack. Only the FLAG
+# bit is touched (SEQ/QUAL/CIGAR/POS/tags untouched); that's exactly correct
+# for the ~98-99% of unspliced reads this assay produces (short MmeI-type
+# fragments), and only risks an XS-tag/FLAG mismatch for the rare (~1-2%)
+# spliced reads, whose XS tag is derived from genome splice motif, not FLAG.
+# A full SEQ/CIGAR/QUAL reverse-complement (the "remap after RC'ing the
+# fastq" approach) was tried previously and produced bad StringTie results -
+# see the design doc's "Strand Problem and Solution" section - but that was
+# on the full unsplit read population; restricted to the FLAG bit alone and
+# combined with the plus/minus split below, that specific failure mode does
+# not apply here.
 
 usage() {
-    echo "Usage: $0 -g <annotation.gtf> -p <prefix> -o <outdir> -t <threads> -b <bam1> -i <ids1> [-b <bam2> -i <ids2> ...] [-x <genome_suffix>]"
+    echo "Usage: $0 -g <annotation.gtf> -p <prefix> -o <outdir> -t <threads> -b <bam1> -i <ids1> -v <votes1> [-b <bam2> -i <ids2> -v <votes2> ...] [-x <genome_suffix>]"
     echo "  -g  GTF gene annotation (used both as StringTie guide and as the exclusion filter)"
-    echo "  -b  RNA-part BAM for one technical replicate (repeatable, paired in order with -i; all -b bams are merged before assembly)"
+    echo "  -b  RNA-part BAM for one technical replicate (repeatable, paired in order with -i/-v; all -b bams are merged before assembly)"
     echo "  -i  Read-id list (one id per line) for the matching -b BAM (repeatable)"
+    echo "  -v  DETECT_STRAND *_wins.tsv vote file for the matching -b BAM (repeatable); ANTI flips FLAG 0x10 on every read before filtering"
     echo "  -p  Output name prefix, e.g. 'uca' (default: uca)"
     echo "  -x  Optional suffix appended to ucaRNA names, e.g. genome build 'hg38'"
     echo "  -o  Output directory (default: ./ucarna_out)"
@@ -31,12 +43,14 @@ OUTDIR="./ucarna_out"
 THREADS=1
 BAMS=()
 IDS=()
+VOTES=()
 
-while getopts "g:b:i:p:x:o:t:h" opt; do
+while getopts "g:b:i:v:p:x:o:t:h" opt; do
     case "$opt" in
         g) GTF="$OPTARG";;
         b) BAMS+=("$OPTARG");;
         i) IDS+=("$OPTARG");;
+        v) VOTES+=("$OPTARG");;
         p) PREFIX="$OPTARG";;
         x) SUFFIX="$OPTARG";;
         o) OUTDIR="$OPTARG";;
@@ -49,6 +63,7 @@ done
 [ -z "${GTF:-}" ] && usage
 [ "${#BAMS[@]}" -eq 0 ] && usage
 [ "${#BAMS[@]}" -ne "${#IDS[@]}" ] && { echo "Error: -b and -i counts must match (one id list per bam)."; exit 1; }
+[ "${#VOTES[@]}" -gt 0 ] && [ "${#BAMS[@]}" -ne "${#VOTES[@]}" ] && { echo "Error: -v count must match -b count when any -v is given."; exit 1; }
 
 mkdir -p "$OUTDIR"
 WORK=$(mktemp -d "${OUTDIR%/}/.work.XXXXXX")
@@ -92,8 +107,9 @@ awk -F'\t' 'NR>5 && $3=="gene" {
 GUIDE_GTF="$WORK/guide.gtf"
 awk -F'\t' '/^#/ || (($3=="transcript" || $3=="exon") && ($7=="+" || $7=="-" || $7=="."))' "$GTF" > "$GUIDE_GTF"
 
-# 2. Per replicate: keep only CIGAR-filter-passing reads, drop reads overlapping
-#    known genes (same strand), sort+index. This mirrors the input-side gene
+# 2. Per replicate: correct FLAG-derived strand per the DETECT_STRAND vote,
+#    keep only CIGAR-filter-passing reads, drop reads overlapping known
+#    genes (same strand), sort+index. This mirrors the input-side gene
 #    exclusion filter used by the fastq/RC path, applied directly to the BAM.
 FILTERED_BAMS=()
 mkdir -p "$WORK/filtered"
@@ -103,6 +119,26 @@ for idx in "${!BAMS[@]}"; do
     name=$(basename "$bam" .bam)
     id_filtered="$WORK/filtered/${name}.ids.bam"
     gene_filtered="$WORK/filtered/${name}.bam"
+
+    # DIAGNOSTIC DISABLE (2026-08-21): commented out at the user's request to
+    # A/B-check that this block, specifically, is what's driving ucaRNA counts
+    # down to single digits post strand-correction (see
+    # 2026-08-21-ucarna-strand-correction-critical-fix.md) - 0-10 ucaRNAs per
+    # replicate seemed suspiciously low, wanted to confirm by reverting just
+    # this step and re-running rather than assume. Re-enable by uncommenting.
+    # if [ "${#VOTES[@]}" -gt 0 ]; then
+    #     vote_file="${VOTES[$idx]}"
+    #     # *_wins.tsv: header + one data row, last field is SAME/ANTI/UNKNOWN.
+    #     decision=$(tail -n +2 "$vote_file" | awk -F'\t' '{d=$NF} END{print d}')
+    #     if [ "$decision" = "ANTI" ]; then
+    #         log "$bam: DETECT_STRAND vote is ANTI, flipping FLAG 0x10 on every read"
+    #         strand_fixed="$WORK/filtered/${name}.strandfix.bam"
+    #         samtools view -h "$bam" \
+    #             | awk -F'\t' -v OFS='\t' '/^@/{print; next} {$2 = xor($2, 16); print}' \
+    #             | samtools view -b -o "$strand_fixed" -
+    #         bam="$strand_fixed"
+    #     fi
+    # fi
 
     # id_reads_for_ucaRNAs_*.tab.rc is "read_id\tpairtype" with a header row
     # (EditDistance_CIGAR_filter.py); samtools -N wants a bare, header-less id list.
@@ -136,9 +172,33 @@ else
     MERGED_BAM="${FILTERED_BAMS[0]}"
 fi
 
+# 3b. Split the merged bam by SAM FLAG 0x10 (0 = forward/plus strand,
+# 16 = reverse-complemented/minus strand) and assemble each strand
+# separately, only concatenating the resulting transcripts afterward.
+# StringTie infers a transcript's strand per-record from splice evidence
+# (XS tag) when present, but falls back to guessing for single-exon/
+# unspliced reads when a mixed-strand bam is handed to it in one run -
+# splitting first removes that ambiguity entirely: every read in
+# plus.bam/minus.bam is only ever assembled against its own true strand.
+PLUS_BAM="$WORK/plus.bam"
+MINUS_BAM="$WORK/minus.bam"
+samtools view -b -F 16 "$MERGED_BAM" > "$PLUS_BAM"
+samtools view -b -f 16 "$MERGED_BAM" > "$MINUS_BAM"
+
 MERGED_GTF="$WORK/merged.gtf"
-log "Running stringtie on the merged replicas bam"
-stringtie -o "$MERGED_GTF" -G "$GUIDE_GTF" -p "$THREADS" "$MERGED_BAM"
+: > "$MERGED_GTF"
+for strand_bam in "$PLUS_BAM" "$MINUS_BAM"; do
+    n_reads=$(samtools view -c "$strand_bam")
+    if [ "$n_reads" -eq 0 ]; then
+        log "$(basename "$strand_bam"): no reads, skipping stringtie"
+        continue
+    fi
+    samtools index "$strand_bam"
+    strand_gtf="$WORK/$(basename "$strand_bam" .bam).gtf"
+    log "Running stringtie on $(basename "$strand_bam") ($n_reads reads)"
+    stringtie -o "$strand_gtf" -G "$GUIDE_GTF" -p "$THREADS" "$strand_bam"
+    cat "$strand_gtf" >> "$MERGED_GTF"
+done
 
 if ! awk -F'\t' '!/^#/ && $3=="transcript"{found=1; exit} END{exit !found}' "$MERGED_GTF"; then
     write_empty_outputs_and_exit "No transcripts assembled from the merged replicas bam"
