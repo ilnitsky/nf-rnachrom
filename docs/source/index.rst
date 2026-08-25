@@ -22,19 +22,31 @@ Key Features
 Pipeline Modules
 ----------------
 
-`RNAchrom` includes a variety of modules that can be utilized as needed in the workflow:
+`RNAchrom` includes a variety of modules that can be utilized as needed in the workflow --
+see :doc:`modules_reference` for the full per-module reference:
 
-============ ==============================================
-Module       Description
-============ ==============================================
-INPUT_CHECK  Validates and stages input samples.
-DEDUP        Deduplicates sequencing reads.
-TRIM         Trims sequencing reads to remove adaptors and low-quality bases.
-ALIGN        Aligns reads to the reference genome.
-ANNOTATE     Conducts annotation voting for the DNA segments.
-MACS2        Identifies significant peaks in RNA-DNA interaction data.
-MULTIQC      Aggregates results across multiple samples for comparative analysis.
-============ ==============================================
+==================== ==============================================
+Module               Description
+==================== ==============================================
+SAMPLESHEET_CHECK    Validates and stages input samples.
+DEDUP                Deduplicates sequencing reads (fastq-dupaway / fastuniq / clumpify / seqkit_rmdup).
+FASTP / TRIM         Trims adapters and low-quality bases (fastp / TrimGalore / Trimmomatic).
+SMARTSEQ_FILTER      GGG-filter for Red-C raw reads.
+PEAR / BBMERGE       Merges overlapping paired-end reads before bridge search.
+BITAP_DEBRIDGE       Separates RNA and DNA parts by bridge sequence (also: chartools debridger).
+RSITES               Applies restriction-site trimming pattern to RNA/DNA parts.
+ALIGN                Aligns RNA and DNA parts to the reference genome (HISAT2 / STAR / BWA-MEM / Bowtie2).
+BAM_TO_CONTACTS      Joins aligned RNA and DNA BAMs into raw contact pairs.
+FILTER_CONTACTS      Filters contacts by edit distance and CIGAR pattern.
+DETECT_STRAND        Votes and corrects RNA-part strand orientation.
+ANNOTATION           Annotation voting for RNA parts of contacts (two variants: old / smart).
+BLACKLIST            Removes contacts overlapping a blacklist BED.
+BARDIC / MACS2       Identifies significant peaks of chromatin-interacting RNAs (ATA / OTA).
+NORMALISATION        Background-model normalisation of contacts (ATA).
+CHROMATIN_POTENTIAL  Computes chromatin potential per RNA from UU/UM contacts + RNA-seq.
+UCARNA_ASSEMBLY      Assembles unannotated chromatin-associated RNAs (ucaRNAs) with StringTie.
+MULTIQC              Aggregates results across multiple samples for comparative analysis.
+==================== ==============================================
 
 Contents:
 
@@ -46,11 +58,12 @@ Contents:
 .. toctree::
    :maxdepth: 3
 
-   quickstart
    installation
    input
    configuration
    stages
+   modules_reference
+   experiment_types
    results
 
 .. toctree::

@@ -3,6 +3,9 @@ Stages of  Data Analysis
 
 This pipeline outlines the key stages for analyzing all-to-all interactome sequencing data, focusing on the steps that lead to the final results of RNA-DNA contact pairs, RNA annotation, and significant peaks of chromatin-interacting RNAs.
 
+For the exact Nextflow process behind each stage below (inputs/outputs, the script/binary it
+calls, config parameters, and known caveats), see :doc:`modules_reference`.
+
 1. Input and Preprocessing
 --------------------------
 * Read input data (FASTQ files) and validate sample information
@@ -50,8 +53,8 @@ search from charseq https://github.com/straightlab/chartools/tree/main/Jchartool
 
 - DNA Sequence Start (\*): Begin your DNA sequence with the ``*`` symbol to indicate the start of the DNA part.
 
-- Add Sequence (`+[CATG]`): Use the + operator followed by the sequence you want to add in square brackets. For example, +[CATG]* means you are adding the sequence "CATG" 
-to the 5' of the DNA part.
+- Add Sequence (`+[CATG]`): Use the + operator followed by the sequence you want to add in square brackets. For example, +[CATG]* means you are adding the sequence "CATG"
+  to the 5' of the DNA part.
 
 
 
@@ -67,52 +70,52 @@ to the 5' of the DNA part.
   - BWA-MEM
   - Bowtie2
 
-6. Post-alignment Processing
+7. Post-alignment Processing
 ----------------------------
 * Filter aligned reads for uniqueness and mismatches
 * Convert BAM files to BED format
 
-7. Contact Generation
+8. Contact Generation
 ---------------------
 * Join RNA and DNA parts to create raw contacts
 * Perform strand detection and correction
 
-8. CIGAR Filtering (optional)
+9. CIGAR Filtering (optional)
 -----------------------------
 * Filter contacts based on CIGAR strings to improve quality
 
-9. Merging Replicates
----------------------
+10. Merging Replicates
+----------------------
 * Combine data from replicate experiments
 
-10. Chromosome Splitting (optional)
+11. Chromosome Splitting (optional)
 -----------------------------------
 * Split data by chromosomes for parallel processing
 
-11. Annotation and Voting
+12. Annotation and Voting
 -------------------------
 * Annotate RNA parts of contacts using reference annotation
 * Perform voting to resolve conflicting annotations
 
-12. Background Model Generation
+13. Background Model Generation
 -------------------------------
 * Create a background model for normalization
 
-13. Normalization
+14. Normalization
 -----------------
 * Normalize raw contacts using the background model
 * Perform additional normalization steps (N2, scaling)
 
-14. Peak Calling (for One-to-All experiments)
+15. Peak Calling (for One-to-All experiments)
 ---------------------------------------------
 * Use MACS2 to call significant peaks of chromatin-interacting RNAs
 
-15. Statistics and Visualization
+16. Statistics and Visualization
 --------------------------------
 * Generate statistics at various stages of the pipeline
 * Create plots and visualizations of the results
 
-16. MultiQC Report
+17. MultiQC Report
 ------------------
 * Compile a comprehensive quality control report using MultiQC
 
